@@ -74,6 +74,23 @@ npm install -g @bitkyc08/opencodex@preview
 ocx update --tag preview
 ```
 
+## Install this fork from Git
+
+This fork supports Bun Git installs without publishing a release. With Bun and
+Git installed, replace `<commit>` with the full commit SHA you intend to run:
+
+```bash
+bun add --global --trust 'git+https://github.com/gkze/opencodex.git#<commit>'
+```
+
+The `prepare` hook builds the dashboard and generates package metadata. `--trust`
+explicitly permits this dependency's build scripts; use only source you trust.
+The proxy runs TypeScript directly through Bun. Build failures fail installation.
+Stop an existing service before replacing its package, then restart and check
+`ocx ready --json`. To avoid stale same-version installs, remove the old global
+package with `bun remove --global @bitkyc08/opencodex` before adding the Git source.
+Use the pinned Git command for fork updates; `ocx update` follows upstream releases.
+
 ## Run from source
 
 To hack on opencodex itself:
@@ -85,6 +102,8 @@ bun install
 bun run dev:proxy   # starts the proxy API in dev mode (src/cli/index.ts start)
 bun run dev:gui     # starts the dashboard dev server (another terminal)
 ```
+
+On this fork, `bun install` also prepares the packaged dashboard automatically.
 
 `bun run dev` remains an alias for `bun run dev:proxy`. The proxy API exposes `/healthz`,
 `/v1/responses`, and `/api/*`; `GET /` serves the packaged dashboard only after `bun run build:gui`

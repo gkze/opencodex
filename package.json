@@ -63,6 +63,7 @@
     "build:standalone": "bun scripts/build-standalone.ts",
     "test:macos": "swift run --package-path app MenuBarCoreTests",
     "prepare:package": "bun scripts/prepare-package.ts",
+    "prepare": "bun run build:gui",
     "prepack": "bun run prepare:package",
     "prepublishOnly": "bun run audit:high && bun run typecheck && bun run build:gui",
     "release": "bun scripts/release.ts",

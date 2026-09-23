@@ -348,6 +348,17 @@ record's secret; the pid in the body is never trusted alone. Ensure, update heal
 waits stay opted out. A fenced restart compares the CLI with `installedVersion`, because the in-place
 respawn runs the replaced files at the same path, and refuses while that version is unreadable.
 
+## Fork source installation
+
+This fork uses the `prepare` lifecycle hook in `package.json` to run the existing
+GUI build and package preparation before a trusted Git installation completes.
+No release or TypeScript transpilation is needed. Registry consumers retain the
+prebuilt package path. `scripts/generate-compatibility-version.ts` hashes the Git
+index in checkouts and source-archive files when the package root has no `.git`;
+archive scanning rejects symlinks and omits its own generated manifest. Missing
+required files and corrupt checkout metadata fail preparation rather than silently
+producing a partial identity. See the installation guide for explicit script trust.
+
 ## Release workflow
 
 Package release is npm-focused. `package.json` exposes `opencodex` and `ocx`, `prepublishOnly` runs
