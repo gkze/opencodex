@@ -42,6 +42,7 @@ import {
   upstreamErrorEvent,
 } from "./openai-chat/errors";
 import { messagesToChatFormat } from "./openai-chat/messages";
+import { normalizeChatInstructions, prepareResponsesChatInstructions } from "./openai-chat/instructions";
 import { withOpenAIChatToolNames } from "./openai-chat/tool-name-registry";
 import { openAIChatTransport, stripBracketedModelSuffix } from "./openai-chat/wire";
 import { toolChoiceToChatFormat, toolsToChatFormatForProvider } from "./openai-chat/tool-schema";
@@ -99,9 +100,10 @@ export function createOpenAIChatAdapter(provider: OcxProviderConfig): ProviderAd
     formatErrorBody: formatOpenAIChatErrorBody,
 
     buildRequest(parsed: OcxParsedRequest, incoming?: IncomingMeta) {
+      parsed = prepareResponsesChatInstructions(parsed, provider);
       lastRequestedModelId = parsed.modelId;
       const { url, headers, hasCredential } = openAIChatTransport(provider);
-      const messages = toolNames.messages(parsed, provider.baseUrl, messagesToChatFormat(parsed, provider));
+      const messages = normalizeChatInstructions(toolNames.messages(parsed, provider.baseUrl, messagesToChatFormat(parsed, provider)), provider, parsed.modelId);
       const finish = (): AdapterRequest => {
         const tools = toolsToChatFormatForProvider(parsed, provider, toolNames.registry());
         const toolChoice = toolChoiceToChatFormat(parsed.options.toolChoice, parsed.context.tools, provider, toolNames.registry());

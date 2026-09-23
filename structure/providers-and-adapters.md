@@ -1,5 +1,8 @@
 # Providers And Adapters
 
+Cerebras Qwen's registry-owned initial-instruction restriction is enforced by the shared
+[Chat instruction policy](providers/chat-compat.md#single-leading-instruction-blocks) on both inbound paths.
+
 The opt-in `inlineThinkTagModels` list follows static-policy override and model-rename rules;
 shared Kiro/Chat splitting and raw display follow [Chat compatibility](providers/chat-compat.md#inline-think-tag-recovery).
 

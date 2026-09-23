@@ -46,6 +46,19 @@ Shared parsing and streaming follow the [request-copy](../transports/byte-accoun
 
 ## Reasoning and tool-result compatibility
 
+### Single leading instruction blocks
+
+Cerebras `qwen-3.8-27b` declares a registry-only `single-leading-system` template policy.
+`src/adapters/openai-chat/instructions.ts` applies it to both Chat passthrough and translated
+Responses requests. Consecutive initial system/developer text is joined in original order into
+one system message; the user, assistant and tool suffix is unchanged. Later instructions are
+refused with an explicit unsupported-request error, never hoisted or demoted. Opaque instruction
+content and metadata are refused rather than discarded. Recognition uses the canonical destination
+and exact model, so other providers/models retain their existing behavior. Coverage lives in
+`tests/adapters/openai/openai-chat-developer-position.test.ts`.
+Responses input is checked before the parser's system extraction or content projection can hide
+later or opaque instructions. Its initial mixed system/developer prefix is restored in source order.
+
 ### Inline think-tag recovery
 
 A gateway that serves a thinking model without a server-side reasoning parser returns the chain

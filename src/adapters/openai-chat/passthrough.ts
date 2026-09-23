@@ -2,6 +2,7 @@ import { openAIChatTransport, stripBracketedModelSuffix } from "./wire";
 import type { AdapterRequest } from "../base";
 import { frameAgentRouterMessages } from "../agentrouter";
 import { applyExplicitChatDeveloperRole } from "./developer-role";
+import { normalizeChatInstructions } from "./instructions";
 import { openRouterProviderPayload, resolveOpenRouterRouting } from "../../providers/openrouter-routing";
 import { resolveVercelGatewayRouting, vercelGatewayProviderPayload } from "../../providers/vercel-gateway-routing";
 import { fastPolicyForModel } from "../../providers/service-tier";
@@ -63,10 +64,10 @@ export function buildOpenAIChatPassthroughRequest(
     // upstream with a 400 before the model saw it. An unrecorded destination is still verbatim,
     // and the conversion changes the role of those messages and nothing else, so the position
     // of every message and every other field survive unchanged.
-    messages: applyExplicitChatDeveloperRole(
+    messages: normalizeChatInstructions(applyExplicitChatDeveloperRole(
       frameAgentRouterMessages(provider.baseUrl, rawBody.messages),
       provider,
-    ),
+    ), provider, modelId),
     stream,
   };
   for (const field of CHAT_PASSTHROUGH_FIELDS) {

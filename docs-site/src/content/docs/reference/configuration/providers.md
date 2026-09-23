@@ -8,6 +8,12 @@ authenticated.
 
 ## Initial model selection
 
+Cerebras `qwen-3.8-27b` accepts only one initial system message. OpenCodex combines consecutive
+initial system/developer text blocks in their original order on both Chat and Responses requests.
+Instructions added after conversation turns are rejected with an explicit compatibility error;
+they are never moved earlier or converted to user text. Such conversations require a model that
+supports later instructions. This template policy does not increase rate limits or guarantee cache hits.
+
 New non-OAuth connections wait for a reliable model list before exposing models. If that list contains at least 20 distinct Models-tab rows, all model switches start OFF; the provider itself stays ACTIVE. OAuth and ChatGPT-login connections keep their defaults, based on the effective authentication mode.
 
 This runs only for a new provider registration. Existing selections survive updates, re-login and key replacement. After initialization, enable the models you need in Models or with the CLI below; the separate new-model-arrival policy is unchanged. Replace `<model-id>` with an ID from the list.

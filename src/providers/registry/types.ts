@@ -325,6 +325,8 @@ export interface ProviderRegistryEntry {
   parallelToolCalls?: boolean;
   /** Opt this provider into forwarding prompt_cache_key (OpenAI-specific; strict backends reject it). */
   promptCacheKey?: boolean;
+  /** Registry-only template restrictions, keyed by exact upstream model id. */
+  chatInstructionPolicy?: Record<string, "single-leading-system">;
   /**
    * Opt-in: forward `service_tier` on the `/chat/completions` wire. Same hazard as
    * `promptCacheKey` — an OpenAI-specific extension that strict gateways reject. Distinct from

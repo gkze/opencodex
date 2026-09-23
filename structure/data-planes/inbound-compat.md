@@ -75,6 +75,9 @@ Shared parsing and streaming follow the [request-copy](../transports/byte-accoun
 
 ## Chat Completions inbound native path
 
+Registry-declared [single leading instruction policies](../providers/chat-compat.md#single-leading-instruction-blocks)
+consolidate supported initial instruction messages and refuse unrepresentable instructions before sending.
+
 `POST /v1/chat/completions` sends eligible `openai-chat` routes directly to the provider's Chat
 Completions endpoint. Route selection reads the raw Chat body and the native request keeps that body
 as its wire source; a Responses projection is constructed only after the native route is declined
