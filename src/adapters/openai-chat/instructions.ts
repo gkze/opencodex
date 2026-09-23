@@ -26,31 +26,27 @@ function instructionText(message: Record<string, unknown>): string {
   throw new Error("Unsupported instruction content for this model's single leading system message.");
 }
 
-/**
- * Apply a destination's declared template constraint at the final Chat boundary.
- * Only the uninterrupted initial instruction prefix can be consolidated. Hoisting
- * later instructions would change chronology and invalidate the reusable prefix.
- */
-export function normalizeChatInstructions(
-  messages: unknown,
-  provider: OcxProviderConfig,
-  modelId: string,
-): unknown {
-  if (!hasSingleLeadingSystemPolicy(provider, modelId) || !Array.isArray(messages)) return messages;
-
+function leadingInstructions(messages: unknown[]): Record<string, unknown>[] {
   let prefixLength = 0;
   while (prefixLength < messages.length && instruction(messages[prefixLength])) prefixLength++;
   if (messages.slice(prefixLength).some(instruction)) {
     throw new Error("Unsupported mid-conversation system/developer instruction: this model requires a single leading system message. Choose a compatible model; instructions were not reordered.");
   }
-  if (prefixLength === 0) return messages;
-  const prefix = messages.slice(0, prefixLength).filter(instruction);
-  const content = prefix.map(instructionText).join("\n\n");
-  return [{ role: "system", content }, ...messages.slice(prefixLength)];
+  return messages.slice(0, prefixLength).filter(instruction);
 }
 
-/** Validate before the Responses parser's system extraction and content projection can hide
- * unsupported instructions. Rebuild only the initial instruction prefix in source order;
+/** Only consolidate the uninterrupted initial prefix: hoisting later instructions
+ * would change chronology and invalidate the reusable prompt prefix. */
+export function normalizeChatInstructions(messages: unknown, provider: OcxProviderConfig, modelId: string): unknown {
+  if (!hasSingleLeadingSystemPolicy(provider, modelId) || !Array.isArray(messages)) return messages;
+  const prefix = leadingInstructions(messages);
+  if (!prefix.length) return messages;
+  const content = prefix.map(instructionText).join("\n\n");
+  return [{ role: "system", content }, ...messages.slice(prefix.length)];
+}
+
+/** Inspect raw instructions that the parser may have extracted, flattened, or demoted.
+ * Rebuild only the initial instruction prefix in source order;
  * all parsed conversation/tool items and request options retain their existing identities. */
 export function prepareResponsesChatInstructions(parsed: OcxParsedRequest, provider: OcxProviderConfig): OcxParsedRequest {
   if (!hasSingleLeadingSystemPolicy(provider, parsed.modelId)) return parsed;
@@ -66,18 +62,14 @@ export function prepareResponsesChatInstructions(parsed: OcxParsedRequest, provi
       record(part) && part.type === "input_text" ? { ...part, type: "text" } : part) : item.content;
     return { role: item.role, content };
   });
-  normalizeChatInstructions(input, provider, parsed.modelId);
-  const prefix = [];
-  for (const item of input) {
-    if (!instruction(item)) break;
-    prefix.push(item);
-  }
+  const prefix = leadingInstructions(input);
   if (!prefix.length) return parsed;
-  const systemCount = prefix.filter(item => item.role === "system" && instructionText(item).length > 0).length;
+  const text = prefix.map(instructionText);
+  const systemCount = prefix.filter((item, index) => item.role === "system" && text[index].length > 0).length;
   const developerCount = prefix.filter(item => item.role === "developer").length;
   const systemPrompt = parsed.context.systemPrompt ?? [];
   return { ...parsed, context: { ...parsed.context,
-    systemPrompt: [...systemPrompt.slice(0, systemPrompt.length - systemCount), ...prefix.map(instructionText)],
+    systemPrompt: [...systemPrompt.slice(0, systemPrompt.length - systemCount), ...text],
     messages: parsed.context.messages.slice(developerCount),
   } };
 }
