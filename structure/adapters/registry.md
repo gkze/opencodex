@@ -17,8 +17,8 @@ Shared parsing and streaming follow the [request-copy](../transports/byte-accoun
 Runtime adapter construction has one authority: `src/adapters/registry.ts`.
 
 [Chronological instruction ordering](../providers/chat-compat.md#chronological-in-conversation-instructions)
-is now uniform across destinations, so the Chat adapter no longer consults the provider registry's
-destination identity for it; it adds no adapter factory.
+is uniform across destinations. The Chat builder separately consults registry-declared template
+restrictions to consolidate initial instructions or refuse unsupported later instructions; it adds no adapter factory.
 
 `src/server/adapter-resolve.ts` may resolve a provider/model onto an adapter id, but it does not maintain a second adapter factory inventory. The selected persisted/configured adapter id remains an untrusted string until the registry lookup succeeds. Unknown ids fail with the existing `Unknown adapter: <id>` error instead of widening configuration types around a closed compile-time union.
 

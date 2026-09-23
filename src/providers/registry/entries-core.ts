@@ -1256,7 +1256,7 @@ export const PROVIDER_REGISTRY_CORE: readonly ProviderRegistryEntry[] = [
     noVisionModels: ["deepseek-chat", "deepseek-reasoner", "deepseek-v4-flash"],
   },
   // llama-3.3-70b was deprecated by Cerebras on 2026-02-16. Evidence: devlog/_plan/260710_provider_hardening/003_research_aggregators.md.
-  { id: "cerebras", label: "Cerebras", baseUrl: "https://api.cerebras.ai/v1", adapter: "openai-chat", authKind: "key", dashboardUrl: "https://cloud.cerebras.ai/platform/apikeys", defaultModel: "gpt-oss-120b" },
+  { id: "cerebras", label: "Cerebras", baseUrl: "https://api.cerebras.ai/v1", adapter: "openai-chat", authKind: "key", dashboardUrl: "https://cloud.cerebras.ai/platform/apikeys", defaultModel: "gpt-oss-120b", chatInstructionPolicy: { "qwen-3.8-27b": "single-leading-system" } },
   {
     // Primary sources checked 2026-08-08:
     // - https://chutes.ai/pricing documents the shared llm.chutes.ai/v1 OpenAI-compatible
