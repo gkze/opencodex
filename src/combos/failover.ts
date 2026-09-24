@@ -529,9 +529,9 @@ export function comboFailureCooldownScope(
     || isResponseFormatCapabilityRefusal(status, message, options?.code)
   ) return "none";
   if (isProviderScopedQuotaCap(status, message, options?.code)) return "provider";
-  // A rejected or unpaid credential is provider-wide evidence: every target that routes
-  // through the same provider row carries the same key and will fail identically.
-  if (status === 401 || status === 402 || status === 403) return "provider";
+  // A rejected, unpaid, or suspended credential is provider-wide evidence: every target that
+  // routes through the same provider row carries the same key and will fail identically.
+  if (status === 401 || status === 402 || status === 403 || status === 412) return "provider";
   if (PROVIDER_SCOPED_FAILURE_CODES.has(code)) return "provider";
   return "target";
 }
@@ -719,9 +719,10 @@ export function comboFailureDecision(
   if (["origin_rejected", "context_length_exceeded", "invalid_request_error"].includes(error.code ?? "")) {
     return "stop";
   }
-  // 402 (payment required) and 425 (too early) are provider-state signals, not verdicts about
-  // the request: another combo target can still serve it.
-  if ([401, 402, 403, 404, 408, 425, 429].includes(status) || status >= 500) return "hop";
+  // 402 (payment required), 412 (account suspended / billing hold) and 425 (too early) are
+  // provider-state signals, not verdicts about the request: another combo target can still
+  // serve it.
+  if ([401, 402, 403, 404, 408, 412, 425, 429].includes(status) || status >= 500) return "hop";
   if ([
     "permission_denied",
     "subscription_required",

@@ -9,7 +9,7 @@ import {
   targetKey,
 } from "../../src/combos";
 import { comboFailureCooldownScope, comboFailureDecision } from "../../src/combos/failover";
-import { adapterFailureFromMessage, inferHttpStatusFromAdapterMessage } from "../../src/lib/errors";
+import { adapterFailureFromMessage, classifyError, inferHttpStatusFromAdapterMessage } from "../../src/lib/errors";
 import type { OcxConfig } from "../../src/types";
 
 /**
@@ -89,6 +89,12 @@ describe("combo failure cooldown scope", () => {
     expect(comboFailureCooldownScope(401, "invalid api key")).toBe("provider");
     expect(comboFailureCooldownScope(402, "payment required")).toBe("provider");
     expect(comboFailureCooldownScope(403, "forbidden")).toBe("provider");
+    // Fireworks reports a suspended account / spending-limit hold as 412 with a null error
+    // code, so the provider scope must come from the status alone.
+    expect(comboFailureCooldownScope(
+      412,
+      "Account town is suspended, possibly due to reaching the monthly spending limit or failure to pay past invoices.",
+    )).toBe("provider");
     for (const code of [
       "invalid_api_key",
       "insufficient_quota",
@@ -119,6 +125,19 @@ describe("combo failure hop/stop verdicts", () => {
   test("402 and 425 hop instead of ending the chain", () => {
     expect(comboFailureDecision(402, "payment required")).toBe("hop");
     expect(comboFailureDecision(425, "too early")).toBe("hop");
+  });
+
+  test("a suspended-account 412 hops instead of ending the chain", () => {
+    // Real Fireworks body (2026-09-24): account suspension reported as 412 with a null
+    // provider code. The classifier must read the billing prose and the decision must treat
+    // the refusal as provider state, the way a 402 is treated.
+    const body = "Provider error 412: Account town is suspended, possibly due to reaching the monthly spending limit or failure to pay past invoices. Please go to https://fireworks.ai/account/billing for more information.";
+    expect(classifyError(412, "upstream_error", body).code).toBe("insufficient_quota");
+    expect(comboFailureDecision(412, body)).toBe("hop");
+    expect(comboFailureDecision(412, body, { code: null })).toBe("hop");
+    // A 412 without recognizable billing prose is still provider state, never a verdict
+    // about the request payload.
+    expect(comboFailureDecision(412, "precondition failed")).toBe("hop");
   });
 
   test("a per-request free-tier cap still hops", () => {
