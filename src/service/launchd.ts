@@ -11,7 +11,7 @@ import { BUN_RUNTIME_PATH_ENV, BUN_RUNTIME_SOURCE_ENV, durableBunRuntime, type D
 import { serviceApiTokenFilePath } from "../lib/service-secrets";
 import { recordOwnedConfigPath } from "../lib/config-ownership";
 import { writeServiceApiTokenFile, assertLiveServiceManagerAllowed } from "./guards";
-import { resolveServiceListenPort, buildServiceShellCommand, buildServiceLauncherShellCommand, installedServiceListenPort, resolvedProxyEnv } from "./health";
+import { resolveServiceListenPort, buildServiceShellCommand, installedServiceListenPort, resolvedProxyEnv } from "./health";
 import { SERVICE_MANAGED_ENV, LABEL, cliEntry, filterTransientServicePath, logPath, serviceStatePath, currentCodexSqliteHomeAbsolute, type ServiceInstallState, writeServiceInstallState, readServiceInstallState } from "./state";
 import { writeServiceDefinitionFile } from "./windows-ops";
 import { readTextOrNull } from "./windows-taskxml";
@@ -158,8 +158,6 @@ export function expectedLaunchdCommand(
   port: number,
   deps: { state?: ServiceInstallState | null; entry?: { bun: string; cli: string | null } } = {},
 ): string {
-  const state = deps.state === undefined ? readServiceInstallState() : deps.state;
-  if (state?.launcherPath) return buildServiceLauncherShellCommand(state.launcherPath, port);
   const entry = deps.entry ?? cliEntry();
   return buildServiceShellCommand(entry.bun, entry.cli, port);
 }
