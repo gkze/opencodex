@@ -69,6 +69,9 @@ import { buildKiloClientConfig, summarizeKilo, buildKiloContribution, kiloConfig
 export { kiloConfigPath, kiloHomeDir, kiloCandidatePath, KILO_CONFIG_CANDIDATES } from "./config-export/kilo";
 export type { KiloGeneratedConfig, KiloProviderBlock, KiloModelEntry } from "./config-export/kilo";
 import { droidConfigPath, buildDroidClientConfig, summarizeDroid, buildDroidContribution } from "./config-export/droid";
+import { fxConfigPath, buildFxClientConfig, summarizeFx, buildFxContribution } from "./config-export/fx";
+export { fxConfigPath, fxSettingsDir } from "./config-export/fx";
+export type { FxConnection, FxModelMetadata, FxGeneratedConfig } from "./config-export/fx";
 import {
   buildCommandCodeClientConfig,
   summarizeCommandCode,
@@ -1696,6 +1699,32 @@ export const EXPORT_CLIENTS: Record<ExportClientId, ExportClientSpec> = {
     format: "json",
     summarize: summarizeDroid,
     buildContribution: buildDroidContribution,
+    loopbackOnly: true,
+  },
+  /*
+   * Appended last for omo's and cline's reason: `EXPORT_CLIENT_IDS` is
+   * `Object.keys(EXPORT_CLIENTS)`, so this object's insertion order IS the public
+   * order, and tests assert it exactly.
+   */
+  fx: {
+    id: "fx",
+    // Not a bare `settings.json`: same Downloads-folder collision argument as
+    // `omo-models.json` and `raycast-providers.yaml`.
+    filename: "fx-settings.json",
+    destination: env => fxConfigPath(env),
+    apiKeyEnv: "",
+    exportHint: "fx keeps custom connections at the top level of ~/.fx/settings.json, which it limits to 64 KiB. Apply, then run `fx provider opencodex` and restart fx; the selected provider stays unchanged. Loopback only.",
+    build: buildFxClientConfig,
+    format: "json",
+    summarize: summarizeFx,
+    buildContribution: buildFxContribution,
+    /*
+     * fx's adapter sends no custom header, and /v1/chat/completions rejects a
+     * bearer credential while requiring the dedicated `x-opencodex-api-key`
+     * header (AUTH_MATRIX in src/server/auth-cors.ts). A remote bind therefore has
+     * nowhere to put its admission, so refuse instead of writing a config that
+     * 401s — Raycast's and DSH's reasoning.
+     */
     loopbackOnly: true,
   },
 };

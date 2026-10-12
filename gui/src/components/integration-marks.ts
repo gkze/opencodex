@@ -63,6 +63,7 @@ export const INTEGRATION_MARKS: Record<OverviewClientId, string | null> = {
   commandcode: CLIENT_MARKS.commandcode ?? null,
   kilo: CLIENT_MARKS.kilo ?? null,
   droid: CLIENT_MARKS.droid ?? null,
+  fx: CLIENT_MARKS.fx ?? null,
 };
 
 /**

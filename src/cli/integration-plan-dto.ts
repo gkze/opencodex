@@ -26,6 +26,7 @@ export const FILE_INTEGRATION_CLIENTS = [
   "commandcode",
   "kilo",
   "droid",
+  "fx",
 ] as const;
 
 export const INTEGRATION_REFUSAL_REASONS: ReadonlySet<string> = new Set<IntegrationRefusalReason>([

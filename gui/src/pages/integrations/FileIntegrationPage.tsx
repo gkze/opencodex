@@ -88,6 +88,7 @@ const SEMANTICS_KEY: Record<FileIntegrationClientId, TKey> = {
   cline: "integrations.semantics.cline",
   kilo: "integrations.semantics.kilo",
   droid: "integrations.semantics.droid",
+  fx: "integrations.semantics.fx",
 };
 
 const TAB_LABEL_KEY: Record<FileIntegrationClientId, TKey> = {
@@ -109,6 +110,7 @@ const TAB_LABEL_KEY: Record<FileIntegrationClientId, TKey> = {
   cline: "integrations.tab.cline",
   kilo: "integrations.tab.kilo",
   droid: "integrations.tab.droid",
+  fx: "integrations.tab.fx",
 };
 
 type FileIntegrationPageProps = {

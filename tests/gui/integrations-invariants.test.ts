@@ -99,7 +99,7 @@ describe("the client registries cannot drift apart", () => {
     const guiRouting = await import("../../gui/src/app-routing");
 
     const expected = [...EXPORT_CLIENT_IDS].sort();
-    expect(expected).toHaveLength(18);
+    expect(expected).toHaveLength(19);
 
     expect([...INTEGRATION_CLIENT_IDS].sort()).toEqual(expected);
     expect([...gui.CLIENTS].sort()).toEqual(expected);
@@ -277,6 +277,9 @@ describe("every client survives a full lifecycle", () => {
     // from the family resemblance (260912 plan unit, 001).
     omo: '{\n  "providers": {\n    "mine": { "api": "http://keep-me" }\n  }\n}\n',
     kilo: '{\n  "model": "keep-me",\n  "provider": {\n    "mine": { "npm": "keep-me" }\n  }\n}\n',
+    // fx's settings.json is a user PROFILE, so the seed carries unrelated
+    // settings (a theme, and a second connection) the writer must leave alone.
+    fx: '{\n  "theme": "dark",\n  "providers": {\n    "mine": { "protocol": "openai-chat-completions", "base_url": "http://keep-me/v1", "auth": { "type": "none" } }\n  }\n}\n',
   };
   /** Where the seed's user-owned entry lives when the seed is a sequence. */
   const USER_ELEMENT: Partial<Record<IntegrationClientId, readonly string[]>> = {

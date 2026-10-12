@@ -219,7 +219,8 @@ export type ExportClientId =
   | "cline"
   | "commandcode"
   | "kilo"
-  | "droid";
+  | "droid"
+  | "fx";
 
 export interface ExportClientSpec {
   id: ExportClientId;

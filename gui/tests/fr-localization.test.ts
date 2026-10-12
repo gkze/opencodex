@@ -156,6 +156,9 @@ const INTENTIONAL_ENGLISH = new Set<TKey>([
   // Cline product name and CLI acronym are intentionally preserved.
   "integrations.tab.cline",
   "api.clientConfig.clientCline",
+  // "fx" is the product's own lowercase name, identical in every locale.
+  "integrations.tab.fx",
+  "api.clientConfig.clientFx",
   "integrations.tab.kilo",
   "api.clientConfig.clientKilo",
   // Command Code is a product name, identical in every locale.
