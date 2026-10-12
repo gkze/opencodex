@@ -146,8 +146,11 @@ export function messagesToChatFormat(parsed: OcxParsedRequest, provider: OcxProv
   // later user renders in place: Qwen3.8-27B, Flash-Next, and the OrcaSAQ-2-Cyber-27B GGUF family.
   // Gateways serve them under namespaced ids (LiteLLM's openai/Qwen3.8-27B, #6674), so any
   // number of leading path segments is accepted; the final segment names the checkpoint.
+  // Cerebras serves the same Qwen3.8-27B checkpoint as `qwen-3.8-27b`: the dash before the
+  // version is that provider's own id shape rather than a typo, and it is the only spelling the
+  // `Qwen3\.8-27B` alternative does not already cover.
   // Orca's GGUF marker must precede any colon quant tag; other Orca variants are unchanged.
-  const leadingSystemTemplate = !nativeOpenAI && /^(?:[^/]+\/)*(?:flash-next|Qwen3\.8-Flash-Next|Qwen3\.8-27B|qwen3-8-27b(?:-(?:fp8|lora))?|OrcaSAQ-2-Cyber-27B(?=[^:/\s]*GGUF)[^:/\s]*(?::[\w-]+)?)$/i.test(parsed.modelId);
+  const leadingSystemTemplate = !nativeOpenAI && /^(?:[^/]+\/)*(?:flash-next|Qwen3\.8-Flash-Next|Qwen3\.8-27B|qwen-3\.8-27b|qwen3-8-27b(?:-(?:fp8|lora))?|OrcaSAQ-2-Cyber-27B(?=[^:/\s]*GGUF)[^:/\s]*(?::[\w-]+)?)$/i.test(parsed.modelId);
   // Which role a developer message carries, and why the unrecorded state folds, is stated once
   // in ./developer-role.ts and read from there by the native passthrough as well. Either way the
   // message keeps the slot it arrived in — only the role changes, never the position.
