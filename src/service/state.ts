@@ -108,6 +108,28 @@ export function serviceLauncherPathDiagnostic(
  * `daemon-reload` + `restart` does not evict-then-maybe-nothing the way launchd did), but
  * the rewrite was the same, so the behavior is deliberately shared rather than branched.
  */
+export function recordedLauncherEntry(deps: {
+  isExecutableFile?: (path: string) => boolean;
+  state?: ServiceInstallState | null;
+  platform?: NodeJS.Platform;
+} = {}): string | null {
+  const platform = deps.platform ?? process.platform;
+  const pathTools = platform === "win32" ? win32 : posix;
+  const isExecutableFile = deps.isExecutableFile ?? ((path: string): boolean => {
+    try {
+      if (!statSync(path).isFile()) return false;
+      accessSync(path, fsConstants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+  const recorded = (deps.state === undefined ? readServiceInstallState() : deps.state)?.launcherPath;
+  if (recorded && !isTransientServiceLauncherPath(recorded, platform)
+    && pathTools.isAbsolute(recorded) && isExecutableFile(recorded)) return recorded;
+  return null;
+}
+
 export function stableLauncherEntry(deps: {
   env?: NodeJS.ProcessEnv;
   isExecutableFile?: (path: string) => boolean;
@@ -127,9 +149,8 @@ export function stableLauncherEntry(deps: {
       return false;
     }
   });
-  const recorded = (deps.state === undefined ? readServiceInstallState() : deps.state)?.launcherPath;
-  if (recorded && !isTransientServiceLauncherPath(recorded, platform)
-    && pathTools.isAbsolute(recorded) && isExecutableFile(recorded)) return recorded;
+  const recorded = recordedLauncherEntry({ isExecutableFile, state: deps.state, platform });
+  if (recorded) return recorded;
   const entries = (env.PATH ?? "").split(deps.pathDelimiter ?? delimiter);
   for (const entry of entries) {
     if (!entry || isTransientServiceLauncherPath(entry, platform) || !pathTools.isAbsolute(entry)) continue;
