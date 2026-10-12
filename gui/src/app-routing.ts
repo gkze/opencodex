@@ -148,6 +148,7 @@ export const INTEGRATION_TAB_HASHES = [
   "integrations/kilo",
   "integrations/droid",
   "integrations/qoder",
+  "integrations/fx",
 ] as const;
 
 /**
