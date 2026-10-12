@@ -169,6 +169,8 @@ const CLIENT_MANAGED_PATHS = {
   ],
   kilo: [["provider", OPENCODE_PROVIDER_ID]],
   droid: [["customModels", DYNAMIC_SEGMENT]],
+  // fx defines a custom connection only at the top level of ~/.fx/settings.json.
+  fx: [["providers", OPENCODE_PROVIDER_ID]],
 } satisfies Record<IntegrationClientId, readonly (readonly string[])[]>;
 
 /** Not a configuration surface. Exported so a parity case can compare it against the shipped clients. */

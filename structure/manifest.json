@@ -973,7 +973,10 @@
         "reason": "no test constrains routed slug shape; the ten files that mention provider/model consume slugs rather than enforcing the form"
       }
     ],
-    "oversizeDocs": [],
+    "oversizeDocs": [
+      "clients/integrations.md",
+      "ops/docs-and-release.md"
+    ],
     "staleRefs": []
   }
 }
