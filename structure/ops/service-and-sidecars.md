@@ -193,8 +193,8 @@ versioned tree. Only a pre-Bun, proof-bound `OPENCODEX_BUN_PATH` with durable so
 carried through; `bin/ocx.mjs` rediscovers bundled or validated PATH Bun, stamping PATH selection as
 `process` via `src/lib/bun-path-runtime.mjs`. The API-auth token remains file-backed and is loaded only by
 the service shell at start. On macOS, `start` and detailed `status` compare the live launchd job
-against `expectedLaunchdCommand`, which still follows a `launcherPath` recorded by a pre-pinning
-install rather than re-walking PATH, so such a job is never misreported as an older plist (#3464). On macOS, `src/service/launchd.ts` waits up to 125 probes at 200 ms intervals for an evicted job to disappear before repair bootstraps its replacement. The bounded 25-second window accommodates the proxy drain and launchd shutdown; exhausted or unreadable registration retains the existing diagnostic failure path (`tests/service/launchd-repair.test.ts`).
+against `expectedLaunchdCommand`, built from the same pair `buildPlist` renders — never from a
+recorded `launcherPath`, which launchd does not bake, so repair converges to the pair form. On macOS, `src/service/launchd.ts` waits up to 125 probes at 200 ms intervals for an evicted job to disappear before repair bootstraps its replacement. The bounded 25-second window accommodates the proxy drain and launchd shutdown; exhausted or unreadable registration retains the existing diagnostic failure path (`tests/service/launchd-repair.test.ts`).
 
 > Decision record: [ADR-0030](../decisions/ADR-0030-stable-service-launcher-launchd-and-systemd.md)
 > Decision record: [ADR-0100](../decisions/ADR-0100-stable-service-launcher-launchd-and-systemd.md)
