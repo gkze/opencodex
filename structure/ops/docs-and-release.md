@@ -404,6 +404,11 @@ cache produces. Archive scanning rejects symlinks and omits its own generated ma
 required file or corrupt checkout metadata fails preparation instead of silently producing a partial
 identity.
 
+This fork uses the `prepare` lifecycle hook in `package.json` to run the existing GUI build and
+package preparation before a trusted Git installation completes. No release or TypeScript
+transpilation is needed, and registry consumers retain the prebuilt package path. See the
+installation guide for explicit script trust.
+
 ## Release workflow
 
 Package release is npm-focused. `package.json` exposes `opencodex` and `ocx`, `prepublishOnly` runs
