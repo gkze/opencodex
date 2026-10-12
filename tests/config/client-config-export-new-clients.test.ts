@@ -63,8 +63,10 @@ describe("no secret reaches a client config", () => {
     // interpolation. OMP, Prime and omo can carry provider headers, but remote
     // credential wiring is deliberately deferred from those initial generated
     // integrations -- omo reuses Pi's builder, which emits no headers at all.
+    // Cline and fx are refused for the same structural reason: Cline's generated
+    // store carries no header field, and fx's adapter sends no custom header.
     const loopbackOnly = EXPORT_CLIENT_IDS.filter(id => EXPORT_CLIENTS[id].loopbackOnly);
-    expect(loopbackOnly).toEqual(["qoder", "pi", "omp", "kimi", "gajae", "dsh", "mcode", "zcode", "commandcode", "prime", "aside", "raycast", "omo", "cline", "droid"]);
+    expect(loopbackOnly).toEqual(["qoder", "pi", "omp", "kimi", "gajae", "dsh", "mcode", "zcode", "commandcode", "prime", "aside", "raycast", "omo", "cline", "droid", "fx"]);
   });
 
   test("every client that is not loopback-only carries the header on a remote bind", () => {
