@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, appendFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // Run after frozen installation and all source checks. Metadata is build-local;
@@ -24,9 +24,11 @@ delete pkg.scripts.prepare;
 delete pkg.scripts.prepack;
 delete pkg.scripts.prepublishOnly;
 writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-execFileSync('bun', ['run', 'prepare:package'], { stdio: 'inherit' });
+execFileSync('bun', ['run', 'build:gui'], { stdio: 'inherit' });
 mkdirSync('dist/fork', { recursive: true });
 const packed = JSON.parse(execFileSync('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', 'dist/fork'], { encoding: 'utf8' }));
 assert.equal(packed.length, 1);
 writeFileSync('dist/fork/manifest.json', JSON.stringify({ version, tag: `fork-v${version}`, source: process.env.FORK_CANDIDATE, file: packed[0].filename }, null, 2) + '\n');
 console.log(resolve('dist/fork', packed[0].filename));
+
+if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);

@@ -43,6 +43,14 @@ if (command === "prepare") {
   const old = git("rev-parse", "HEAD")
   const input = { old, upstream, commits: lines(git("rev-list", "--reverse", `${upstream}..${old}`)) }
   writeFileSync(path.join(directory, "input.json"), JSON.stringify(input, null, 2))
+} else if (command === "manual") {
+  assertForkRemote()
+  const candidate = sha(process.env.SOURCE_SHA)
+  assert.equal(candidate, sha(process.env.EXPECTED_SHA), "Dispatch commit differs from reviewed commit")
+  assert.equal(git("rev-parse", "HEAD"), candidate)
+  assert.equal(git("ls-remote", "origin", branch).split("\t")[0], candidate, "Fork advanced before dispatch")
+  const upstream = git("merge-base", candidate, "origin/dev")
+  appendFileSync(process.env.GITHUB_OUTPUT, `candidate=${candidate}\nold=${candidate}\nupstream=${upstream}\n`)
 } else if (command === "accept") {
   assertForkRemote()
   const input = read(path.join(directory, "input.json"))
