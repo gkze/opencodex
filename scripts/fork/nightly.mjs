@@ -1,3 +1,4 @@
+import { assertForkRemote } from "./remote.mjs"
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
 import { mkdirSync, readFileSync, writeFileSync, appendFileSync } from "node:fs"
@@ -43,6 +44,7 @@ if (command === "prepare") {
   const input = { old, upstream, commits: lines(git("rev-list", "--reverse", `${upstream}..${old}`)) }
   writeFileSync(path.join(directory, "input.json"), JSON.stringify(input, null, 2))
 } else if (command === "accept") {
+  assertForkRemote()
   const input = read(path.join(directory, "input.json"))
   assert.equal(sha(input.old), sha(process.env.SOURCE_SHA))
   git("fetch", "https://github.com/lidge-jun/opencodex.git", "dev")
@@ -95,6 +97,7 @@ if (command === "prepare") {
   git("push", "origin", `${candidate}:${staging}`)
   appendFileSync(process.env.GITHUB_OUTPUT, `candidate=${candidate}\nold=${input.old}\nupstream=${input.upstream}\n`)
 } else if (command === "promote") {
+  assertForkRemote()
   const old = sha(process.env.FORK_OLD)
   const candidate = sha(process.env.FORK_CANDIDATE)
   const upstream = sha(process.env.FORK_UPSTREAM)

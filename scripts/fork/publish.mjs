@@ -1,9 +1,11 @@
+import { assertForkRemote } from "./remote.mjs";
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+assertForkRemote();
 const directory = process.argv[2];
 assert.ok(directory, 'Usage: publish.mjs <artifacts>');
 const manifest = JSON.parse(readFileSync(path.join(directory, 'manifest.json'), 'utf8'));
