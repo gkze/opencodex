@@ -1,4 +1,7 @@
 {
+  "link-ultrafast-settings.test.ts": "clients",
+  "catalog-ultrafast-cache.test.ts": "codex-integration",
+  "fastwire-ultrafast-regressions.test.ts": "routing",
   "codex-history-pending-wal.test.ts": "codex-integration",
   "service-log.test.ts": "service",
   "fork-updates.test.ts": "update",
