@@ -310,9 +310,10 @@ export function applyProviderConfigHints(
   // owns catalog publication, including an explicit provider-level false.
   const supportsServiceTier = serviceTierSupportFromPolicy(fastPolicy);
   // Ultra Fast is published only where the pair declares it AND its wire can carry the spelling.
-  const supportsUltraFast = supportsServiceTier === true && ultraFastSettableFromPolicy(fastPolicy);
+  const supportsUltraFast = ultraFastSettableFromPolicy(fastPolicy);
   const {
     supportsServiceTier: _staleServiceTier,
+    supportsUltraFast: _staleUltraFast,
     fastTierDescription: _staleFastTierDescription,
     providerAlias: _staleProviderAlias,
     suppressSyntheticMax: _staleSuppressSyntheticMax,

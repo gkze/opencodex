@@ -247,9 +247,7 @@ The Chat/Responses projections expose that subset as `reasoning_tokens`; no text
 `src/adapters/run-turn-queue.ts` preflight callers may supply an optional wait bound; timeout hands
 the outstanding iterator read to replay once, while callers without a bound keep the existing wait.
 
-Fast response evidence follows the [response-tier observation contract](transports/responses.md#response-tier-observation-authority):
-an explicit provider declaration can mark an intermediary's echo non-authoritative without
-changing its capability or adapter wire mapping.
+`src/providers/fastwire.ts` owns Ultra Fast admission: setting the tier requires Fast capability, Ultra Fast capability, a mapped spelling, and a compatible final adapter. The settable projection in `src/providers/service-tier.ts` derives from that decision instead of duplicating its eligibility rules. Explicit Ultra Fast denial also drops inherited caller intent. Unclassified routes retain caller forwarding policy and do not acquire proxy-owned demand; an unclassified Ultra Fast tier uses foreign-tier forwarding rather than gaining capability from its wire spelling. Fast response evidence follows the [response-tier observation contract](transports/responses.md#response-tier-observation-authority): an explicit provider declaration can mark an intermediary's echo non-authoritative without changing its capability or adapter wire mapping.
 
 The image/video loop bounds each hidden iteration before replay or fulfillment; see
 [media iteration retention](transports/inventory.md#media-iteration-retention).
