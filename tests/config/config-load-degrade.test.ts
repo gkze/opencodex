@@ -198,6 +198,49 @@ test("Fast rows default on for fresh and omitted config; explicit false and malf
 });
 
 
+test("the fast-lane demand accepts the Ultra Fast tier and degrades a malformed value to passthrough", () => {
+  // `fastMode` used to be boolean-only; the tier demand widens it without moving any existing
+  // meaning. A hand-edited value the schema does not know degrades to passthrough (undefined)
+  // rather than rejecting the providers that carry it.
+  for (const [value, expected] of [
+    [undefined, undefined],
+    [true, true],
+    [false, false],
+    ["ultrafast", "ultrafast"],
+    ["fast", undefined],
+    ["UltraFast", undefined],
+  ] as const) {
+    const config = { ...candidate({}), fastMode: value };
+    writeFileSync(getConfigPath(), JSON.stringify(config), "utf8");
+    const loaded = loadConfig();
+    expect(loaded.fastMode).toBe(expected);
+    expect(loaded.providers.xai.note).toBe("keep me");
+  }
+});
+
+test("Ultra Fast capability is a strict write and a loadable declaration", () => {
+  const withCapability = (value: unknown) => ({ ...candidate(undefined), providers: { xai: {
+    ...candidate(undefined).providers.xai,
+    supportsUltraFast: true,
+    modelSupportsUltraFast: value,
+  } } });
+  expect(validateConfigCandidate(withCapability({ "grok-5": true })).ok).toBe(true);
+  expect(validateConfigCandidate(withCapability({ "grok-5": "yes" })).ok).toBe(false);
+  writeFileSync(getConfigPath(), JSON.stringify(withCapability({ "grok-5": true })), "utf8");
+  const loaded = loadConfig();
+  expect(loaded.providers.xai.supportsUltraFast).toBe(true);
+  expect(loaded.providers.xai.modelSupportsUltraFast).toEqual({ "grok-5": true });
+  expect(loaded.providers.xai.note).toBe("keep me");
+  // A nulled Fast wire with a declared Ultra Fast capability is the same contradiction Fast
+  // capability already reports: the declaration has no wire left to carry it.
+  const conflicted = { ...withCapability({ "grok-5": true }), providers: { xai: {
+    ...candidate(undefined).providers.xai,
+    fastWire: null,
+    modelSupportsUltraFast: { "grok-5": true },
+  } } };
+  expect(validateConfigCandidate(conflicted).ok).toBe(false);
+});
+
 test("model capability writes stay strict while load preserves independent restrictions", () => {
   const raw = { ...candidate(undefined), providers: { xai: {
     ...candidate(undefined).providers.xai,

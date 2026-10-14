@@ -53,7 +53,7 @@ export function buildOpenAIChatPassthroughRequest(
   modelId: string,
   stream: boolean,
   fastPolicy: ResolvedFastPolicy = fastPolicyForModel(provider, modelId, undefined, "chat"),
-  fastMode?: boolean,
+  fastMode?: boolean | "ultrafast",
   providerName?: string,
 ): AdapterRequest {
   const { url, headers, hasCredential } = openAIChatTransport(provider);
