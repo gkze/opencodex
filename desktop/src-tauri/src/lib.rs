@@ -404,10 +404,7 @@ pub fn run() {
             let builder = builder
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .hidden_title(true)
-                .min_inner_size(360.0, 320.0)
-                .traffic_light_position(tauri::Position::Logical(tauri::LogicalPosition::new(
-                    18.0, 22.0,
-                )));
+                .min_inner_size(360.0, 320.0);
             let window = builder.build()?;
             window::configure(&window);
             if startup::LaunchOrigin::detect() == startup::LaunchOrigin::User {

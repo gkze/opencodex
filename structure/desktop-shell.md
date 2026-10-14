@@ -42,18 +42,18 @@ dashboard. `capabilities/dashboard-zoom.json` grants that single command to the 
 
 The main window carries an integrated title bar on macOS: the builder sets
 `TitleBarStyle::Overlay` with `hidden_title`, so the webview draws to the top of the window and
-the traffic lights land inside it at a fixed `traffic_light_position`. The layout that receives
+the traffic lights land inside it through the native layout observer. The layout that receives
 them is the GUI's: the dashboard keeps a top strip across the sidebar and the main area, reserves
 the lights' inset on macOS only, and moves or zooms the window through `plugin:window` commands.
-`capabilities/dashboard-titlebar.json` grants `start_dragging`, `toggle_maximize`, and a read-only
-`scale_factor` query to `main` for the loopback origin. The dashboard uses the native window scale
+`capabilities/dashboard-titlebar.json` grants `start_dragging`, `toggle_maximize`, `set_theme`, and a read-only
+`scale_factor` query to `main` for the loopback origin. `set_theme` synchronizes native appearance with the dashboard. The dashboard uses the native window scale
 and page device-pixel ratio to keep the traffic-light row and inset clear at reduced WebKit zoom;
 the macOS window has a 360-point minimum width. The same test pins the capability shape, and
 `capabilities/default.json` grants the drag/zoom pair
 on the app origin because the bundled bootstrap and update pages draw their own matching strip —
 a page with an overlay title bar and no strip cannot be dragged or zoomed at all. Windows and
 Linux keep the native title bar: the shell ships no min/max/close widgets of its own, and the
-sidebar-top layout applies unchanged beneath it.
+sidebar-top layout applies unchanged beneath it. `app/Sources/NativeTray/WindowControls.swift` positions the native controls around the center of the 39-point titlebar content at 100% zoom, snapped to physical pixels: centers 20, 43 and 66 points on 1× displays and 19.5, 42.5 and 65.5 points on 2× displays, after AppKit frame changes and window updates, including resize and focus changes. Window-owned observers also track the titlebar ancestors so native relayout cannot silently reset the controls. Tauri's `traffic_light_position` is deliberately unset because Wry would otherwise overwrite this placement during drawing. It changes button frame origins and refreshes native tracking areas; AppKit owns button sizes, bounds, layers, symbols and hover behavior. At enlarged page zoom, the native titlebar container grows downward just enough to contain the controls so hit testing reaches them. The observer remembers each container's original height and restores it at normal zoom; the first control has equal top and left center insets at every zoom level. The dashboard synchronizes its light/dark/system preference through `plugin:window|set_theme`, so current shells do not retain dark native appearance over an explicitly light dashboard; system mode clears the override. No custom drawing or decorative overlays alter the native buttons. Fullscreen uses system layout. The centerline follows WKWebView page zoom using the same row-height and border rule as the dashboard. The sidebar toggle begins at 83 points on 1× displays or 82.5 points on 2× displays at 100% zoom, leaving 10 points after the green control; its vertical offset follows the same snapped center, including while collapsed, and its clearance follows page zoom in `gui/src/lib/window-chrome.ts`. `swift run --package-path app WindowControlsTests` checks native geometry preservation, explicit shared centers at 1× and 2× display scales, physical-pixel-aligned control edges, root-view hit testing at six zoom levels from 50% to 300% across three window sizes, normal-zoom restoration, repeated layout and release of the observed hierarchy on window teardown. GUI titlebar tests cover collapsed and zoomed clearance against explicit contract values rather than parsing Swift implementation expressions.
 
 Process creation shares the Unix guard with executable publication; see [Desktop-owned terminal command](desktop-terminal-command.md).
 ## Startup, quit and the tray
