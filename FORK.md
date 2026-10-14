@@ -8,7 +8,7 @@ fork channel does not publish to npmjs or use upstream release credentials.
 
 ## Nightly flow
 
-The **Fork nightly refresh** workflow runs at 11:17 UTC daily (04:17 PDT / 03:17 PST)
+The **Fork nightly refresh** workflow runs at 03:00 Pacific daily (`America/Los_Angeles`, including daylight-saving changes)
 and can be dispatched manually on `gkze/patches`. GitHub may delay scheduled runs.
 It captures upstream `lidge-jun/opencodex:dev` and the fork tip, then asks Copilot
 to inspect each patch and keep, adapt, or drop it with concrete evidence. Clean
