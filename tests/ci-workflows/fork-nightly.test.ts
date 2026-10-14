@@ -134,15 +134,22 @@ test("publication requires checked artifacts and keeps candidate execution read-
   const workflow = Bun.YAML.parse(await Bun.file(repoPath(".github/workflows/fork-nightly-publish.yml")).text()) as {
     permissions: Record<string, string>;
     on: { workflow_run: { workflows: string[]; types: string[] } };
-    jobs: Record<string, { needs?: string[]; permissions?: Record<string, string>; if?: string }>;
+    jobs: Record<string, { needs?: string[]; permissions?: Record<string, string>; if?: string;
+      strategy?: { matrix: { shard: number[] } };
+      steps?: { env?: Record<string, string>; run?: string }[]; }>;
   }
   expect(workflow.permissions).toEqual({ contents: "read" })
   expect(workflow.on.workflow_run).toEqual({ workflows: ["Fork nightly refresh"], types: ["completed"] })
   expect(workflow.jobs.candidate.if).toContain("head_repository.full_name == github.repository")
   expect(workflow.jobs.candidate.if).toContain("head_branch == 'gkze/patches'")
   expect(workflow.jobs.validate.permissions).toBeUndefined()
+  expect(workflow.jobs.test.permissions).toBeUndefined()
+  expect(workflow.jobs.test.strategy?.matrix.shard).toEqual([1, 2, 3, 4])
+  const suite = workflow.jobs.test.steps?.find(step => step.env?.BUN_TEST_FILE_SCOPE)
+  expect(suite?.env?.BUN_TEST_FILE_SCOPE).toBe("all")
+  expect(suite?.run).toContain("scripts/ci/run-bun-test-batches.sh")
   expect(workflow.jobs.smoke.permissions).toBeUndefined()
-  expect(workflow.jobs.publish.needs).toEqual(["candidate", "validate", "smoke", "assets"])
+  expect(workflow.jobs.publish.needs).toEqual(["candidate", "validate", "test", "smoke", "assets"])
   expect(workflow.jobs.publish.permissions).toEqual({ contents: "write", packages: "write" })
 })
 
