@@ -62,7 +62,11 @@ if (!alreadyVisible) {
 }
 // Verify every asset's server-computed digest before making a draft visible or
 // moving the consumer tag. A retry of a visible release never replaces its bytes.
-const published = JSON.parse(execFileSync('gh', ['api', `repos/gkze/opencodex/releases/tags/${manifest.tag}`], { encoding: 'utf8' }));
+// The tag endpoint only resolves published releases; address drafts by identity.
+const identity = JSON.parse(execFileSync('gh', ['release', 'view', manifest.tag, '--repo', 'gkze/opencodex', '--json', 'databaseId'], { encoding: 'utf8' }));
+assert.ok(Number.isSafeInteger(identity.databaseId) && identity.databaseId > 0);
+const published = JSON.parse(execFileSync('gh', ['api', `repos/gkze/opencodex/releases/${identity.databaseId}`], { encoding: 'utf8' }));
+assert.equal(published.tag_name, manifest.tag);
 assert.deepEqual(published.assets.map(asset => asset.name).sort(), [...releaseNames].sort(), 'Published release asset inventory differs');
 for (const name of releaseNames) {
   const asset = published.assets.find(item => item.name === name);
