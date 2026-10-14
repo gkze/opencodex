@@ -27,14 +27,25 @@ A successful publication creates:
 
 - `@gkze/opencodex` on GitHub Packages with the `nightly` dist-tag;
 - an immutable `fork-vX.Y.Z-gkze.nightly.RUN.ATTEMPT` tag and GitHub prerelease;
-- the package tarball, SHA256SUMS, and source manifest attached to the release;
+- the package tarball, all platform assets, SHA256SUMS, and source manifests attached to the release;
 - a `fork-backup-OLD_SHA` tag before atomically advancing `gkze/patches` with an
   exact-old-tip lease. Concurrent fork work is never overwritten.
 
 Version and package metadata are stamped only for the build. The maintained tree
 keeps upstream metadata to avoid nightly version-bump commits in the patch stack.
 The archive contains a built dashboard; install scripts do not rebuild it.
-This channel releases the CLI/package, not desktop applications.
+The same release also contains five standalone CLI builds (Linux x64/arm64,
+macOS x64/arm64, Windows x64) and desktop bundles (universal macOS app and DMG,
+Windows x64 MSI, Linux x64 AppImage and deb). Desktop builds are manual-install
+fork builds: macOS is ad-hoc signed without notarization, Windows is unsigned,
+and upstream desktop updater endpoints are disabled. Widget availability still
+requires the platform's extension-signing requirements; an ad-hoc bundle does
+not establish widget registration.
+
+For an already reviewed fork tip, dispatch **Publish fork nightly** directly on
+`gkze/patches` with its full `expected_sha`. The job refuses a moved tip, runs the
+same validation/build gates, and publishes that exact commit without a rebase.
+The scheduled refresh retains its semantic patch review and guarded promotion.
 
 ## Install and update
 
