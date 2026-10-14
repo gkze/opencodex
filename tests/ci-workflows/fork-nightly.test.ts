@@ -17,7 +17,7 @@ function fixture() {
     execFileSync("git", args, { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
   git("init", "--bare", remote)
   git("init", "-b", "dev")
-  git("config", "user.email", "test@example.invalid")
+  git("config", "user.email", "test@example.test")
   git("config", "user.name", "Test")
   git("config", `url.${remote}.insteadOf`, "https://github.com/lidge-jun/opencodex.git")
   git("config", "--add", `url.${remote}.insteadOf`, "https://github.com/gkze/opencodex.git")
