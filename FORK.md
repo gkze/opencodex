@@ -60,7 +60,7 @@ workflows; inherited upstream workflows are not part of this release channel.
 Repository secrets:
 
 - `COPILOT_GITHUB_TOKEN`: Copilot CLI authentication for the read-only agent.
-- `FORK_PUSH_TOKEN`: repository-scoped permission to update the fork's branch,
+- `FORK_PUSH_TOKEN`: a credential with permission to update the fork's branch,
   including workflow files. Used only by deterministic acceptance/promotion.
 
 The built-in GitHub token supplies release and package publication permissions.
