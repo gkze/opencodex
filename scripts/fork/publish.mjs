@@ -1,8 +1,10 @@
+import { assetTargets, assetContract } from './asset-contract.mjs';
+import { verifyAssets } from './verify-assets.mjs';
 import { assertForkRemote } from "./remote.mjs";
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync, copyFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 
 assertForkRemote();
@@ -16,6 +18,19 @@ assert.equal(manifest.tag, `fork-v${manifest.version}`);
 const files = readdirSync(directory).filter(x => x.endsWith('.tgz'));
 assert.deepEqual(files, [manifest.file]);
 assert.equal(path.basename(manifest.file), manifest.file);
+const inventory = Object.entries(assetTargets).flatMap(([kind, targets]) => targets.map(target => ({
+  target, ...assetContract(kind, target, manifest.version, manifest.source),
+})));
+const platformAssets = verifyAssets(process.argv[3], manifest, inventory);
+for (const asset of platformAssets) {
+  const destination = path.join(directory, asset.name);
+  assert.ok(!existsSync(destination), `Artifact would overwrite publication input: ${asset.name}`);
+  copyFileSync(asset.path, destination);
+}
+const releaseNames = [manifest.file, 'manifest.json', ...platformAssets.map(asset => asset.name)];
+const checksums = releaseNames.map(name => `${createHash('sha256').update(readFileSync(path.join(directory, name))).digest('hex')}  ${name}`).join('\n') + '\n';
+writeFileSync(path.join(directory, 'SHA256SUMS'), checksums);
+releaseNames.push('SHA256SUMS');
 const file = path.join(directory, manifest.file);
 const pkg = JSON.parse(execFileSync('tar', ['-xOf', file, 'package/package.json'], { encoding: 'utf8' }));
 assert.equal(pkg.name, '@gkze/opencodex');
@@ -38,15 +53,24 @@ const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const remoteTag = git('ls-remote', 'origin', `refs/tags/${manifest.tag}`).split('\t')[0];
 if (remoteTag) assert.equal(remoteTag, manifest.source, 'Release tag points at other source');
 else git('push', 'origin', `${manifest.source}:refs/tags/${manifest.tag}`);
-writeFileSync(path.join(directory, 'SHA256SUMS'), `${createHash('sha256').update(readFileSync(file)).digest('hex')}  ${manifest.file}\n`);
+
 const release = spawnSync('gh', ['release', 'view', manifest.tag, '--repo', 'gkze/opencodex', '--json', 'isDraft'], { encoding: 'utf8' });
-if (release.status !== 0) execFileSync('gh', ['release', 'create', manifest.tag, '--repo', 'gkze/opencodex', '--verify-tag', '--draft', '--prerelease', '--title', `OpenCodex Fork ${manifest.version}`, '--notes', `Nightly CLI package. Source: ${manifest.source}. Replace explicitly from this fork; upstream self-update is disabled.`], { stdio: 'inherit' });
-else if (!JSON.parse(release.stdout).isDraft) {
-  // Never replace the bytes of an already-visible release.
-  execFileSync('npm', ['dist-tag', 'add', target, 'nightly', '--registry', registry], { stdio: 'inherit' });
-  process.exit(0);
+if (release.status !== 0) execFileSync('gh', ['release', 'create', manifest.tag, '--repo', 'gkze/opencodex', '--verify-tag', '--draft', '--prerelease', '--title', `OpenCodex Fork ${manifest.version}`, '--notes', `Fork CLI package, five standalone builds, and desktop bundles. Source: ${manifest.source}. Manual installation only; upstream self-update is disabled. macOS is ad-hoc signed without notarization; Windows is unsigned. These are personal fork builds, not official signed releases.`], { stdio: 'inherit' });
+const alreadyVisible = release.status === 0 && !JSON.parse(release.stdout).isDraft;
+if (!alreadyVisible) {
+  execFileSync('gh', ['release', 'upload', manifest.tag, ...releaseNames.map(name => path.join(directory, name)), '--clobber', '--repo', 'gkze/opencodex'], { stdio: 'inherit' });
 }
-execFileSync('gh', ['release', 'upload', manifest.tag, file, path.join(directory, 'SHA256SUMS'), path.join(directory, 'manifest.json'), '--clobber', '--repo', 'gkze/opencodex'], { stdio: 'inherit' });
-execFileSync('gh', ['release', 'edit', manifest.tag, '--draft=false', '--prerelease', '--repo', 'gkze/opencodex'], { stdio: 'inherit' });
+// Verify every asset's server-computed digest before making a draft visible or
+// moving the consumer tag. A retry of a visible release never replaces its bytes.
+const published = JSON.parse(execFileSync('gh', ['api', `repos/gkze/opencodex/releases/tags/${manifest.tag}`], { encoding: 'utf8' }));
+assert.deepEqual(published.assets.map(asset => asset.name).sort(), [...releaseNames].sort(), 'Published release asset inventory differs');
+for (const name of releaseNames) {
+  const asset = published.assets.find(item => item.name === name);
+  const expected = `sha256-${createHash('sha256').update(readFileSync(path.join(directory, name))).digest('hex')}`;
+  assert.equal(asset.digest?.replace('sha256:', 'sha256-'), expected, `Published asset digest differs: ${name}`);
+}
+if (!alreadyVisible) execFileSync('gh', ['release', 'edit', manifest.tag, '--draft=false', '--prerelease', '--repo', 'gkze/opencodex'], { stdio: 'inherit' });
+const visible = JSON.parse(execFileSync('gh', ['release', 'view', manifest.tag, '--repo', 'gkze/opencodex', '--json', 'isDraft'], { encoding: 'utf8' }));
+assert.equal(visible.isDraft, false);
 execFileSync('npm', ['dist-tag', 'add', target, 'nightly', '--registry', registry], { stdio: 'inherit' });
 assert.equal(execFileSync('npm', ['view', `${pkg.name}@nightly`, 'version', '--registry', registry], { encoding: 'utf8' }).trim(), manifest.version);
