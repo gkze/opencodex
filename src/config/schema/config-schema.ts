@@ -211,6 +211,10 @@ export const configSchema = z.object({
   cursorEffortRows: z.boolean().optional().catch(false),
   // Fast selectors default on; malformed hand edits disable them without rejecting providers.
   fastRows: z.boolean().default(true).catch(false),
+  // The fast-lane demand: `true` sends canonical Fast, `"ultrafast"` sends canonical Ultra Fast,
+  // `false` strips the field, absent leaves the caller's value alone. A malformed hand edit
+  // degrades to passthrough rather than rejecting the config that carries it.
+  fastMode: z.union([z.boolean(), z.literal("ultrafast")]).optional().catch(undefined),
   // Ultra Fast is opt-in for the same reason and degrades the same way: a malformed hand
   // edit turns the tier off rather than rejecting the config that carries it.
   ultraFastTier: z.boolean().optional().catch(false),
@@ -462,7 +466,7 @@ export const configSchema = z.object({
       ctx.addIssue({
         code: "custom",
         path: ["providers", redactSecretString(name), "fastWire"],
-        message: "fastWire=null conflicts with supportsServiceTier=true",
+        message: "fastWire=null conflicts with a declared service-tier capability",
       });
     }
     const openRouterRoutingError = openRouterRoutingConfigError(provider);
@@ -671,6 +675,17 @@ export const configSchema = z.object({
         code: "custom",
         path: ["providers", redactSecretString(name), "modelSupportsServiceTier"],
         message: serviceTierModelsError,
+      });
+    }
+    const ultraFastModelsError = booleanRecordConfigError(
+      (provider as { modelSupportsUltraFast?: unknown }).modelSupportsUltraFast,
+      "modelSupportsUltraFast",
+    );
+    if (ultraFastModelsError) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["providers", redactSecretString(name), "modelSupportsUltraFast"],
+        message: ultraFastModelsError,
       });
     }
     const reasoningSummaryDeliveryError = reasoningSummaryDeliveryRecordConfigError(

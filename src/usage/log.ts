@@ -643,7 +643,9 @@ function normalizeAttemptTierOutcome(raw: unknown): AttemptTierOutcome | null {
     || !TIER_CONFIRMATIONS.has(outcome.confirmation as AttemptTierOutcome["confirmation"])) {
     return null;
   }
-  if ("canonical" in outcome && outcome.canonical !== "priority") return null;
+  if ("canonical" in outcome
+    && outcome.canonical !== "priority"
+    && outcome.canonical !== "ultrafast") return null;
   if ("wireKind" in outcome
     && outcome.wireKind !== null
     && outcome.wireKind !== "service-tier"
@@ -664,7 +666,9 @@ function normalizeAttemptTierOutcome(raw: unknown): AttemptTierOutcome | null {
   const wireValue = sanitizeLogMetadataString(outcome.wireValue);
   const responseServiceTier = sanitizeLogMetadataString(outcome.responseServiceTier);
   return {
-    ...(outcome.canonical === "priority" ? { canonical: "priority" as const } : {}),
+    ...(outcome.canonical === "priority" || outcome.canonical === "ultrafast"
+      ? { canonical: outcome.canonical }
+      : {}),
     ...(outcome.wireKind === null
       || outcome.wireKind === "service-tier"
       || outcome.wireKind === "anthropic-speed"

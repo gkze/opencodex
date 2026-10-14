@@ -939,7 +939,8 @@ export function inheritedFastWireConflictProviderNames(
 ): string[] {
   const conflicts: string[] = [];
   for (const [name, provider] of Object.entries(config.providers)) {
-    if (provider.fastWire !== null || provider.supportsServiceTier === false) continue;
+    if (provider.fastWire !== null
+      || (provider.supportsServiceTier === false && provider.supportsUltraFast !== true)) continue;
     if (providerFastSwitchOff(name, provider)) continue;
     const registry = providerMatchesRegistryTransport(name, provider)
       ? getProviderRegistryEntry(name)
@@ -952,9 +953,19 @@ export function inheritedFastWireConflictProviderNames(
         : {}),
       ...(provider.modelSupportsServiceTier ?? {}),
     };
+    // Ultra Fast is the same shape one tier up: a declared capability the nulled wire would drop.
+    const effectiveUltraFastCapability = provider.supportsUltraFast ?? registry.supportsUltraFast;
+    const effectiveModelUltraFastCapabilities = {
+      ...(registryModelServiceTierCapabilityApplies(registry, provider)
+        ? registry.modelSupportsUltraFast ?? {}
+        : {}),
+      ...(provider.modelSupportsUltraFast ?? {}),
+    };
     if (
       effectiveProviderCapability === true
       || Object.values(effectiveModelCapabilities).some(value => value === true)
+      || effectiveUltraFastCapability === true
+      || Object.values(effectiveModelUltraFastCapabilities).some(value => value === true)
     ) {
       conflicts.push(name);
     }
