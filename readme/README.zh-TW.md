@@ -1,3 +1,5 @@
+> **個人分支：** 每夜發布版本與安裝說明請見 [FORK.md](../FORK.md)。下方為上游專案文件。
+
 <p align="center">
   <img src="../assets/banner.png" alt="opencodex——適用於 Codex、Claude Code、Claude Desktop 與 Grok Build 的通用供應商代理" width="100%">
 </p>
