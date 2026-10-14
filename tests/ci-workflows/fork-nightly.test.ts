@@ -20,7 +20,8 @@ function fixture() {
   git("config", "user.email", "test@example.invalid")
   git("config", "user.name", "Test")
   git("config", `url.${remote}.insteadOf`, "https://github.com/lidge-jun/opencodex.git")
-  git("remote", "add", "origin", remote)
+  git("config", "--add", `url.${remote}.insteadOf`, "https://github.com/gkze/opencodex.git")
+  git("remote", "add", "origin", "https://github.com/gkze/opencodex.git")
   writeFileSync(path.join(repo, "upstream"), "base")
   git("add", ".")
   git("commit", "-m", "base")
@@ -142,4 +143,15 @@ test("publication requires checked artifacts and keeps candidate execution read-
   expect(workflow.jobs.smoke.permissions).toBeUndefined()
   expect(workflow.jobs.publish.needs).toEqual(["candidate", "validate", "smoke"])
   expect(workflow.jobs.publish.permissions).toEqual({ contents: "write", packages: "write" })
+})
+
+test("nightly refuses an upstream publication remote", () => {
+  const f = fixture()
+  try {
+    f.git("remote", "set-url", "origin", "https://github.com/lidge-jun/opencodex.git")
+    expect(f.run("accept").status).not.toBe(0)
+    expect(f.run("promote").status).not.toBe(0)
+  } finally {
+    rmSync(f.root, { recursive: true, force: true })
+  }
 })
