@@ -12,6 +12,8 @@
   "service-health-sentinel-linux.test.ts": "service",
   "service-state-isolation.test.ts": "service",
   "owner-registry-isolation.test.ts": "config",
+  "fork-updates.test.ts": "update",
+  "fork-nightly.test.ts": "ci-workflows",
   "service-health-sentinel-policy.test.ts": "service",
   "service-health-sentinel-runner.test.ts": "service",
   "service-health-sentinel-launch.test.ts": "service",
