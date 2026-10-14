@@ -79,7 +79,6 @@ jobs:
           role: test-runner
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
-      - run: bun run test --parallel=2
       - run: bun run privacy:scan
       - run: bun run structure:check
       - name: Prepare fork package
@@ -93,6 +92,35 @@ jobs:
           path: dist/fork/*
           if-no-files-found: error
           retention-days: 14
+  test:
+    needs: candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ needs.candidate.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project-bun
+        with:
+          role: test-runner
+      - name: Install dependencies and build the dashboard exercised by tests
+        run: |
+          bun install --frozen-lockfile
+          cd gui
+          bun install --frozen-lockfile
+          bun run build
+      - name: Run every test in bounded fresh-process batches
+        env:
+          TEST_SHARD: ${{ matrix.shard }}/4
+          BUN_TEST_FILE_SCOPE: all
+          BUN_TEST_PARALLEL: '2'
+        run: bash scripts/ci/run-bun-test-batches.sh "$TEST_SHARD"
   assets:
     needs: [candidate, validate]
     uses: ./.github/workflows/fork-build-assets.yml
@@ -122,7 +150,7 @@ jobs:
       - name: Install and run exact package
         run: node scripts/fork/smoke.mjs dist/fork
   publish:
-    needs: [candidate, validate, smoke, assets]
+    needs: [candidate, validate, test, smoke, assets]
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
