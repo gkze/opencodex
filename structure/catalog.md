@@ -112,9 +112,8 @@ to the native default singleton. A default must belong to the projected list. Fu
 is still not inferred from a GPT name. Stored configuration and native capability maps are
 unchanged. Request-time native effort clamps remain canonical-forward only.
 
-The shared merge preserves operator-supplied Ultra Fast metadata through `src/codex/catalog/operator-tiers.ts` when the writer explicitly passes the enabled `ultraFastTier` setting. Only an exact persisted routed slug supplies that
-metadata; native templates, baseline backups, account rows and combo aliases are not sources. The overlay runs after admission and fresh capability generation, preserves Fast policy, and never creates a row or invents a tier. Disabling the
-flag removes Ultra Fast from ordinary routed rows. An explicit operator Ultra Fast default is retained only alongside a supplied tier declaration. Coverage: `tests/codex-integration/ultrafast-tier-honesty.test.ts`.
+The shared merge distinguishes freshly derived Ultra Fast evidence from operator-supplied metadata through `src/codex/catalog/operator-tiers.ts`. A fresh provider/model declaration with a usable wire is stamped by `src/codex/catalog/effort.ts` and survives with `ultraFastTier` disabled. Cached models have their prior Ultra Fast capability removed before current policy is reapplied in `src/codex/catalog/model-hints.ts`, so a later denial cannot become fresh evidence.
+The `ultraFastTier` flag preserves hand-added metadata only from the exact persisted routed slug; native templates, baseline backups, account rows and combo aliases are not operator sources. With the flag enabled, the persisted descriptor takes precedence over the derived descriptor. Disabling it removes the operator overlay while retaining freshly derived evidence. An operator Ultra Fast default survives only alongside a supplied tier declaration. Coverage: `tests/codex-integration/ultrafast-tier-honesty.test.ts`.
 
 The observed-state merge tracks the current invocation's freshly generated custom row objects
 after detaching its inputs. Those rows already own their complete reasoning projection, so the

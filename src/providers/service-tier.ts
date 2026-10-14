@@ -10,6 +10,7 @@ import {
 } from "./registry";
 import {
   cloneFastWire,
+  decideTier,
   resolveFastPolicy,
   resolveProviderAuthTransport,
   type FastPolicyAuthority,
@@ -30,6 +31,8 @@ type ServiceTierCapabilityProvider = Pick<
   | "adapter"
   | "supportsServiceTier"
   | "modelSupportsServiceTier"
+  | "supportsUltraFast"
+  | "modelSupportsUltraFast"
   | "modelAdapters"
   | "baseUrl"
   | "authMode"
@@ -85,6 +88,10 @@ function buildFastPolicyAuthority(
     && registryModelServiceTierCapabilityApplies(registry, capabilityProvider)
     ? registry.modelSupportsServiceTier
     : undefined;
+  const registryModelUltraFastCapabilities = registry
+    && registryModelServiceTierCapabilityApplies(registry, capabilityProvider)
+    ? registry.modelSupportsUltraFast
+    : undefined;
   const fastSwitchOff = providerFastSwitchOff(providerName, {
     fastEnabled: capabilityProvider.fastEnabled ?? provider.fastEnabled,
   });
@@ -93,6 +100,11 @@ function buildFastPolicyAuthority(
     : capabilityProvider.supportsServiceTier
       ?? keyAuthDefaults?.supportsServiceTier
       ?? registry?.supportsServiceTier;
+  // Ultra Fast follows the same authority chain one tier up. `fastEnabled: false` denies the whole
+  // fast lane, so it closes Ultra Fast as well; the wire spelling is a separate gate in decideTier.
+  const providerUltraFastCapability = fastSwitchOff
+    ? false
+    : capabilityProvider.supportsUltraFast ?? registry?.supportsUltraFast;
   const authority: FastPolicyAuthority = Object.freeze({
     providerAdapter: provider.adapter,
     providerAuthMode: provider.authMode ?? registry?.authKind ?? "key",
@@ -107,10 +119,18 @@ function buildFastPolicyAuthority(
     authTransport,
     capability: Object.freeze({
       ...(providerCapability !== undefined ? { provider: providerCapability } : {}),
+      ...(providerUltraFastCapability !== undefined
+        ? { providerUltraFast: providerUltraFastCapability }
+        : {}),
       models: Object.freeze({
         ...(registryModelCapabilities ?? {}),
         ...(keyAuthDefaults?.modelSupportsServiceTier ?? {}),
         ...(capabilityProvider.modelSupportsServiceTier ?? {}),
+      }),
+      modelsUltraFast: Object.freeze({
+        ...(registryModelUltraFastCapabilities ?? {}),
+        ...(keyAuthDefaults?.modelSupportsUltraFast ?? {}),
+        ...(capabilityProvider.modelSupportsUltraFast ?? {}),
       }),
       ...(provider.chatServiceTier !== undefined
         ? { chatServiceTier: provider.chatServiceTier }
@@ -226,6 +246,46 @@ export function supportsServiceTierForModel(
   return resolveFastPolicy(authority, modelId).capability;
 }
 
+/** Ultra Fast counterpart of `supportsServiceTierForModel`; wire availability is checked separately. */
+export function supportsUltraFastForModel(
+  provider: Pick<OcxProviderConfig, "supportsUltraFast" | "modelSupportsUltraFast">,
+  modelId: string,
+): boolean | undefined {
+  const authority: FastPolicyAuthority = {
+    providerAdapter: "openai-responses",
+    fastWireDeclaration: undefined,
+    modelWireOverrideAllowed: true,
+    authTransport: "authorization_bearer",
+    capability: {
+      ...(provider.supportsUltraFast !== undefined
+        ? { providerUltraFast: provider.supportsUltraFast }
+        : {}),
+      models: {},
+      modelsUltraFast: provider.modelSupportsUltraFast ?? {},
+    },
+    modelAdapters: {},
+    hardPins: {},
+    registryWireDefaults: {},
+  };
+  return resolveFastPolicy(authority, modelId).ultraFastCapability;
+}
+
+/**
+ * Whether a provider/model pair can be SET to Ultra Fast — the capability is not denied and the
+ * resolved wire publishes a spelling for it. Declared capability without a wire value is inert
+ * config, so every surface that offers or publishes the tier goes through this instead of the
+ * capability tri-state alone.
+ */
+export function canSetUltraFastForModel(
+  providerName: string,
+  provider: ServiceTierCapabilityProvider,
+  modelId: string,
+  inbound: InboundWire = "responses",
+): boolean {
+  const policy = fastPolicyForModel(provider, modelId, providerName, inbound);
+  return ultraFastSettableFromPolicy(policy);
+}
+
 /** Whether a Chat route may forward an arbitrary caller tier rather than canonical Fast. */
 export function canForwardForeignServiceTierForChatModel(
   provider: Pick<OcxProviderConfig, "supportsServiceTier" | "modelSupportsServiceTier" | "chatServiceTier">,
@@ -269,7 +329,21 @@ export function serviceTierSupportForModel(
   return serviceTierSupportFromPolicy(policy);
 }
 
-/** Compatibility projection shared by catalog, routing, and request logging. */
+/**
+ * Compatibility projection for catalog publication and the settings surfaces: Ultra Fast is
+ * settable only when the route DECLARES the capability (`true`, not merely unclassified, exactly
+ * like canonical Fast injection) and the resolved wire publishes a spelling for it. Capability
+ * without a spelling has nothing to send, and a spelling without capability is not evidence.
+ */
+export function ultraFastSettableFromPolicy(
+  policy: ResolvedFastPolicy,
+): boolean {
+  return decideTier(policy, "ultrafast", undefined).kind === "set";
+}
+
+/**
+ * Compatibility projection shared by catalog, routing, and request logging.
+ */
 export function serviceTierSupportFromPolicy(
   policy: Pick<ResolvedFastPolicy, "eligibility" | "adapter" | "forwardCallerTier">,
 ): boolean | undefined {
