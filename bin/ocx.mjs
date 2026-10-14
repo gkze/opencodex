@@ -62,6 +62,8 @@ import {
   isCodexCliUpdateInspectionArgv,
 } from "../src/update/codex-cli-update-launch-policy.mjs";
 
+import { isForkVersion, forkUpdateMessage } from "../src/update/fork-policy.mjs";
+
 const PKG = "@bitkyc08/opencodex";
 const UPDATE_RECOVERY_READY_MS = 30_000;
 const UPDATE_RECOVERY_POLL_MS = 100;
@@ -1011,6 +1013,11 @@ const updateHelpRequested = process.argv[2] === "update" &&
   process.argv.slice(3).some(a => a === "--help" || a === "-h" || a === "help");
 if (updateHelpRequested) {
   console.log("Usage: ocx update [--tag latest|preview]\n\nUpdate opencodex. Preview installs stay on the preview tag unless overridden.");
+  process.exit(0);
+}
+
+if (process.argv[2] === "update" && isForkVersion(currentPackageVersion())) {
+  console.log(forkUpdateMessage);
   process.exit(0);
 }
 

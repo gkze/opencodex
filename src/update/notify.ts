@@ -1,3 +1,4 @@
+import { isForkVersion } from "./fork-policy.mjs";
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -131,7 +132,7 @@ export function isNewer(latest: string, current: string, channel: Channel): bool
 }
 
 export function isSourceBuildVersion(v: string): boolean {
-  return v.trim() === "0.0.0";
+  return v.trim() === "0.0.0" || isForkVersion(v);
 }
 
 /** The interactive/TTY + install-method gate shared with the star prompt. */

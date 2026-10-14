@@ -1,4 +1,7 @@
 {
+  "fork-updates.test.ts": "update",
+  "fork-nightly.test.ts": "ci-workflows",
+  "fastwire-ultrafast-tier.test.ts": "routing",
   "service-health-sentinel-policy.test.ts": "service",
   "service-health-sentinel-runner.test.ts": "service",
   "service-health-sentinel-launch.test.ts": "service",

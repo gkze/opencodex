@@ -611,3 +611,7 @@ Universal macOS release builds install both aarch64-apple-darwin and x86_64-appl
 The existing `codex-routing`, `codex-auth-context` and `codex-quota-prime` tests cover [priority failback](../providers/openai-accounts.md#ongoing-priority-failback), including cache-default retention, stale evidence, main fencing and failed-attempt cadence.
 
 Automatic account exhaustion and recovery use the [spendable Codex credit evidence contract](../providers/openai-tiers.md#spendable-codex-credits), including independent freshness, upstream refusal, and reset-ticket separation.
+
+## Personal fork nightlies
+
+The `gkze/opencodex` fork uses `.github/workflows/fork-nightly.md` and its generated lock workflow for a daily read-only semantic refresh onto upstream `dev`. `scripts/fork/nightly.mjs` verifies every patch decision and protects publication controls, then stages the candidate. `.github/workflows/fork-nightly-publish.yml` independently checks and builds it, smoke-tests the package on Linux, macOS and Windows, and publishes `@gkze/opencodex` to GitHub Packages plus a GitHub prerelease. Promotion of `gkze/patches` uses an exact-old-tip lease and backup tag. Upstream release authority remains `scripts/release.ts`; this fork channel never publishes the upstream npm package. See `FORK.md` for operations and recovery.
