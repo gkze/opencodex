@@ -139,6 +139,13 @@ export interface CatalogModel {
   supportsVerbosity?: boolean;
   /** Whether this exact routed model has a verified OpenAI-compatible service tier. */
   supportsServiceTier?: boolean;
+  /**
+   * Whether this exact routed model can be SET to the canonical Ultra Fast tier: the provider/model
+   * pair declares Ultra Fast capability and its wire publishes an `ultrafast` spelling. Derived from
+   * that declaration rather than invented, which is why it may publish a tier the pinned upstream
+   * catalog does not carry (#2994 rejected synthesizing one with no provider evidence).
+   */
+  supportsUltraFast?: boolean;
   /** Optional provider-specific copy for the advertised Fast tier. */
   fastTierDescription?: string;
   supportsReasoningSummaries?: boolean;

@@ -40,6 +40,7 @@ import {
   captureFastPolicyAuthority,
   fastPolicyForModel,
   serviceTierSupportFromPolicy,
+  ultraFastSettableFromPolicy,
 } from "../../providers/service-tier";
 import type { FastPolicyAuthority } from "../../providers/fastwire";
 import { effectiveGoogleMode, getProviderRegistryEntry, providerMatchesRegistryTransport, registryEntryForProviderDestination } from "../../providers/registry";
@@ -308,6 +309,8 @@ export function applyProviderConfigHints(
   // Frozen gather providers retain the captured Fast authority. That late/captured eligibility
   // owns catalog publication, including an explicit provider-level false.
   const supportsServiceTier = serviceTierSupportFromPolicy(fastPolicy);
+  // Ultra Fast is published only where the pair declares it AND its wire can carry the spelling.
+  const supportsUltraFast = supportsServiceTier === true && ultraFastSettableFromPolicy(fastPolicy);
   const {
     supportsServiceTier: _staleServiceTier,
     fastTierDescription: _staleFastTierDescription,
@@ -343,6 +346,7 @@ export function applyProviderConfigHints(
     ...(typeof supportsReasoningSummaries === "boolean" ? { supportsReasoningSummaries } : {}),
     ...(typeof supportsVerbosity === "boolean" ? { supportsVerbosity } : {}),
     ...(typeof supportsServiceTier === "boolean" ? { supportsServiceTier } : {}),
+    ...(supportsUltraFast ? { supportsUltraFast: true } : {}),
     ...(supportsServiceTier === true && fastPolicy.fastTierDescription !== undefined
       ? { fastTierDescription: fastPolicy.fastTierDescription }
       : {}),

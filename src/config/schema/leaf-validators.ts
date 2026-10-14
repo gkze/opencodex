@@ -332,6 +332,13 @@ export const providerConfigSchema = z.object({
   fastEnabled: z.boolean().optional(),
   supportsServiceTier: z.boolean().optional(),
   modelSupportsServiceTier: z.record(z.string().min(1), z.boolean()).optional(),
+  /**
+   * Ultra Fast counterpart of `supportsServiceTier`. Capability alone is not enough to send the
+   * tier — the route also needs a `fastWire.canonicalToWire.ultrafast` spelling — but declaring it
+   * here is what lets this provider's models be SET to Ultra Fast at all.
+   */
+  supportsUltraFast: z.boolean().optional(),
+  modelSupportsUltraFast: z.record(z.string().min(1), z.boolean()).optional(),
   modelSuppressSyntheticMax: z.record(z.string().min(1), z.boolean()).optional(),
   preserveResponsesReasoningContent: z.boolean().optional(),
   preserveResponsesInputItemIds: z.boolean().optional(),
