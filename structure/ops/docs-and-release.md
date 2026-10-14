@@ -1,5 +1,7 @@
 # Docs And Release
 
+The independent personal fork release channel is specified in `FORK.md`. Manual publication pins the reviewed fork tip; scheduled publication accepts a checked refresh candidate. Both require CLI package checks plus all standalone and desktop build jobs before publication. Platform downloads are manual-install fork builds, with upstream desktop updates disabled; their signatures are not upstream release signatures.
+
 The activation scheduling contract is covered by `tests/codex-integration/codex-quota-auto-refresh.test.ts`, including restart recovery and bounded retries. See the [quota activation contract](../providers/openai-tiers.md#public-provider-contract). `.github/workflows/catalog-async-contracts.yml` runs portable Rust-owned Bun catalog contracts on Linux, macOS and Windows for runtime, fixture or dependency changes on pushes to `dev`/`main`/`preview`, pull requests or manual dispatch. It has read-only permissions and no release effect.
 
 Automatic package-tree restart holds a releasable data-plane drain until its scheduled

@@ -48,7 +48,7 @@ function fixture() {
   }
   writeFileSync(path.join(data, "report.json"), JSON.stringify(report))
   git("bundle", "create", path.join(data, "candidate.bundle"), "refs/heads/nightly-candidate")
-  const run = (command: string) =>
+  const run = (command: string, extraEnv: Record<string, string> = {}) =>
     spawnSync(process.execPath, [script, command, data], {
       cwd: repo,
       encoding: "utf8",
@@ -60,6 +60,7 @@ function fixture() {
         FORK_OLD: old,
         FORK_CANDIDATE: candidate,
         FORK_UPSTREAM: upstream,
+        ...extraEnv,
       },
     })
   return { root, repo, data, git, run, old, candidate, report }
@@ -141,7 +142,7 @@ test("publication requires checked artifacts and keeps candidate execution read-
   expect(workflow.jobs.candidate.if).toContain("head_branch == 'gkze/patches'")
   expect(workflow.jobs.validate.permissions).toBeUndefined()
   expect(workflow.jobs.smoke.permissions).toBeUndefined()
-  expect(workflow.jobs.publish.needs).toEqual(["candidate", "validate", "smoke"])
+  expect(workflow.jobs.publish.needs).toEqual(["candidate", "validate", "smoke", "assets"])
   expect(workflow.jobs.publish.permissions).toEqual({ contents: "write", packages: "write" })
 })
 
@@ -154,4 +155,55 @@ test("nightly refuses an upstream publication remote", () => {
   } finally {
     rmSync(f.root, { recursive: true, force: true })
   }
+})
+
+
+test("manual release requires the reviewed commit to be the current fork tip", () => {
+  const f = fixture()
+  try {
+    f.git("checkout", "gkze/patches")
+    const env = { EXPECTED_SHA: f.old, SOURCE_SHA: f.old }
+    expect(f.run("manual", env).status).toBe(0)
+    expect(f.run("manual", { ...env, EXPECTED_SHA: f.candidate }).status).not.toBe(0)
+    f.git("commit", "--allow-empty", "-m", "new fork work")
+    f.git("push", "origin", "gkze/patches")
+    f.git("checkout", "--detach", f.old)
+    expect(f.run("manual", env).status).not.toBe(0)
+  } finally {
+    rmSync(f.root, { recursive: true, force: true })
+  }
+})
+
+
+test("release assets reject missing builds, mixed source, and corrupt bytes", async () => {
+  const { verifyAssets } = await import("../../scripts/fork/verify-assets.mjs")
+  const { createHash } = await import("node:crypto")
+  const root = mkdtempSync(path.join(os.tmpdir(), "fork-assets-"))
+  const release = { version: "2.84.0-gkze.nightly.1.1", source: "a".repeat(40) }
+  const inventory = [{ target: "platform-a", artifact: "build-a", files: ["platform-a.zip"] }, { target: "platform-b", artifact: "build-b", files: ["platform-b.tar.gz"] }]
+  const metadata = (target: string, name: string, source = release.source) => ({
+    ...release, source, target,
+    files: [{ name, sha256: createHash("sha256").update("verified bytes").digest("hex") }],
+  })
+  try {
+    for (const item of inventory) {
+      const dir = path.join(root, item.artifact)
+      mkdirSync(dir)
+      writeFileSync(path.join(dir, item.files[0]!), "verified bytes")
+      writeFileSync(path.join(dir, `${item.files[0]}.sha256`), `${createHash("sha256").update("verified bytes").digest("hex")}  ${item.files[0]}\n`)
+      writeFileSync(path.join(root, item.artifact, `assets-${item.target}.json`), JSON.stringify(metadata(item.target, item.files[0]!)))
+    }
+    expect(verifyAssets(root, release, inventory)).toHaveLength(4)
+    const replacement = path.join(root, "build-a", "replacement.tgz")
+    writeFileSync(replacement, "unverified package")
+    expect(() => verifyAssets(root, release, inventory)).toThrow("Unexpected files")
+    rmSync(replacement)
+    writeFileSync(path.join(root, "build-b", "assets-platform-b.json"), JSON.stringify(metadata("platform-b", "platform-b.tar.gz", "b".repeat(40))))
+    expect(() => verifyAssets(root, release, inventory)).toThrow("Source mismatch")
+    writeFileSync(path.join(root, "build-b", "assets-platform-b.json"), JSON.stringify(metadata("platform-b", "platform-b.tar.gz")))
+    writeFileSync(path.join(root, "build-b", "platform-b.tar.gz"), "changed bytes")
+    expect(() => verifyAssets(root, release, inventory)).toThrow("Corrupt asset")
+    rmSync(path.join(root, "build-b", "assets-platform-b.json"))
+    expect(() => verifyAssets(root, release, inventory)).toThrow()
+  } finally { rmSync(root, { recursive: true, force: true }) }
 })
