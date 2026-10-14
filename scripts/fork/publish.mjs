@@ -55,7 +55,7 @@ if (remoteTag) assert.equal(remoteTag, manifest.source, 'Release tag points at o
 else git('push', 'origin', `${manifest.source}:refs/tags/${manifest.tag}`);
 
 const release = spawnSync('gh', ['release', 'view', manifest.tag, '--repo', 'gkze/opencodex', '--json', 'isDraft'], { encoding: 'utf8' });
-if (release.status !== 0) execFileSync('gh', ['release', 'create', manifest.tag, '--repo', 'gkze/opencodex', '--verify-tag', '--draft', '--prerelease', '--title', `OpenCodex Fork ${manifest.version}`, '--notes', `Fork CLI package, five standalone builds, and desktop bundles. Source: ${manifest.source}. Manual installation only; upstream self-update is disabled. macOS is ad-hoc signed without notarization; Windows is unsigned. These are personal fork builds, not official signed releases.`], { stdio: 'inherit' });
+if (release.status !== 0) execFileSync('gh', ['release', 'create', manifest.tag, '--repo', 'gkze/opencodex', '--verify-tag', '--draft', '--prerelease', '--title', `OpenCodex ${manifest.version}`, '--notes', `CLI package, five standalone builds, and desktop bundles. Source: ${manifest.source}. Manual installation only; upstream self-update is disabled. macOS is ad-hoc signed without notarization; Windows is unsigned. These are personal builds, not official signed releases.`], { stdio: 'inherit' });
 const alreadyVisible = release.status === 0 && !JSON.parse(release.stdout).isDraft;
 if (!alreadyVisible) {
   execFileSync('gh', ['release', 'upload', manifest.tag, ...releaseNames.map(name => path.join(directory, name)), '--clobber', '--repo', 'gkze/opencodex'], { stdio: 'inherit' });
