@@ -1,4 +1,4 @@
-> **Personal fork:** nightly CLI/package releases and installation instructions are documented in [FORK.md](FORK.md). The upstream project documentation follows below.
+> **Personal fork:** nightly releases and installation instructions are documented in [FORK.md](FORK.md). The upstream project documentation follows below.
 
 <p align="center">
   <img src="assets/banner.png" alt="opencodex — universal provider proxy for Codex, Claude Code, Claude Desktop and Grok Build" width="100%">
