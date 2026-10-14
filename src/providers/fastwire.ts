@@ -47,7 +47,7 @@ export interface FastPolicyAuthority {
     readonly models: Readonly<Record<string, boolean>>;
     /**
      * Ultra Fast axes, one tier above canonical Fast. Absent leaves Ultra Fast unclassified on
-     * the route; a route is only settable to `ultrafast` when this is not `false` AND the final
+     * the route; a route is only settable to `ultrafast` when this is `true` AND the final
      * wire maps an `ultrafast` spelling, because capability without a wire value has nothing to
      * send.
      */
@@ -324,11 +324,6 @@ function canonicalFromWire(
   return undefined;
 }
 
-/** A wire echo counts as applied only for a canonical tier the proxy actually knows how to send. */
-function canonicalTierName(value: string | undefined): "priority" | "ultrafast" | undefined {
-  return value === "priority" || value === "ultrafast" ? value : undefined;
-}
-
 function downgradeReasonForUnavailable(
   context: TierObservationContext,
 ): AttemptTierOutcome["fastDowngradeReason"] {
@@ -401,10 +396,13 @@ export function createAdapterTierMetadata(
   const forcedCanonicalTier = context.demandDecision === "force-fast"
     ? "priority" as const
     : context.demandDecision === "force-ultrafast" ? "ultrafast" as const : undefined;
+  const requestedCanonicalTier = forcedCanonicalTier
+    ?? (context.demandDecision === "inherit" ? callerMarker : undefined);
   const effectiveFastRequested = context.capability === true
     && context.fastWire !== null
     && (forcedCanonicalTier !== undefined
-      || (context.demandDecision === "inherit" && callerCanonicalFast));
+      || (context.demandDecision === "inherit"
+        && (callerCanonicalFast || (callerMarker === "ultrafast" && decision.kind === "set"))));
   // Known-unsupported routes still need a downgrade when the caller/config expressed Fast intent,
   // but they are deliberately outside the effective-demand calculation above.
   const fastIntent = forcedCanonicalTier !== undefined
@@ -421,8 +419,9 @@ export function createAdapterTierMetadata(
       ? "response-declined"
       : downgradeReasonForUnavailable(context);
     outcome.confirmation = "downgraded";
-  } else if (canonicalTierName(canonicalFromWire(context.fastWire, wireValue)) !== undefined) {
-    outcome.canonical = canonicalTierName(canonicalFromWire(context.fastWire, wireValue));
+  } else if (requestedCanonicalTier !== undefined
+    && canonicalFromWire(context.fastWire, wireValue) === requestedCanonicalTier) {
+    outcome.canonical = requestedCanonicalTier;
     outcome.fastOutcome = "applied";
     outcome.confirmation = "assumed";
   }
@@ -449,8 +448,9 @@ export function createAdapterTierMetadata(
       const sanitized = sanitizeLogMetadataString(value);
       if (sanitized) outcome.responseServiceTier = sanitized;
       if (!responseCanConfirmFast) return;
-      if (canonicalTierName(canonicalFromWire(context.fastWire, value)) !== undefined) {
-        outcome.canonical = canonicalTierName(canonicalFromWire(context.fastWire, value));
+      if (requestedCanonicalTier !== undefined
+        && canonicalFromWire(context.fastWire, value) === requestedCanonicalTier) {
+        outcome.canonical = requestedCanonicalTier;
         delete outcome.fastDowngradeReason;
         outcome.fastOutcome = "applied";
         outcome.confirmation = "confirmed";
@@ -503,11 +503,11 @@ export function decideTier(
   callerTier: string | undefined,
 ): TierDecision {
   if (policy.capability === false) return { kind: "drop" };
-  if (policy.capability === undefined) {
-    return policy.forwardCallerTier ? { kind: "forward-caller" } : { kind: "drop" };
-  }
-  if (policy.fastWire === null) {
-    return policy.forwardCallerTier ? { kind: "forward-caller" } : { kind: "drop" };
+  const callerCanonicalFast = canonicalFastTierMarker(callerTier);
+  const callerUltraFastDenied = callerCanonicalFast === "ultrafast" && policy.ultraFastCapability === false;
+  const forwardCallerTier = policy.forwardCallerTier && !callerUltraFastDenied;
+  if (policy.capability === undefined || policy.fastWire === null) {
+    return forwardCallerTier ? { kind: "forward-caller" } : { kind: "drop" };
   }
   if (policy.eligibility !== "eligible") return { kind: "drop" };
   if (fastMode === "ultrafast") {
@@ -530,8 +530,9 @@ export function decideTier(
       : { kind: "drop" };
   }
   if (fastMode === false) return { kind: "drop" };
-  const callerCanonicalFast = canonicalFastTierMarker(callerTier);
-  if (callerCanonicalFast !== undefined) {
+  if (callerUltraFastDenied) return { kind: "drop" };
+  if (callerCanonicalFast === "priority"
+    || (callerCanonicalFast === "ultrafast" && policy.ultraFastCapability === true)) {
     const value = policy.fastWire.canonicalToWire[callerCanonicalFast];
     if (typeof value === "string" && value.length > 0) return { kind: "set", value };
     // A canonical marker with NO wire mapping is not a reason to drop the tier.

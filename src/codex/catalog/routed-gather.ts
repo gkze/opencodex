@@ -623,8 +623,7 @@ async function gatherRoutedModelsUncached(
       ? serviceTierSupportFromPolicy(fastPolicy)
       : undefined;
     // Same evidence rule as Fast, one tier up: declaration plus a wire spelling, never a guess.
-    const supportsUltraFast = supportsServiceTier === true
-      && fastPolicy !== undefined
+    const supportsUltraFast = fastPolicy !== undefined
       && ultraFastSettableFromPolicy(fastPolicy);
     const base: CatalogModel = {
       id: cm.modelId,
