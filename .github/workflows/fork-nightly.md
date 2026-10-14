@@ -87,7 +87,7 @@ Classify it as keep, adapt, or drop. A patch applying cleanly does not prove it 
 needed. Drop only when upstream supplies the desired behavior or the original
 problem demonstrably no longer exists. Preserve provider and service-tier customizations, catalog aliases, client integrations,
 failover behavior, service repair, fork package identity, update isolation, and
-release functionality unless equivalent behavior is demonstrated. Do not remove a feature merely to make a check pass.
+release functionality and native desktop controls, appearance, and scrolling unless equivalent behavior is demonstrated. Do not remove a feature merely to make a check pass.
 
 Create branch `nightly-candidate` at the captured upstream SHA. Replay the smallest
 necessary patch stack, adapting to current ownership and APIs. Keep meaningful
@@ -101,7 +101,7 @@ Run `bun install --frozen-lockfile`, `bun run typecheck`, `bun run test`,
 `bun run privacy:scan`, `bun run structure:check`, and `bun run build:gui`. For dropped patches, exercise equivalent
 upstream behavior where possible. If a check fails, compare against clean upstream
 to identify the cause, but do not waive failures or claim a passing candidate.
-The next workflow independently runs the checks and builds and smoke-tests the CLI package.
+The next workflow independently runs the checks, builds and smoke-tests the CLI package, and requires every standalone and desktop platform build before publication.
 Leave a clean committed checkout on `nightly-candidate`.
 
 Write `/tmp/gh-aw/agent/fork-nightly/report.json` with this shape:
