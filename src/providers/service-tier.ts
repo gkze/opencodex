@@ -10,6 +10,7 @@ import {
 } from "./registry";
 import {
   cloneFastWire,
+  decideTier,
   resolveFastPolicy,
   resolveProviderAuthTransport,
   type FastPolicyAuthority,
@@ -335,13 +336,9 @@ export function serviceTierSupportForModel(
  * without a spelling has nothing to send, and a spelling without capability is not evidence.
  */
 export function ultraFastSettableFromPolicy(
-  policy: Pick<ResolvedFastPolicy, "capability" | "ultraFastCapability" | "fastWire">,
+  policy: ResolvedFastPolicy,
 ): boolean {
-  // Fast capability first: `decideTier` refuses every tier on a route whose Fast capability is
-  // false, so an Ultra Fast declaration on such a route is inert and must not be offered.
-  if (policy.capability !== true || policy.ultraFastCapability !== true) return false;
-  const wireValue = policy.fastWire?.canonicalToWire.ultrafast;
-  return typeof wireValue === "string" && wireValue.length > 0;
+  return decideTier(policy, "ultrafast", undefined).kind === "set";
 }
 
 /**

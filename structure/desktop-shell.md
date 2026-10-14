@@ -42,7 +42,7 @@ dashboard. `capabilities/dashboard-zoom.json` grants that single command to the 
 
 The main window carries an integrated title bar on macOS: the builder sets
 `TitleBarStyle::Overlay` with `hidden_title`, so the webview draws to the top of the window and
-the traffic lights land inside it at a fixed `traffic_light_position`. The layout that receives
+the traffic lights land inside it through the native layout observer. The layout that receives
 them is the GUI's: the dashboard keeps a top strip across the sidebar and the main area, reserves
 the lights' inset on macOS only, and moves or zooms the window through `plugin:window` commands.
 `capabilities/dashboard-titlebar.json` grants `start_dragging`, `toggle_maximize`, and a read-only
@@ -54,6 +54,7 @@ on the app origin because the bundled bootstrap and update pages draw their own 
 a page with an overlay title bar and no strip cannot be dragged or zoomed at all. Windows and
 Linux keep the native title bar: the shell ships no min/max/close widgets of its own, and the
 sidebar-top layout applies unchanged beneath it.
+`app/Sources/NativeTray/WindowControls.swift` positions the native controls at centers 25, 48 and 71 points from the left, centered in the 39-point titlebar content at 100% zoom, after AppKit frame changes and window updates, including resize and focus changes. Window-owned observers also track the titlebar ancestors so native relayout cannot silently reset the controls. Tauri's `traffic_light_position` is deliberately unset because Wry would otherwise overwrite this placement during drawing. It changes button frame origins and refreshes native tracking areas; AppKit owns button sizes, bounds, layers, symbols and hover behavior. At enlarged page zoom, the native titlebar container grows downward just enough to contain the controls so hit testing reaches them. The observer remembers each container's original height and restores it at normal zoom; the accepted 100% placement is unchanged. The dashboard synchronizes its light/dark/system preference through `plugin:window|set_theme`, so current shells do not retain dark native appearance over an explicitly light dashboard; system mode clears the override. No custom drawing or decorative overlays alter the native buttons. Fullscreen uses system layout. The centerline follows WKWebView page zoom using the same row-height and border rule as the dashboard. The sidebar toggle begins at 88 points, leaving 10 points after the green control, and its clearance follows page zoom in `gui/src/lib/window-chrome.ts`. `swift run --package-path app WindowControlsTests` checks native geometry preservation, explicit shared centers, root-view hit testing at six zoom levels from 50% to 300% across three window sizes, normal-zoom restoration, repeated layout and release of the observed hierarchy on window teardown. GUI titlebar tests cover collapsed and zoomed clearance against explicit contract values rather than parsing Swift implementation expressions.
 
 ## Startup, quit and the tray
 
