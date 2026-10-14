@@ -32,6 +32,7 @@ import {
   chooseCatalogPathForInjection,
   dominantEol,
   ensureFastModeFeature,
+  fastModeFeatureFlag,
   ensureRootWebSearchDisabled,
   normalizeServiceTier,
   removeProfileSection,
@@ -188,7 +189,7 @@ export function deriveCodexInjectionPlan(
   content = stripExistingModelProvider(content);
   content = stripRootContextWindowOverrides(content);
   content = normalizeServiceTier(content);
-  content = ensureFastModeFeature(content, config?.fastMode);
+  content = ensureFastModeFeature(content, fastModeFeatureFlag(config?.fastMode));
   // Codex's own web-search switch follows the sidecar's master switch. While the sidecar is off,
   // the client must not keep offering a native `web_search` tool that an MCP search server is
   // meant to replace. The journal carries both halves of an earlier pass — the value we wrote,
@@ -313,7 +314,7 @@ export function deriveCodexInjectionPlan(
     routingTarget,
     catalogPath,
     websocketsForRoutingTarget(config, routingTarget),
-    config?.fastMode,
+    fastModeFeatureFlag(config?.fastMode),
     config?.codexProviderDisplayName,
   );
   content = applyEol(content, eol);

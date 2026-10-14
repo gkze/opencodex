@@ -204,6 +204,13 @@ export function deriveComboCatalogModel(
       : members.some(member => member.supportsServiceTier === false)
         ? { supportsServiceTier: false }
         : {}),
+    // A combo can offer Ultra Fast only when every member can carry it; one member without the
+    // tier makes the choice a no-op for the whole combo, so the conservative rule applies.
+    ...(members.every(member => member.supportsUltraFast === true)
+      ? { supportsUltraFast: true }
+      : members.some(member => member.supportsUltraFast === false)
+        ? { supportsUltraFast: false }
+        : {}),
     ...(members.some(member => member.supportsReasoningSummaries === false) ? { supportsReasoningSummaries: false } : {}),
     // A combo is only as capable as its least capable member. One member that cannot honour
     // text.verbosity is enough to make the control a no-op for the whole combo, so the
