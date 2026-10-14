@@ -170,6 +170,10 @@ and launcher installation or repair stays disabled while that ownership remains;
 Normal desktop updates replace the bundled CLI with the fixed startup probe. No local
 patch needs to be preserved across an update.
 
+## Appearance
+
+The dashboard’s Light, Dark, and System theme selections also apply to the native desktop window controls. System clears the app override and follows the operating system’s appearance. Scrollbars also follow the system preference: on macOS, they disappear when idle when Show scroll bars is set to When scrolling or the applicable automatic mode.
+
 ## Zoom
 
 On macOS and Linux, Cmd (macOS) or Ctrl (Linux) with `+`, `-` and `0`, or Ctrl with the mouse wheel,

@@ -10,6 +10,7 @@
  * global is absent and every call is a no-op.
  */
 import type { MouseEvent as ReactMouseEvent } from "react";
+import type { ThemeMode } from "../components/theme-switch";
 
 declare global {
   interface Window {
@@ -77,14 +78,14 @@ export function watchMacTitlebarMetrics(app: HTMLElement): () => void {
     app.classList.toggle("app--reduced-zoom", ratio > 1);
     app.style.setProperty("--titlebar-h", `${Math.ceil(40 * ratio)}px`);
     if (scale >= 1) {
-      app.style.setProperty("--tl-inset", `${Math.ceil(80 * ratio)}px`);
-      app.style.setProperty("--chrome-clear", `${Math.ceil(124 * ratio)}px`);
+      app.style.setProperty("--tl-inset", `${Math.ceil(88 * ratio)}px`);
+      app.style.setProperty("--chrome-clear", `${Math.ceil(132 * ratio)}px`);
       return;
     }
     // Zoomed in: the lights (fixed in window points) now cover fewer CSS pixels, while the
     // toggle and its padding (28 + 16) grow with the page. Shrinking only the lights' share
     // keeps a 44px menu on screen in a 360pt window at 300%. The row keeps its 40px floor.
-    const inset = Math.ceil(80 * scale);
+    const inset = Math.ceil(88 * scale);
     app.style.setProperty("--tl-inset", `${inset}px`);
     app.style.setProperty("--chrome-clear", `${inset + 44}px`);
   };
@@ -115,4 +116,15 @@ export function watchMacTitlebarMetrics(app: HTMLElement): () => void {
     window.removeEventListener("resize", onResize);
     window.removeEventListener("focus", readScale);
   };
+}
+
+/** Keep AppKit/window chrome in the same appearance as the dashboard. */
+export async function syncWindowTheme(theme: ThemeMode): Promise<void> {
+  try {
+    await window.__TAURI__?.core?.invoke?.("plugin:window|set_theme", {
+      value: theme === "system" ? null : theme,
+    });
+  } catch {
+    // Older desktop shells may not grant this command; browser theming still works.
+  }
 }
