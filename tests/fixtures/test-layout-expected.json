@@ -1,6 +1,8 @@
 {
   "codex-history-pending-wal.test.ts": "codex-integration",
   "service-log.test.ts": "service",
+  "fork-updates.test.ts": "update",
+  "fork-nightly.test.ts": "ci-workflows",
   "service-health-sentinel-policy.test.ts": "service",
   "service-health-sentinel-runner.test.ts": "service",
   "service-health-sentinel-launch.test.ts": "service",
