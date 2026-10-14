@@ -13,6 +13,7 @@ assert.match(process.env.GITHUB_RUN_ID ?? '', /^\d+$/);
 assert.match(process.env.GITHUB_RUN_ATTEMPT ?? '', /^\d+$/);
 const version = `${base}-gkze.nightly.${process.env.GITHUB_RUN_ID}.${process.env.GITHUB_RUN_ATTEMPT}`;
 pkg.name = '@gkze/opencodex';
+pkg.files = [...new Set([...pkg.files, 'FORK.md'])];
 pkg.version = version;
 pkg.repository = { type: 'git', url: 'git+https://github.com/gkze/opencodex.git' };
 pkg.homepage = 'https://github.com/gkze/opencodex';
