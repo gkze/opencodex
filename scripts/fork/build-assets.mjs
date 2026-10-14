@@ -123,7 +123,11 @@ async function standalone(target, version, out, file) {
   } else run('tar', ['-czf', join(out, file), 'ocx', 'gui', 'keyring'], { cwd: directory });
   const extracted = mkdtempSync(join(tmpdir(), 'ocx-fork-extracted-'));
   try {
-    run('tar', ['-xf', join(out, file), '-C', extracted]);
+    if (process.platform === 'win32') {
+      run('pwsh', ['-NoProfile', '-Command', 'Expand-Archive -LiteralPath $env:FORK_ARCHIVE -DestinationPath $env:FORK_EXTRACTED'], {
+        env: { ...process.env, FORK_ARCHIVE: join(out, file), FORK_EXTRACTED: extracted },
+      });
+    } else run('tar', ['-xf', join(out, file), '-C', extracted]);
     return await smokeRuntime(join(extracted, process.platform === 'win32' ? 'ocx.exe' : 'ocx'), version);
   } finally { rmSync(extracted, { recursive: true, force: true }); }
 }
