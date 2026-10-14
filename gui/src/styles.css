@@ -233,10 +233,7 @@ p.muted.text-control {
 /* native controls (checkbox/radio) follow the accent instead of browser blue */
 input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 
-/* scrollbars */
-*::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-pill); border: 2px solid var(--bg); }
-*::-webkit-scrollbar-thumb:hover { background: var(--faint); }
+/* Keep native scrollbars: custom WebKit painting disables OS-controlled idle hiding. */
 
 :focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; border-radius: var(--radius-2xs); }
 
@@ -249,6 +246,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   display: flex; flex-direction: column; gap: 4px;
   padding: 18px 14px;
   border-right: 1px solid var(--border);
+  /* Focus landing zone for the drawer, not an interactive control. */
+  outline: none;
   background: var(--glass-rail);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -2421,7 +2420,7 @@ button.prov-account-row.active { cursor: default; }
     transform: translateX(-100%);
     visibility: hidden;   /* removes the closed drawer from the tab order / a11y tree */
     transition: transform var(--motion-normal) ease, visibility var(--motion-normal);
-    overflow-y: auto; outline: none;
+    overflow-y: auto;
   }
   .sidebar.open {
     transform: translateX(0); visibility: visible;
