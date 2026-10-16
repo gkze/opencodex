@@ -30,6 +30,8 @@
 외부 CDN 폰트를 사용하지 않는다. 프록시 관리 화면은 오프라인에서도 열려야 하고, 폰트
 다운로드 실패가 레이아웃 이동이나 한글 누락으로 이어지면 안 되기 때문이다.
 
+Ordinary dashboard text uses the platform's default font smoothing to avoid unnecessarily thin glyphs on 1× displays. Font family, size and weight tokens remain its typography controls. The tray popup and desktop bootstrap have separate styles that explicitly select antialiased smoothing; this dashboard rule does not change those surfaces.
+
 ### Type scale
 
 | 역할 | 클래스 | 토큰 | 크기 | 대표 용도 |
