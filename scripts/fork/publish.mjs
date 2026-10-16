@@ -1,3 +1,4 @@
+import { pruneNightlyReleases, recordNightlyPublication } from './retention.mjs';
 import { assetTargets, assetContract } from './asset-contract.mjs';
 import { verifyAssets } from './verify-assets.mjs';
 import { assertForkRemote } from "./remote.mjs";
@@ -78,3 +79,6 @@ const visible = JSON.parse(execFileSync('gh', ['release', 'view', manifest.tag, 
 assert.equal(visible.isDraft, false);
 execFileSync('npm', ['dist-tag', 'add', target, 'nightly', '--registry', registry], { stdio: 'inherit' });
 assert.equal(execFileSync('npm', ['view', `${pkg.name}@nightly`, 'version', '--registry', registry], { encoding: 'utf8' }).trim(), manifest.version);
+// Cleanup is last: a failed build or publication must never consume rollback releases.
+recordNightlyPublication(identity.databaseId, manifest.tag);
+pruneNightlyReleases(manifest.tag);
