@@ -86,3 +86,7 @@ retrying. A retry never overwrites a mismatched published package or a newer
 branch tip. Candidate staging branches and backup tags are retained for recovery;
 cleanup is a separate deliberate operation. A manual rollback must use the
 recorded backup SHA and account for newer fork work.
+
+## Nightly release retention
+
+After verifying all release assets and reading back the published package’s `nightly` tag, publication records and reads back a completion marker in the release notes, then retains the five newest marked public fork nightly prereleases. Unmarked historical or interrupted publications are preserved rather than assumed successful. Older matching GitHub release entries and their attached assets are deleted. Stable releases, drafts, unrelated prereleases, Git release tags, backup tags and package versions are preserved. Cleanup never runs merely because a rebase occurred or a build started. An older publication retry cannot prune a newer nightly. If cleanup fails, the verified publication remains available; retrying cleanup resumes from the remaining inventory.
