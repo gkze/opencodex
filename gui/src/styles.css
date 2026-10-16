@@ -167,8 +167,7 @@ body {
   font-family: var(--font-ui);
   font-size: var(--text-body);
   line-height: var(--leading-body);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Let the platform render text for its display; forced grayscale thins 1x text. */
   text-rendering: optimizeLegibility;
 }
 
