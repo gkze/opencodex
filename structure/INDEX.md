@@ -120,6 +120,7 @@ Background service, docs, release, and design discipline.
 
 | Doc | Scope |
 | --- | --- |
+| [`ops/git-installs.md`](ops/git-installs.md) | Trusted Git installation lifecycle and source archive prerequisite. |
 | [`desktop-shell.md`](desktop-shell.md) | Tauri desktop shell, proxy attachment and sidecar lifecycle, tray controls, bootstrap navigation, and desktop companion presence. |
 | [`desktop-terminal-command.md`](desktop-terminal-command.md) | Desktop-owned ocx command on PATH: record and journal, POSIX shim and shell blocks, Windows user Path, private-path ACL policy, and the local Terminal command page. |
 | [`desktop-start-at-login.md`](desktop-start-at-login.md) | macOS tray Start at Login judgment shared with Startup safety, its parity fixture, click rules, and the guarded launch-origin migration. |
@@ -158,6 +159,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `gui/src/account-pause-display.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `gui/src/components/ModelPriceDialog.tsx` | [`pricing.md`](pricing.md) |
 | `gui/src/hooks/useProviderAccountPools.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
+| `package.json` | [`ops/git-installs.md`](ops/git-installs.md) |
 | `scripts/` | [`overview.md`](overview.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
 | `scripts/generate-ocx-skill-surface.ts` | [`cli-management.md`](cli-management.md) |
 | `skills/ocx/` | [`cli-management.md`](cli-management.md) |

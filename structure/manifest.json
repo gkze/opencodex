@@ -48,6 +48,15 @@
   ],
   "docs": [
     {
+      "path": "ops/git-installs.md",
+      "tier": 6,
+      "title": "Git Installation Preparation",
+      "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
+      "documents": [
+        "package.json"
+      ]
+    },
+    {
       "path": "providers/generic-account-pool.md",
       "tier": 4,
       "title": "Generic OAuth Account Pool",
