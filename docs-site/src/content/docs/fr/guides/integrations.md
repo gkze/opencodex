@@ -1,10 +1,10 @@
 ---
 title: Intégrations
-description: Connectez opencodex à OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code et Factory Droid depuis le tableau de bord — un commutateur par client, avec une sauvegarde avant chaque écriture.
+description: Connectez opencodex à OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code, Factory Droid et fx depuis le tableau de bord — un commutateur par client, avec une sauvegarde avant chaque écriture.
 ---
 
 L'onglet **Connexion** écrit le bloc fournisseur d'opencodex dans le fichier de configuration du client,
-puis peut le retirer. Dix-huit clients fonctionnent ainsi, chacun avec son propre commutateur :
+puis peut le retirer. Dix-neuf clients fonctionnent ainsi, chacun avec son propre commutateur :
 
 | Client | Fichier de configuration | Format | Prise d'effet de la modification | Identifiant |
 |---|---|---|---|---|
@@ -26,6 +26,7 @@ puis peut le retirer. Dix-huit clients fonctionnent ainsi, chacun avec son propr
 | Kilo | premier fichier existant parmi `kilo.jsonc`, `kilo.json`, `opencode.jsonc`, `opencode.json` ou `config.json` sous `~/.config/kilo` (`XDG_CONFIG_HOME` déplace ce répertoire ; `kilo.jsonc` est créé si aucun n'existe) | JSONC | nouvelles sessions | `OPENCODEX_KILO_API_KEY` |
 | Command Code | `~/.commandcode/providers.json` (sous Windows avec le répertoire personnel par défaut : utiliser `HOME ?? USERPROFILE` uniquement si la valeur n’est ni vide ni composée uniquement d’espaces et désigne un chemin absolu Windows, sinon `homedir()` ; un répertoire personnel fourni séparément est conservé ; ajouter `.commandcode\providers.json`) | JSON | au prochain lancement de Command Code | aucun — boucle locale sans clé (`apiKey: false`) |
 | Factory Droid | `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` sous Windows) | JSON | dès la détection du fichier | boucle locale sans clé |
+| fx | `~/.fx/settings.json` | JSON | après redémarrage de fx | aucun — bouclage uniquement |
 
 Les modèles GJC dotés d'une échelle d'effort de raisonnement prise en charge exportent `reasoning: true`, `thinking.levels` et `compat.supportsReasoningEffort`, afin que GJC propose le choix de l'effort. Les modèles Codex natifs reçoivent leur échelle standard même si le catalogue l'omet. Ces champs sont absents sans échelle connue ; `none` n'envoie pas d'effort et `ultra` devient `max` sur le réseau. Actualisez l'intégration pour mettre à jour ces options.
 
@@ -328,3 +329,43 @@ ocx integration client enable --client kilo
 ## Factory Droid
 
 Factory Droid utilise `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` sous Windows). Activez explicitement l’intégration avec `ocx integration client enable --client droid`, puis choisissez un modèle personnalisé dans `/model`. Les entrées gérées n’utilisent pas de clé et fonctionnent uniquement en boucle locale. La désactivation supprime ces entrées ; l’annulation restaure les octets sauvegardés. Si l’ancien `config.json` contient des entrées OpenCodex ou si `settings.local.json` remplace `customModels`, résolvez ce conflit avant l’activation. Consultez la [documentation Factory BYOK](https://docs.factory.ai/model-independence/byok).
+
+## fx
+
+Cette intégration cible les connexions de modèles personnalisées de fx, que fx ne définit qu'au
+**niveau racine** de `~/.fx/settings.json`. Un fichier `.fx.json` de projet est limité aux champs du
+projet et ne peut ni définir ni sélectionner une connexion : c'est donc là qu'opencodex écrit
+`providers.opencodex`. Votre thème, vos espaces de travail, vos règles de permission et vos autres
+connexions restent intacts.
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+La connexion générée utilise `openai-chat-completions` avec `base_url` pointant vers la racine `/v1`
+du proxy — fx ajoute lui-même `/chat/completions` — et `auth: { "type": "none" }`. Le bloc
+`model_metadata` de fx est aussi sa liste de modèles : `fx models` n'affiche que les modèles routés
+écrits par opencodex, avec la fenêtre de contexte lorsque le catalogue la connaît et l'entrée d'image
+uniquement lorsque le modèle la déclare.
+
+**fx lit ce fichier au démarrage : redémarrez fx après avoir appliqué ou synchronisé.** L'activation ne
+change pas le fournisseur sélectionné : exécutez `fx provider opencodex` pour basculer, et
+`fx status --json` pour vérifier. Vos autres connexions et leurs modèles enregistrés sont conservés.
+
+Si le profil contient déjà une entrée `providers.opencodex` — écrite à la main ou laissée
+par une configuration antérieure — il n'existe aucun enregistrement de propriété auquel la comparer :
+le commutateur signale un conflit et refuse d'appliquer. **Replace** sur la ligne, ou
+`ocx integration client enable --client fx --overwrite-conflict`, réécrit cette seule entrée avec la
+connexion générée et laisse le reste du profil — thème, autres connexions, règles de permission —
+intact, après avoir pris l'instantané que Restaurer permet de rétablir.
+
+fx limite un fichier de paramètres à 64 Kio et signale les paramètres invalides au démarrage : une très
+grande sélection de modèles routés peut saturer ce budget, que le reste de votre profil partage.
+Désactivez les fournisseurs inutilisés ou réduisez la sélection si fx signale le fichier comme invalide.
+
+fx n'envoie aucun en-tête d'authentification personnalisé, et `/v1/chat/completions` refuse un
+identifiant Bearer en exigeant l'en-tête dédié `x-opencodex-api-key` : cette intégration est donc
+délibérément limitée au bouclage. Une écoute non locale est refusée plutôt que d'écrire une connexion
+incapable de s'authentifier.
