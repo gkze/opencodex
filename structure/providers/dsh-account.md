@@ -1,8 +1,15 @@
 # DeepSeek Harness Account Provider
 
-`dsh-account` reuses the DeepSeek account signed in to DeepSeek Harness (DSH) Desktop. It is an OAuth-kind provider with its own credential domain; it shares no key, route or fallback with the API-key `deepseek` provider.
+`dsh-account` supports DeepSeek browser authorization and validated import from DeepSeek Harness (DSH) Desktop. It is an OAuth-kind provider with its own credential domain; it shares no key, route or fallback with the API-key `deepseek` provider.
 
-## Import
+## Browser authorization and import
+
+`src/oauth/dsh-browser.ts` implements the DSH platform's PKCE S256 protocol: `auth_init`, a single-use loopback `/oauth/callback`, then `auth_exchange`. A 32-byte verifier and independent state bind each attempt. Callback method, path, parameter cardinality and state are validated before consuming the code. Browser URLs are pinned to the platform origin and authorization paths; server requests reject redirects, bound responses to 64 KiB and retain only locally authored stage/status errors, never arbitrary provider or transport text. Attempts expire within ten minutes or the shorter platform deadline, check the absolute deadline before exchange and credential return, honor cancellation, close their listener and attempt `auth_cancel` on failure.
+
+The exchange's authoritative `user.id` establishes account identity directly. If missing, the profile endpoint must establish it; a balance response, token hash or email cannot substitute. CLI and dashboard share this flow through the existing OAuth controller and credential-publication transaction. Browser sign-in runs when import cannot establish identity; `forceLogin` skips import. The browser callback confirms authorization only, leaving credential-publication success to the initiating client. Without an authorization URL handler, import failures remain errors.
+
+OpenCodex keeps its own non-secret UUID in `dsh-device-id` under its configuration home, supplies device/OS and client metadata, and never borrows Harness's device identity. The client version identifies OpenCodex. The existing generic callback helper does not own the callback through exchange or enforce single consumption and duplicate-parameter rejection, so this provider owns that bounded lifecycle using Bun and standard cryptographic primitives. No Harness runtime dependency is required.
+
 
 `src/oauth/dsh.ts` reads `$DSH_HOME/.credentials.yaml` (default `~/.dsh/.credentials.yaml`) only inside `loginDshAccount`, which runs on `ocx login dsh-account` or the dashboard's **Log in** action for the provider. Nothing else reads the file, and nothing in opencodex writes, deletes or changes the permissions of it. The `deepseek-account-platform/default` grant record is validated against `https://platform.deepseek.com/auth-api/v0/users/current` with manual redirects before anything is stored.
 
@@ -12,7 +19,7 @@ The imported copy lives in the opencodex credential store. Removing the account 
 
 ## Refresh and 401
 
-DSH grants have no rotation endpoint. `defaultRefreshPolicy` is `disabled`, and `refreshDshAccountToken` never re-reads the DSH file: it throws a terminal "revoked" error. An upstream 401 on the replay path therefore marks the account `needsReauth`; the user re-imports explicitly.
+DSH grants have no rotation endpoint. `defaultRefreshPolicy` is `disabled`, and `refreshDshAccountToken` never re-reads the DSH file: it throws a terminal "revoked" error. An upstream 401 on the replay path therefore marks the account `needsReauth`; the user signs in explicitly again.
 
 ## Destinations
 
