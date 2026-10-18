@@ -14,7 +14,10 @@ runs on `gkze/patches`. GitHub may delay scheduled runs. It captures upstream
 `lidge-jun/opencodex:dev`, the fork tip, and the dedicated branches in
 `scripts/fork/orchestrator/registry.json` once per run.
 
-A Bun/Effect coordinator owns a SQLite workflow journal for that job only. It
+A Bun/Effect coordinator owns a SQLite workflow journal for that job only.
+Dependency-ready workers continuously replenish bounded slots. Dependency branches
+retain accepted parent commits; independent dependency tips compose through Git
+merges, with conflicts held for review. The final fork remains linear. It
 replays each logical patch on the captured upstream plus declared dependencies
 in isolated GitHub Actions workers. Clean replay is deterministic. Non-sensitive
 text conflicts may receive one bounded Copilot SDK repair with restricted file
@@ -26,9 +29,15 @@ provenance and reconstructed trees, then assembles the complete stack. Only the
 existing publisher promotes maintained branches. Expected-tip leases update all
 patch branches and `gkze/patches` atomically, preserving backup tags. SQLite is
 not carried between workflow runs; interrupted runs start fresh from maintained
-refs. Account assumptions, platform ceilings and policy budgets are separate in
+refs. There is no automatic process restart; the journal supports same-runner
+recovery only. Account assumptions, platform ceilings and policy budgets are separate in
 `scripts/fork/orchestrator/limits.json`; unobservable shared usage can still cause
-throttling. The prior **Fork nightly refresh** workflow is manual-only.
+throttling. Refresh and publication share one concurrency group. Workflow limits
+and retention are checked against the policy before dispatch. Storage admission
+uses retained repository artifacts plus a 2 GiB run budget against a 10 GiB
+repository budget; these are operating budgets, not account entitlements. Shared
+account usage remains unknown. Publication artifacts expire after three days;
+GitHub release assets follow their separate retention policy. The prior **Fork nightly refresh** workflow is manual-only.
 
 **Publish fork nightly** accepts artifacts only from a successful same-repository
 run on `gkze/patches`. It verifies lineage, linear history, complete patch mapping,

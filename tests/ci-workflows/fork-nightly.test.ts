@@ -150,7 +150,7 @@ test("publication requires checked artifacts and keeps candidate execution read-
   expect(suite?.run).toContain("scripts/ci/run-bun-test-batches.sh")
   expect(workflow.jobs.smoke.permissions).toBeUndefined()
   expect(workflow.jobs.publish.needs).toEqual(["candidate", "validate", "test", "smoke", "assets"])
-  expect(workflow.jobs.publish.permissions).toEqual({ contents: "write", packages: "write" })
+  expect(workflow.jobs.publish.permissions).toEqual({ contents: "write", packages: "write", actions: "read" })
 })
 
 test("nightly refuses an upstream publication remote", () => {

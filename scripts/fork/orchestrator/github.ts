@@ -1,6 +1,7 @@
 import { appendFileSync } from "node:fs"
 import { join } from "node:path"
 import { Effect, Schema } from "effect"
+import { limits } from "./limits.ts"
 import { decode } from "./model.ts"
 export const Repository = "gkze/opencodex"
 export const Run = Schema.Struct({ id: Schema.Number, name: Schema.String, display_title: Schema.String, head_sha: Schema.String, event: Schema.String, status: Schema.String, conclusion: Schema.NullOr(Schema.String), path: Schema.String, head_repository: Schema.Struct({ full_name: Schema.String }) })
@@ -55,7 +56,7 @@ export const wait = (runId: number, attempt: string, control: string, deadline: 
       if (run.conclusion !== "success") return yield* Effect.fail(`Worker ${runId} ${run.conclusion}`)
       return runId
     }
-    yield* Effect.sleep("60 seconds")
+    yield* Effect.sleep(limits.policy.pollSeconds * 1000)
   }
   yield* request(`actions/runs/${runId}/cancel`, {})
   return yield* Effect.fail("Worker deadline exceeded")

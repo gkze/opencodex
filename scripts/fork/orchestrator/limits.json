@@ -44,6 +44,12 @@
       "ubuntu-24.04",
       "macos-15",
       "windows-2025"
-    ]
+    ],
+    "publicationJobs": 15,
+    "publicationMacosJobs": 4,
+    "runArtifactBytes": 2147483648,
+    "retainedRepositoryBytes": 10737418240,
+    "publicationArtifactRetentionDays": 3,
+    "publicationArtifactMaxBytes": 209715200
   }
 }

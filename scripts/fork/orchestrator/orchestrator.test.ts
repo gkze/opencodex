@@ -70,3 +70,84 @@ test("metadata updates preserve compact registry layout and semantics", () => {
   expect(rendered.split("\n").length).toBe(2)
   expect(renderMetadata(text, JSON.parse(text))).toBe(text)
 })
+
+test("scheduler starts dependents and replenishes slots before slow siblings finish", async () => {
+  const { Deferred } = await import("effect")
+  const { schedule } = await import("./scheduler.ts")
+  const events: string[] = []
+  await Effect.runPromise(Effect.gen(function*() {
+    const childStarted = yield* Deferred.make<void>()
+    yield* schedule([patch("base"), patch("slow"), patch("child", ["base"])], 2, 1, p => Effect.gen(function*() {
+      events.push(p.id)
+      if (p.id === "slow") yield* Deferred.await(childStarted)
+      if (p.id === "child") yield* Deferred.succeed(childStarted, undefined)
+      return p.id
+    }))
+  }).pipe(Effect.timeout("2 seconds")))
+  expect(events).toEqual(["base", "slow", "child"])
+})
+
+test("scheduler bounds total and macOS execution and interrupts siblings on failure", async () => {
+  const { schedule } = await import("./scheduler.ts")
+  let active = 0, mac = 0, peak = 0, peakMac = 0
+  const patches = Array.from({length:8}, (_, i) => ({...patch(`p${i}`), runner: i % 2 ? "ubuntu-24.04" as const : "macos-15" as const}))
+  await Effect.runPromise(schedule(patches, 3, 1, p => Effect.acquireUseRelease(
+    Effect.sync(() => {active++; mac += Number(p.runner === "macos-15"); peak = Math.max(peak, active); peakMac = Math.max(peakMac, mac)}),
+    () => Effect.sleep("5 millis"),
+    () => Effect.sync(() => {active--; mac -= Number(p.runner === "macos-15")}),
+  )))
+  expect(peak).toBeLessThanOrEqual(3)
+  expect(peakMac).toBe(1)
+  const outcome = await Effect.runPromise(schedule([patch("fail"), patch("blocked", ["fail"])], 2, 1, () => Effect.fail("stop")).pipe(Effect.result, Effect.timeout("2 seconds")))
+  expect(outcome._tag).toBe("Failure")
+})
+
+test("workflow projections and repository storage budgets agree", async () => {
+  const { checkWorkflows } = await import("./resources.ts")
+  const { checkStorage, limits } = await import("./limits.ts")
+  checkWorkflows(join(import.meta.dir, "../../.."))
+  expect(() => checkStorage(limits.policy.retainedRepositoryBytes, 1)).toThrow("retained")
+  expect(() => checkStorage(0, limits.policy.runArtifactBytes + 1)).toThrow("Run")
+  expect(() => checkStorage(6 * 1024 ** 3, limits.policy.runArtifactBytes)).not.toThrow()
+})
+
+test("dependency bases retain exact accepted ancestors, including independent parents", async () => {
+  const { dependencyBase } = await import("./dependencies.ts")
+  const { git } = await import("./process.ts")
+  const root = mkdtempSync(join(tmpdir(), "ocx-dependency-test-"))
+  try {
+    await Effect.runPromise(Effect.gen(function*() {
+      yield* git(root, "init")
+      yield* git(root, "config", "user.name", "Fixture")
+      yield* git(root, "config", "user.email", "test@example.com")
+      yield* git(root, "commit", "--allow-empty", "-m", "upstream")
+      const upstream = yield* git(root, "rev-parse", "HEAD")
+      writeFileSync(join(root, "a"), "a")
+      yield* git(root, "add", "a"); yield* git(root, "commit", "-m", "a")
+      const a = yield* git(root, "rev-parse", "HEAD")
+      expect(yield* dependencyBase(root, upstream, [a])).toBe(a)
+      yield* git(root, "checkout", "--detach", upstream)
+      writeFileSync(join(root, "b"), "b")
+      yield* git(root, "add", "b"); yield* git(root, "commit", "-m", "b")
+      const b = yield* git(root, "rev-parse", "HEAD")
+      const base = yield* dependencyBase(root, upstream, [a, b])
+      yield* git(root, "merge-base", "--is-ancestor", a, base)
+      yield* git(root, "merge-base", "--is-ancestor", b, base)
+      expect(readFileSync(join(root,"a"),"utf8")).toBe("a")
+      expect(readFileSync(join(root,"b"),"utf8")).toBe("b")
+    }))
+  } finally {rmSync(root, {recursive:true,force:true})}
+})
+
+test("zero scheduler capacity and oversized upload outputs fail before execution", async () => {
+  const { schedule } = await import("./scheduler.ts")
+  const { checkOutput } = await import("./output-budget.ts")
+  const result = await Effect.runPromiseExit(schedule([patch("one")], 0, 1, () => Effect.succeed("unexpected")))
+  expect(result._tag).toBe("Failure")
+  const root = mkdtempSync(join(tmpdir(), "ocx-budget-test-"))
+  try {
+    writeFileSync(join(root, "payload"), "12345")
+    expect(checkOutput(root, 5)).toBe(5)
+    expect(() => checkOutput(root, 4)).toThrow("allocation")
+  } finally {rmSync(root, {recursive:true,force:true})}
+})

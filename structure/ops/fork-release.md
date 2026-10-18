@@ -35,9 +35,19 @@ expected old tips and recovery tags, only after all publication gates pass.
 
 `scripts/fork/orchestrator/limits.json` separates documented platform constraints,
 account assumptions with provenance, and operating budgets. Unknown account plan
-or usage is not represented as verified. Worker admission reserves capacity;
+or usage is not represented as verified. Worker admission bounds this run;
 other account repositories can still cause queueing. Paid runner classes are
 excluded. API exhaustion and ambiguous dispatch halt rather than retrying writes.
-SQLite survives a process restart on the same runner, not runner loss. Fresh runs
+SQLite is a run-local journal that survives a process restart on the same runner, not runner loss; no automatic restart is configured. Fresh runs
 capture fresh inputs. Cancellation attempts to stop child workflows, whose own
 timeouts bound work if parent cleanup cannot run. No database survives the run.
+
+Dependency-ready workers replenish slots immediately using Effect semaphores.
+Dependency bases preserve accepted commits, merging independent parents in declared
+order and rejecting merge conflicts. The integrated fork still cherry-picks only
+own patch commits into a linear stack. Refresh and publication share a concurrency
+group. Parsed workflow conformance checks bind job durations, matrix fanout and
+artifact retention to the policy. Repository artifact inventory is an advisory
+snapshot checked against explicit operating budgets, not an account reservation.
+Publication input sizes are checked again before promotion; retained account-wide
+storage and other repositories' activity remain unknown.

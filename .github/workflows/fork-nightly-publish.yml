@@ -12,7 +12,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: fork-nightly-publish
+  group: fork-maintenance
   cancel-in-progress: false
 jobs:
   candidate:
@@ -50,10 +50,12 @@ jobs:
           path: ${{ runner.temp }}/fork-nightly
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
-      - if: github.event.workflow_run.name == 'Fork stack refresh'
-        uses: ./.github/actions/setup-project-bun
-      - if: github.event.workflow_run.name == 'Fork stack refresh'
-        run: bun install --cwd scripts/fork/orchestrator --frozen-lockfile --ignore-scripts
+      - uses: ./.github/actions/setup-project-bun
+      - run: bun install --cwd scripts/fork/orchestrator --frozen-lockfile --ignore-scripts
+      - name: Check resource policy and retained artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/fork/orchestrator/resources.ts
       - id: accept
         env:
           SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
@@ -100,12 +102,14 @@ jobs:
         env:
           FORK_CANDIDATE: ${{ needs.candidate.outputs.sha }}
         run: node scripts/fork/package.mjs
+      - name: Enforce package output allocation
+        run: bun scripts/fork/orchestrator/output-budget.ts dist/fork
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: fork-package
           path: dist/fork/*
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 3
   test:
     needs: candidate
     runs-on: ubuntu-24.04
@@ -170,6 +174,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      actions: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -193,6 +198,12 @@ jobs:
         with:
           name: verified-stack
           path: ${{ runner.temp }}/verified-stack
+      - uses: ./.github/actions/setup-project-bun
+      - run: bun install --cwd scripts/fork/orchestrator --frozen-lockfile --ignore-scripts
+      - name: Verify publication artifact budget
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/fork/orchestrator/resources.ts published-inputs
       - name: Publish checked package and promote fork
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}

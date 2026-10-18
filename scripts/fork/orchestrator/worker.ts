@@ -4,6 +4,7 @@ import { mkdirSync } from "node:fs"
 import { decode, CapturedPatch, Sha, Result as ResultSchema, type Result } from "./model.ts"
 import { git, command } from "./process.ts"
 import { replay, commitPatch } from "./replay.ts"
+import { dependencyBase } from "./dependencies.ts"
 import { limits } from "./limits.ts"
 import { repair } from "./agent.ts"
 const Task = Schema.Struct({ attempt: Schema.String, control: Sha, upstream: Sha, patch: CapturedPatch, dependencies: Schema.Array(Sha) })
@@ -13,7 +14,7 @@ mkdirSync(output, {recursive: true})
 const prepare = Effect.gen(function*() {
   if ((yield* git(trusted, "rev-parse", "HEAD")) !== task.control) return yield* Effect.fail("Control checkout mismatch")
   yield* command(["git", "clone", "--no-hardlinks", "--no-checkout", trusted, cwd], trusted)
-  yield* git(cwd, "config", "user.name", "Fork patch maintenance")
+  yield* git(cwd, "config", "user.name", "github-actions[bot]")
   yield* git(cwd, "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
   yield* git(cwd, "fetch", "https://github.com/lidge-jun/opencodex.git", task.upstream)
   for (const ref of [task.patch.source, ...task.dependencies]) yield* git(cwd, "fetch", "https://github.com/gkze/opencodex.git", ref)
@@ -21,12 +22,7 @@ const prepare = Effect.gen(function*() {
   const timestamp = yield* git(cwd, "show", "-s", "--format=%cI", task.upstream)
   process.env.GIT_AUTHOR_DATE = timestamp
   process.env.GIT_COMMITTER_DATE = timestamp
-  for (const source of task.dependencies) {
-    const applied = yield* replay(cwd, source, trusted)
-    if (!applied.ok) return yield* Effect.fail(`Dependency ${applied.reason}`)
-    yield* git(cwd, "commit", "--allow-empty", "-m", `Dependency ${source}`)
-  }
-  const base = yield* git(cwd, "rev-parse", "HEAD")
+  const base = yield* dependencyBase(cwd, task.upstream, task.dependencies)
   const applied = yield* replay(cwd, task.patch.source, trusted)
   let adapted = false
   if (!applied.ok) {

@@ -1,4 +1,4 @@
-import { Effect, Layer, Schema } from "effect"
+import { Effect, Layer, Schema, Semaphore } from "effect"
 import * as Workflow from "effect/workflow/Workflow"
 import * as Activity from "effect/workflow/Activity"
 import { mkdirSync } from "node:fs"
@@ -11,16 +11,20 @@ import { limits, capacity, canStart } from "./limits.ts"
 import { freshWorktree, freshDirectory } from "./recovery.ts"
 import { download } from "./artifact.ts"
 import { replay, commitPatch } from "./replay.ts"
+import { schedule } from "./scheduler.ts"
+import { dependencyBase } from "./dependencies.ts"
+import { preflight, measureOutputs } from "./resources.ts"
 import registryJson from "./registry.json"
 const root = process.cwd(), directory = resolve(process.env.RUN_STATE ?? "../fork-state")
 mkdirSync(directory, {recursive: true})
 const startedAt = Number(process.env.FORK_RUN_STARTED_AT) * 1000
 if (!Number.isFinite(startedAt) || startedAt <= 0 || startedAt > Date.now()) throw new Error("Missing or invalid job start time")
 const registry = decode(Registry, registryJson)
-if ((registry.patches.length + 1) * limits.policy.artifactMaxBytes > limits.account.artifactBytes.value) throw new Error("Run artifact reservation exceeds account policy")
+
 const Refresh = Workflow.make("ForkRefreshV1", { payload: { run: Schema.String }, success: Schema.String, error: Schema.String, idempotencyKey: p => p.run })
 const step = (name: string, execute: Effect.Effect<string, string>) => Activity.make({name, success: Schema.String, error: Schema.String, execute})
 const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
+  yield* preflight()
   const input = decode(Input, JSON.parse(yield* step("capture", Effect.gen(function*() {
     const control = yield* git(root, "rev-parse", "HEAD")
     const old = (yield* git(root, "ls-remote", "origin", "refs/heads/gkze/patches")).split("\t")[0]
@@ -40,28 +44,11 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
   const timestamp = yield* git(root, "show", "-s", "--format=%cI", input.upstream)
   process.env.GIT_AUTHOR_DATE = timestamp
   process.env.GIT_COMMITTER_DATE = timestamp
-  const results: PatchResult[] = []
-  const pending = new Map(input.patches.map(p => [p.id, p]))
-  while (pending.size) {
-    const ready = [...pending.values()].filter(p => p.requires.every(id => results.some(r => r.id === id)))
-    if (!ready.length) return yield* Effect.fail("Unsatisfied dependencies")
-    // Unknown activity in other repositories is covered by a reserved-capacity policy;
-    // this is an admission bound, not a claim of an account-wide atomic reservation.
-    const slots = capacity(0, 0)
-    if (slots === 0) return yield* Effect.fail("Account policy has no worker capacity")
-    let macos = 0
-    const batch = ready.filter(p => {
-      if (!limits.policy.runnerLabels.includes(p.runner)) throw new Error("Runner outside allowlist")
-      if (p.runner === "macos-15") return ++macos <= Math.min(limits.policy.macosJobs, limits.account.macosJobs.value)
-      return true
-    }).slice(0, slots)
-    const completed = yield* Effect.forEach(batch, patch => Effect.gen(function*() {
-      const dependencies = results.filter(r => {
-        const closure = new Set<string>()
-        const visit = (id: string) => { if (closure.has(id)) return; closure.add(id); input.patches.find(p => p.id === id)?.requires.forEach(visit) }
-        patch.requires.forEach(visit)
-        return closure.has(r.id)
-      }).map(r => r.candidate)
+  const writer = yield* Semaphore.make(1)
+  const results = yield* schedule(registry.patches, capacity(0, 0), limits.policy.macosJobs, (definition, parents: readonly PatchResult[]) => Effect.gen(function*() {
+      const patch = input.patches.find(p => p.id === definition.id)!
+      if (!limits.policy.runnerLabels.includes(patch.runner)) return yield* Effect.fail("Runner outside allowlist")
+      const dependencies = parents.map(r => r.candidate)
       const attempt = `${run}-${patch.id}`
       const id = Number(yield* step(`dispatch-${patch.id}`, Effect.gen(function*() {
         if (!canStart(input.deadline, Date.now())) return yield* Effect.fail("Insufficient run time for worker")
@@ -85,12 +72,8 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         if ((yield* git(root, "rev-parse", `${result.candidate}^`)) !== result.base) return yield* Effect.fail("Patch must have exactly one own commit")
         const expected = join(directory, `${patch.id}-verify`)
         yield* freshWorktree(root, directory, expected, input.upstream)
-        for (const dep of dependencies) {
-          const merged = yield* replay(expected, dep, root)
-          if (!merged.ok) return yield* Effect.fail(merged.reason)
-          yield* git(expected, "commit", "--allow-empty", "-m", `Dependency ${dep}`)
-        }
-        if ((yield* git(expected, "rev-parse", "HEAD^{tree}")) !== (yield* git(root, "rev-parse", `${result.base}^{tree}`))) return yield* Effect.fail("Worker dependency tree differs")
+        const expectedBase = yield* dependencyBase(expected, input.upstream, dependencies)
+        if (expectedBase !== result.base) return yield* Effect.fail("Worker dependency ancestry differs")
         const merged = yield* replay(expected, patch.source, root)
         if (!result.adapted) {
           if (!merged.ok || (yield* git(expected, "write-tree")) !== (yield* git(root, "rev-parse", `${result.candidate}^{tree}`))) return yield* Effect.fail("Unadapted worker changed patch semantics")
@@ -102,10 +85,7 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         yield* git(root, "worktree", "remove", "--force", expected)
         return JSON.stringify(result)
       }))
-      return decode(Result, JSON.parse(encoded))
-    }), {concurrency: limits.policy.workerJobs})
-    for (const result of completed) {
-      // One writer publishes only the objects later workers must fetch.
+      const result = decode(Result, JSON.parse(encoded))
       if (input.patches.some(p => p.requires.includes(result.id))) yield* step(`expose-${result.id}`, Effect.gen(function*() {
         const ref = `refs/heads/maintenance/${run}/${result.id}`
         const current = (yield* git(root, "ls-remote", "origin", ref)).split("\t")[0]
@@ -113,10 +93,9 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         if (current) return yield* Effect.fail("Dependency staging ref unexpectedly advanced")
         yield* git(root, "push", `--force-with-lease=${ref}:`, "origin", `${result.candidate}:${ref}`)
         return result.candidate
-      }))
-      results.push(result); pending.delete(result.id)
-    }
-  }
+      }).pipe(writer.withPermits(1)))
+      return result
+  }))
   return yield* step("assemble", Effect.gen(function*() {
     const cwd = join(directory, "integration")
     yield* freshWorktree(root, directory, cwd, input.upstream)
@@ -133,6 +112,7 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
     yield* git(cwd, "bundle", "create", join(directory, "candidate.bundle"), "refs/heads/nightly-candidate", ...results.map(r => r.candidate), `^${input.upstream}`)
     yield* Effect.promise(() => Bun.write(join(directory, "input.json"), JSON.stringify(input)))
     yield* Effect.promise(() => Bun.write(join(directory, "stack.json"), JSON.stringify({input, results, mapped, candidate}, null, 2)))
+    yield* measureOutputs(directory)
     yield* git(root, "worktree", "remove", "--force", cwd)
     return candidate
   }))

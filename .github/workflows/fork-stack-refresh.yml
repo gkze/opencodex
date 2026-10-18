@@ -12,7 +12,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: fork-nightly-refresh
+  group: fork-maintenance
   cancel-in-progress: false
 jobs:
   coordinate:
@@ -30,6 +30,10 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/setup-project-bun
       - run: bun install --cwd scripts/fork/orchestrator --frozen-lockfile --ignore-scripts
+      - name: Validate orchestrator contracts
+        run: |
+          bun run --cwd scripts/fork/orchestrator typecheck
+          bun run --cwd scripts/fork/orchestrator test
       - name: Exercise real bounded agent operation
         if: inputs.exercise_agent
         env:
