@@ -1,0 +1,20 @@
+{
+  "name": "@gkze/fork-orchestrator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.0.5",
+    "@effect/sql-sqlite-bun": "4.0.5",
+    "@github/copilot-sdk": "1.0.22",
+    "effect": "4.0.5",
+    "jsonc-parser": "3.3.1"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.0",
+    "typescript": "7.0.2"
+  }
+}
