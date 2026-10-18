@@ -45,6 +45,14 @@ export interface FastPolicyAuthority {
   readonly capability: {
     readonly provider?: boolean;
     readonly models: Readonly<Record<string, boolean>>;
+    /**
+     * Ultra Fast axes, one tier above canonical Fast. Absent leaves Ultra Fast unclassified on
+     * the route; a route is only settable to `ultrafast` when this is `true` AND the final
+     * wire maps an `ultrafast` spelling, because capability without a wire value has nothing to
+     * send.
+     */
+    readonly providerUltraFast?: boolean;
+    readonly modelsUltraFast?: Readonly<Record<string, boolean>>;
     readonly chatServiceTier?: boolean;
   };
   readonly modelAdapters: Readonly<Record<string, string>>;
@@ -55,6 +63,12 @@ export interface FastPolicyAuthority {
 
 export interface ResolvedFastPolicy {
   readonly capability: boolean | undefined;
+  /**
+   * Tri-state Ultra Fast capability for this provider/model pair. `undefined` is unclassified and
+   * `false` is an explicit denial; neither is settable. Usable Ultra Fast also requires
+   * `fastWire.canonicalToWire.ultrafast`, so this alone does not imply the tier can be sent.
+   */
+  readonly ultraFastCapability: boolean | undefined;
   readonly eligibility:
     | "eligible"
     | "capability-unsupported"
@@ -211,6 +225,12 @@ export function resolveFastPolicy(
   const capability = authority.capability.provider === false
     ? false
     : exactCapability ?? authority.capability.provider;
+  // Ultra Fast resolves from its own axes, so a provider can deny Ultra Fast while keeping Fast.
+  // The wire spelling is a separate gate: `decideTier` only sets a tier the wire can carry.
+  const exactUltraFast = exactModelValue(authority.capability.modelsUltraFast ?? {}, modelId);
+  const ultraFastCapability = authority.capability.providerUltraFast === false
+    ? false
+    : exactUltraFast ?? authority.capability.providerUltraFast;
   const fastWire = authority.fastWireDeclaration === undefined
     ? defaultFastWireForAdapter(adapter)
     : authority.fastWireDeclaration;
@@ -244,6 +264,7 @@ export function resolveFastPolicy(
 
   return {
     capability,
+    ultraFastCapability,
     eligibility,
     adapter,
     fastWire,
@@ -257,13 +278,12 @@ export function resolveFastPolicy(
 /**
  * Fold a caller's service tier onto a canonical fast marker.
  *
- * `ultrafast` is recognised as INTENT even though no shipped catalog advertises it and
- * `DEFAULT_SERVICE_TIER_FAST_WIRE` has no wire mapping for it. That asymmetry is
- * deliberate: a caller who sends `ultrafast` (which #3429's reporter did, via their own
- * catalog edit) was previously folded to `undefined`, which made `fastIntent` false and
- * recorded `fastOutcome: "not-requested"` — the log asserting the user asked for nothing.
- * Recognising the intent without a wire mapping lands the attempt on `unknown` instead,
- * which is the truth: the tier was requested, and we cannot confirm it was honored.
+ * `ultrafast` is recognised as INTENT whether or not the route can carry it. A route that declares
+ * the spelling sends the caller's tier as-is; one that does not still records the attempt as
+ * `unknown` rather than folding it to `undefined`, which made `fastIntent` false and recorded
+ * `fastOutcome: "not-requested"` — the log asserting the user asked for nothing. That asymmetry is
+ * deliberate: recognising the intent without a wire mapping lands the attempt on `unknown`, which
+ * is the truth when the tier was requested and we cannot confirm it was honored.
  */
 export function canonicalFastTierMarker(callerTier: string | undefined): "priority" | "ultrafast" | undefined {
   const folded = callerTier?.trim().toLowerCase();
@@ -275,7 +295,7 @@ export function canonicalFastTierMarker(callerTier: string | undefined): "priori
 /** Capture Fast demand before the final A1 serialization action rewrites the parsed tier view. */
 export function tierObservationContext(
   policy: ResolvedFastPolicy,
-  fastMode: boolean | undefined,
+  fastMode: boolean | "ultrafast" | undefined,
   callerTier: string | undefined,
   responseTierAuthoritative?: boolean,
 ): TierObservationContext {
@@ -283,7 +303,11 @@ export function tierObservationContext(
     capability: policy.capability,
     eligibility: policy.eligibility,
     fastWire: policy.fastWire,
-    demandDecision: fastMode === true ? "force-fast" : fastMode === false ? "force-default" : "inherit",
+    demandDecision: fastMode === true
+      ? "force-fast"
+      : fastMode === false
+        ? "force-default"
+        : fastMode === "ultrafast" ? "force-ultrafast" : "inherit",
     ...(callerTier !== undefined ? { callerTier } : {}),
     ...(responseTierAuthoritative !== undefined ? { responseTierAuthoritative } : {}),
   };
@@ -368,13 +392,20 @@ export function createAdapterTierMetadata(
     };
   }
 
+  // A proxy-owned demand may name either canonical tier, and both count as effective demand.
+  const forcedCanonicalTier = context.demandDecision === "force-fast"
+    ? "priority" as const
+    : context.demandDecision === "force-ultrafast" ? "ultrafast" as const : undefined;
+  const requestedCanonicalTier = forcedCanonicalTier
+    ?? (context.demandDecision === "inherit" ? callerMarker : undefined);
   const effectiveFastRequested = context.capability === true
     && context.fastWire !== null
-    && (context.demandDecision === "force-fast"
-      || (context.demandDecision === "inherit" && callerCanonicalFast));
+    && (forcedCanonicalTier !== undefined
+      || (context.demandDecision === "inherit"
+        && (callerCanonicalFast || (callerMarker === "ultrafast" && decision.kind === "set"))));
   // Known-unsupported routes still need a downgrade when the caller/config expressed Fast intent,
   // but they are deliberately outside the effective-demand calculation above.
-  const fastIntent = context.demandDecision === "force-fast"
+  const fastIntent = forcedCanonicalTier !== undefined
     || (context.demandDecision === "inherit" && callerFastFamilyIntent);
 
   if (!fastIntent) {
@@ -388,8 +419,9 @@ export function createAdapterTierMetadata(
       ? "response-declined"
       : downgradeReasonForUnavailable(context);
     outcome.confirmation = "downgraded";
-  } else if (canonicalFromWire(context.fastWire, wireValue) === "priority") {
-    outcome.canonical = "priority";
+  } else if (requestedCanonicalTier !== undefined
+    && canonicalFromWire(context.fastWire, wireValue) === requestedCanonicalTier) {
+    outcome.canonical = requestedCanonicalTier;
     outcome.fastOutcome = "applied";
     outcome.confirmation = "assumed";
   }
@@ -416,8 +448,9 @@ export function createAdapterTierMetadata(
       const sanitized = sanitizeLogMetadataString(value);
       if (sanitized) outcome.responseServiceTier = sanitized;
       if (!responseCanConfirmFast) return;
-      if (canonicalFromWire(context.fastWire, value) === "priority") {
-        outcome.canonical = "priority";
+      if (requestedCanonicalTier !== undefined
+        && canonicalFromWire(context.fastWire, value) === requestedCanonicalTier) {
+        outcome.canonical = requestedCanonicalTier;
         delete outcome.fastDowngradeReason;
         outcome.fastOutcome = "applied";
         outcome.confirmation = "confirmed";
@@ -459,20 +492,37 @@ export function emittedFastWire(
   return [tier === null ? null : "service-tier", tier];
 }
 
-/** Pure tier state machine. B1 normalizes canonical Fast on classified inherit routes. */
+/**
+ * Pure tier state machine. B1 normalizes canonical Fast on classified inherit routes; the same
+ * shape now carries the canonical Ultra Fast tier, which a proxy-owned demand can set on any route
+ * that both declares the capability and publishes a wire spelling for it.
+ */
 export function decideTier(
   policy: ResolvedFastPolicy,
-  fastMode: boolean | undefined,
+  fastMode: boolean | "ultrafast" | undefined,
   callerTier: string | undefined,
 ): TierDecision {
   if (policy.capability === false) return { kind: "drop" };
-  if (policy.capability === undefined) {
-    return policy.forwardCallerTier ? { kind: "forward-caller" } : { kind: "drop" };
-  }
-  if (policy.fastWire === null) {
-    return policy.forwardCallerTier ? { kind: "forward-caller" } : { kind: "drop" };
+  const callerCanonicalFast = canonicalFastTierMarker(callerTier);
+  const callerUltraFastDenied = callerCanonicalFast === "ultrafast" && policy.ultraFastCapability === false;
+  const forwardCallerTier = policy.forwardCallerTier && !callerUltraFastDenied;
+  if (policy.capability === undefined || policy.fastWire === null) {
+    return forwardCallerTier ? { kind: "forward-caller" } : { kind: "drop" };
   }
   if (policy.eligibility !== "eligible") return { kind: "drop" };
+  if (fastMode === "ultrafast") {
+    // Settable only where the route DECLARES Ultra Fast capability (`true`, never merely
+    // unclassified — the same rule that keeps canonical Fast injection off unclassified routes)
+    // AND the final wire publishes a spelling for it. A route that cannot honor the demand drops
+    // the tier rather than quietly sending Fast in its place: the demand named a specific tier,
+    // and the metadata path records the drop as a downgrade instead of a silent substitution.
+    const ultraFastWire = policy.ultraFastCapability === true
+      ? policy.fastWire.canonicalToWire.ultrafast
+      : undefined;
+    return typeof ultraFastWire === "string" && ultraFastWire.length > 0
+      ? { kind: "set", value: ultraFastWire }
+      : { kind: "drop" };
+  }
   if (fastMode === true) {
     const value = policy.fastWire.canonicalToWire.priority;
     return typeof value === "string" && value.length > 0
@@ -480,14 +530,15 @@ export function decideTier(
       : { kind: "drop" };
   }
   if (fastMode === false) return { kind: "drop" };
-  const callerCanonicalFast = canonicalFastTierMarker(callerTier);
-  if (callerCanonicalFast !== undefined) {
+  if (callerUltraFastDenied) return { kind: "drop" };
+  if (callerCanonicalFast === "priority"
+    || (callerCanonicalFast === "ultrafast" && policy.ultraFastCapability === true)) {
     const value = policy.fastWire.canonicalToWire[callerCanonicalFast];
     if (typeof value === "string" && value.length > 0) return { kind: "set", value };
     // A canonical marker with NO wire mapping is not a reason to drop the tier.
     //
-    // `ultrafast` is recognised as intent but deliberately unmapped, because no wire
-    // advertises it. Dropping here would have made recognition strictly worse than not
+    // `ultrafast` on a route that publishes no spelling for it is recognised as intent and
+    // deliberately unmapped. Dropping here would have made recognition strictly worse than not
     // recognising it at all: before, `ultrafast` was a foreign tier and
     // `foreignCallerTiers: "verbatim"` forwarded it untouched. Falling through keeps that
     // behavior, so an operator-supplied tier still reaches the provider.
@@ -521,12 +572,16 @@ export function hasFastWireCapabilityConflict(source: {
   readonly fastWire?: unknown;
   readonly supportsServiceTier?: unknown;
   readonly modelSupportsServiceTier?: unknown;
+  readonly supportsUltraFast?: unknown;
+  readonly modelSupportsUltraFast?: unknown;
 }): boolean {
   if (source.fastWire !== null) return false;
-  if (source.supportsServiceTier === false) return false;
-  if (source.supportsServiceTier === true) return true;
-  return isPlainRecord(source.modelSupportsServiceTier)
-    && Object.values(source.modelSupportsServiceTier).some(value => value === true);
+  if (source.supportsServiceTier === false && source.supportsUltraFast !== true) return false;
+  if (source.supportsServiceTier === true || source.supportsUltraFast === true) return true;
+  return (isPlainRecord(source.modelSupportsServiceTier)
+    && Object.values(source.modelSupportsServiceTier).some(value => value === true))
+    || (isPlainRecord(source.modelSupportsUltraFast)
+      && Object.values(source.modelSupportsUltraFast).some(value => value === true));
 }
 
 /** Runtime registry validation; config uses the equivalent Zod shape at its boundary. */
@@ -534,11 +589,13 @@ export function fastWireDeclarationError(source: {
   readonly fastWire?: unknown;
   readonly supportsServiceTier?: unknown;
   readonly modelSupportsServiceTier?: unknown;
+  readonly supportsUltraFast?: unknown;
+  readonly modelSupportsUltraFast?: unknown;
 }): string | null {
   const value = source.fastWire;
   if (value === undefined) return null;
   if (hasFastWireCapabilityConflict(source)) {
-    return "fastWire=null conflicts with supportsServiceTier=true";
+    return "fastWire=null conflicts with a declared service-tier capability";
   }
   if (value === null) return null;
   if (!isPlainRecord(value)) return "fastWire must be an object, null, or absent";
