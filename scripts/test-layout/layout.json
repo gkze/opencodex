@@ -2363,6 +2363,7 @@
     "catalog-ultrafast-cache.test.ts": "codex-integration",
     "fastwire-ultrafast-regressions.test.ts": "routing",
     "fork-updates.test.ts": "update",
-    "fork-nightly.test.ts": "ci-workflows"
+    "fork-nightly.test.ts": "ci-workflows",
+    "dsh-browser.test.ts": "oauth"
   }
 }
