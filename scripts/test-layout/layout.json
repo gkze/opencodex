@@ -104,6 +104,7 @@
     "responses-hosted-image-display.test.ts": "responses",
     "responses-hosted-image-limits.test.ts": "responses",
     "dsh-login.test.ts": "oauth",
+    "dsh-browser.test.ts": "oauth",
     "dsh-account.test.ts": "providers",
     "dsh-account-adapter.test.ts": "adapters",
     "cursor-local-installer.test.ts": "providers/cursor",
