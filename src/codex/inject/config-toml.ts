@@ -574,6 +574,15 @@ export function normalizeServiceTier(content: string): string {
   return bom + sourceText(lines);
 }
 
+/**
+ * Codex's `[features] fast_mode` is a boolean toggle, so an Ultra Fast demand still writes `true`:
+ * the flag says "the fast lane is on", while WHICH tier is sent is the proxy's decision, not this
+ * key's. `false` and `undefined` keep their existing meanings.
+ */
+export function fastModeFeatureFlag(fastMode: boolean | "ultrafast" | undefined): boolean | undefined {
+  return fastMode === undefined ? undefined : fastMode !== false;
+}
+
 export function ensureFastModeFeature(content: string, fastMode?: boolean): string {
   // Tri-state fast mode (see OcxConfig.fastMode): true forces `fast_mode = true`,
   // false forces `fast_mode = false`, and undefined leaves the user's config
