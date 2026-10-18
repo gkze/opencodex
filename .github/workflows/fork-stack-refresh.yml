@@ -1,0 +1,62 @@
+name: Fork stack refresh
+on:
+  schedule:
+    - cron: "0 3 * * *"
+      timezone: "America/Los_Angeles"
+  workflow_dispatch:
+    inputs:
+      exercise_agent:
+        description: Exercise the bounded agent file tools before the run
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: fork-nightly-refresh
+  cancel-in-progress: false
+jobs:
+  coordinate:
+    if: github.repository == 'gkze/opencodex' && github.ref == 'refs/heads/gkze/patches'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 310
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Capture job deadline origin
+        run: echo "FORK_RUN_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-project-bun
+      - run: bun install --cwd scripts/fork/orchestrator --frozen-lockfile --ignore-scripts
+      - name: Exercise real bounded agent operation
+        if: inputs.exercise_agent
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+        run: bun scripts/fork/orchestrator/agent-probe.ts
+      - name: Configure commit identity
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Refresh captured stack
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORK_PUSH_TOKEN: ${{ secrets.FORK_PUSH_TOKEN }}
+          RUN_STATE: ${{ runner.temp }}/fork-state
+        run: bun scripts/fork/orchestrator/coordinator.ts
+      - name: Cancel unfinished children
+        if: always()
+        env:
+          RUN_STATE: ${{ runner.temp }}/fork-state
+          GH_TOKEN: ${{ github.token }}
+        run: bun scripts/fork/orchestrator/cancel.ts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: nightly-output
+          path: |
+            ${{ runner.temp }}/fork-state/stack.json
+            ${{ runner.temp }}/fork-state/input.json
+            ${{ runner.temp }}/fork-state/candidate.bundle
+          if-no-files-found: error
+          retention-days: 3
