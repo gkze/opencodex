@@ -39,7 +39,7 @@ import { useDesktopZoom } from "./use-desktop-zoom";
 import { DesktopZoomControl } from "./components/desktop-zoom-control";
 import { ThemeSwitch, type ThemeMode } from "./components/theme-switch";
 import { MainTopStrip, SidebarTopStrip } from "./components/app-titlebar";
-import { watchMacTitlebarMetrics, windowChromeHandlers } from "./lib/window-chrome";
+import { syncWindowTheme, watchMacTitlebarMetrics, windowChromeHandlers } from "./lib/window-chrome";
 
 type Theme = ThemeMode;
 
@@ -257,6 +257,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    void syncWindowTheme(theme);
     const el = document.documentElement;
     if (theme === "system") { el.removeAttribute("data-theme"); localStorage.removeItem(THEME_KEY); }
     else { el.setAttribute("data-theme", theme); localStorage.setItem(THEME_KEY, theme); }
