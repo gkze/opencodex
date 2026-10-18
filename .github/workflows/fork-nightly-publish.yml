@@ -1,0 +1,205 @@
+name: Publish fork nightly
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed fork commit to release
+        required: true
+        type: string
+  workflow_run:
+    workflows: [Fork nightly refresh, Fork stack refresh]
+    types: [completed]
+permissions:
+  contents: read
+concurrency:
+  group: fork-nightly-publish
+  cancel-in-progress: false
+jobs:
+  candidate:
+    if: >-
+      github.repository == 'gkze/opencodex' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/gkze/patches') || (
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'gkze/patches' &&
+      (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'workflow_dispatch')))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      sha: ${{ steps.accept.outputs.candidate }}
+      old: ${{ steps.accept.outputs.old }}
+      upstream: ${{ steps.accept.outputs.upstream }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      - if: github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Fork nightly refresh'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: nightly-input
+          path: ${{ runner.temp }}/fork-nightly
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: nightly-output
+          path: ${{ runner.temp }}/fork-nightly
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+      - if: github.event.workflow_run.name == 'Fork stack refresh'
+        uses: ./.github/actions/setup-project-bun
+      - if: github.event.workflow_run.name == 'Fork stack refresh'
+        run: bun install --cwd scripts/fork/orchestrator --frozen-lockfile --ignore-scripts
+      - id: accept
+        env:
+          SOURCE_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          REFRESH_NAME: ${{ github.event.workflow_run.name }}
+          FORK_PUSH_TOKEN: ${{ secrets.FORK_PUSH_TOKEN }}
+        run: |
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then
+            node scripts/fork/nightly.mjs manual
+          elif [ "$REFRESH_NAME" = "Fork stack refresh" ]; then
+            bun scripts/fork/orchestrator/accept.ts "$RUNNER_TEMP/fork-nightly"
+          else
+            node scripts/fork/nightly.mjs accept "$RUNNER_TEMP/fork-nightly"
+          fi
+      - if: github.event.workflow_run.name == 'Fork stack refresh'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-stack
+          path: |
+            ${{ runner.temp }}/fork-nightly/stack.json
+            ${{ runner.temp }}/fork-nightly/candidate.bundle
+          if-no-files-found: error
+          retention-days: 3
+  validate:
+    needs: candidate
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ needs.candidate.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project-bun
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run privacy:scan
+      - run: bun run structure:check
+      - name: Prepare fork package
+        id: package
+        env:
+          FORK_CANDIDATE: ${{ needs.candidate.outputs.sha }}
+        run: node scripts/fork/package.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fork-package
+          path: dist/fork/*
+          if-no-files-found: error
+          retention-days: 14
+  test:
+    needs: candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ needs.candidate.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project-bun
+        with:
+          role: test-runner
+      - name: Install dependencies and build the dashboard exercised by tests
+        run: |
+          bun install --frozen-lockfile
+          cd gui
+          bun install --frozen-lockfile
+          bun run build
+      - name: Run every test in bounded fresh-process batches
+        env:
+          TEST_SHARD: ${{ matrix.shard }}/4
+          BUN_TEST_FILE_SCOPE: all
+          BUN_TEST_PARALLEL: '2'
+        run: bash scripts/ci/run-bun-test-batches.sh "$TEST_SHARD"
+  assets:
+    needs: [candidate, validate]
+    uses: ./.github/workflows/fork-build-assets.yml
+    with:
+      sha: ${{ needs.candidate.outputs.sha }}
+      version: ${{ needs.validate.outputs.version }}
+  smoke:
+    needs: [candidate, validate]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: fork-package
+          path: dist/fork
+      - name: Install and run exact package
+        run: node scripts/fork/smoke.mjs dist/fork
+  publish:
+    needs: [candidate, validate, test, smoke, assets]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          registry-url: https://npm.pkg.github.com
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: fork-package
+          path: dist/fork
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: fork-assets-*
+          path: dist/platform
+          merge-multiple: false
+      - if: github.event.workflow_run.name == 'Fork stack refresh'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: verified-stack
+          path: ${{ runner.temp }}/verified-stack
+      - name: Publish checked package and promote fork
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          FORK_PUSH_TOKEN: ${{ secrets.FORK_PUSH_TOKEN }}
+          FORK_OLD: ${{ needs.candidate.outputs.old }}
+          FORK_CANDIDATE: ${{ needs.candidate.outputs.sha }}
+          FORK_UPSTREAM: ${{ needs.candidate.outputs.upstream }}
+          FORK_STACK_MANIFEST: ${{ github.event.workflow_run.name == 'Fork stack refresh' && format('{0}/verified-stack/stack.json', runner.temp) || '' }}
+        run: node scripts/fork/publish.mjs dist/fork dist/platform

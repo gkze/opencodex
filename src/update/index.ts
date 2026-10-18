@@ -1,3 +1,4 @@
+import { isForkVersion, forkUpdateMessage } from "./fork-policy.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import { createSupervisionLatch, inspectDesktopSupervision } from "../service/desktop-supervision.mjs";
 import { manualUpdateFailureGuidance } from "./update-failure-guidance.mjs";
@@ -297,6 +298,7 @@ export function latestVersion(
   owner?: PnpmGlobalOwner,
   spawn: typeof spawnSync = spawnSync,
 ): string | null {
+  if (isForkVersion(currentVersion())) return null;
   const resolvedOwner = installer === "pnpm" ? selectedPnpmOwner(owner) : undefined;
   if (installer === "pnpm" && !resolvedOwner) return null;
   const manager = registrySpawnTarget(installer, ["view", `${PKG}@${tag}`, "version"], resolvedOwner);
@@ -415,6 +417,7 @@ async function resolvedRuntimeOwnership(): Promise<RuntimeOwnershipObservation> 
  * Bun binary.
  */
 export async function runUpdate(): Promise<void> {
+  if (isForkVersion(currentVersion())) { console.log(forkUpdateMessage); return; }
   const ownership = detectInstallOwnership();
   const installer = ownership.installer;
   const current = currentVersion();
