@@ -48,6 +48,15 @@
   ],
   "docs": [
     {
+      "path": "ops/source-archives.md",
+      "tier": 6,
+      "title": "Source Archive Identity",
+      "scope": "Compatibility manifest hashing for source archives.",
+      "documents": [
+        "scripts/generate-compatibility-version.ts"
+      ]
+    },
+    {
       "path": "providers/generic-account-pool.md",
       "tier": 4,
       "title": "Generic OAuth Account Pool",
