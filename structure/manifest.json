@@ -1013,6 +1013,15 @@
       "documents": [
         "package.json"
       ]
+    },
+    {
+      "path": "ops/fork-release.md",
+      "tier": 6,
+      "title": "Personal Fork Release",
+      "scope": "Fork candidate verification, publication, update isolation and retention.",
+      "documents": [
+        "scripts/fork/"
+      ]
     }
   ],
   "contracts": {

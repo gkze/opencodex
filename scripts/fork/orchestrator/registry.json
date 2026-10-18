@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "patches": [
+    {
+      "id": "source-archive-builds",
+      "branch": "codex/patch/source-archive-builds",
+      "requires": [],
+      "sensitive": false,
+      "tests": [
+        "tests/ci-workflows/compatibility-version.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "git-install-preparation",
+      "branch": "codex/patch/git-install-preparation",
+      "requires": [
+        "source-archive-builds"
+      ],
+      "sensitive": true,
+      "tests": [],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "suspended-account-failover",
+      "branch": "codex/patch/suspended-account-failover",
+      "requires": [],
+      "sensitive": false,
+      "tests": [
+        "tests/routing/router-combo-failover-classification.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "fx-client-export",
+      "branch": "codex/patch/fx-client-export",
+      "requires": [],
+      "sensitive": false,
+      "tests": [
+        "gui/tests/client-config-panel.test.tsx",
+        "gui/tests/fr-localization.test.ts",
+        "gui/tests/integrations-api.test.ts",
+        "gui/tests/locale-parity.test.ts",
+        "tests/clients/fx-client.test.ts",
+        "tests/clients/integrations-state.test.ts",
+        "tests/config/client-config-export-new-clients.test.ts",
+        "tests/config/client-config-export.test.ts",
+        "tests/gui/integrations-invariants.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "provider-alias-labels",
+      "branch": "codex/patch/provider-alias-labels",
+      "requires": [],
+      "sensitive": false,
+      "tests": [
+        "tests/providers/provider-model-aliases.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "cerebras-qwen-template",
+      "branch": "codex/patch/cerebras-qwen-template",
+      "requires": [],
+      "sensitive": false,
+      "tests": [
+        "tests/adapters/openai/openai-chat-qwen38-leading-system.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "audio-readiness-budget",
+      "branch": "codex/patch/audio-readiness-budget",
+      "requires": [],
+      "sensitive": false,
+      "tests": [
+        "tests/cli/cli-access-audio-live.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "launchd-command-consistency",
+      "branch": "codex/launchd-baked-command",
+      "requires": [],
+      "sensitive": true,
+      "tests": [
+        "tests/service/launchd-repair.test.ts",
+        "tests/service/service.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "provider-tier-contracts",
+      "branch": "codex/patch/provider-tier-contracts",
+      "requires": [],
+      "sensitive": false,
+      "tests": [
+        "tests/claude-integration/claude-management-api.test.ts",
+        "tests/clients/link-ultrafast-settings.test.ts",
+        "tests/codex-integration/catalog-ultrafast-cache.test.ts",
+        "tests/codex-integration/codex-catalog.test.ts",
+        "tests/codex-integration/configured-ultrafast-picker.test.ts",
+        "tests/codex-integration/ultrafast-tier-honesty.test.ts",
+        "tests/config/config-load-degrade.test.ts",
+        "tests/routing/fastwire-policy.test.ts",
+        "tests/routing/fastwire-ultrafast-regressions.test.ts",
+        "tests/routing/fastwire-ultrafast-tier.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "desktop-native-appearance",
+      "branch": "codex/patch/desktop-native-appearance",
+      "requires": [],
+      "sensitive": false,
+      "tests": [
+        "app/Sources/WindowControlsTests/main.swift",
+        "gui/tests/app-titlebar.test.tsx"
+      ],
+      "runner": "macos-15"
+    },
+    {
+      "id": "fork-release-channel",
+      "branch": "codex/patch/fork-release-channel",
+      "requires": [],
+      "sensitive": true,
+      "tests": [
+        "tests/ci-workflows/fork-nightly.test.ts",
+        "tests/update/fork-updates.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "deepseek-browser-auth",
+      "branch": "codex/patch/deepseek-browser-auth",
+      "requires": [],
+      "sensitive": true,
+      "tests": [
+        "tests/adapters/dsh-account-adapter.test.ts",
+        "tests/oauth/dsh-browser.test.ts",
+        "tests/oauth/dsh-login.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
+    },
+    {
+      "id": "lifecycle-test-isolation",
+      "branch": "codex/patch/lifecycle-test-isolation",
+      "requires": [],
+      "sensitive": false,
+      "runner": "ubuntu-24.04",
+      "tests": [
+        "tests/claude-integration/claude-desktop-first-party.test.ts",
+        "tests/clients/client-lifecycle-lock.test.ts",
+        "tests/claude-integration/claude-desktop-remote-hub.test.ts",
+        "tests/ci-workflows/test-runner.test.ts"
+      ]
+    }
+  ]
+}
