@@ -22,6 +22,7 @@ export const FILE_INTEGRATION_CLIENTS = [
   "kilo",
   "droid",
   "gentle-shell",
+  "fx",
 ] as const;
 
 export type FileIntegrationClientId = (typeof FILE_INTEGRATION_CLIENTS)[number];
