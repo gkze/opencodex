@@ -248,6 +248,15 @@ export interface ProviderRegistryEntry {
    * (and the canonical openai seed comparison keeps its exact key set).
    */
   supportsServiceTier?: boolean;
+  /**
+   * Registry default for Ultra Fast capability; see `OcxProviderConfig.supportsUltraFast`.
+   * Registry-only and backfilled like `supportsServiceTier`: never seeded into saved config, and a
+   * declared capability still needs a `fastWire.canonicalToWire.ultrafast` spelling before the tier
+   * can actually be sent.
+   */
+  supportsUltraFast?: boolean;
+  /** Registry default for exact model Ultra Fast capability; explicit config keys win. */
+  modelSupportsUltraFast?: Record<string, boolean>;
   /** Registry default for OpenAI extended hosted web_search field support. */
   supportsOpenAiWebSearchToolFields?: boolean;
   /** Registry default for native Responses custom-tool support. */
@@ -262,6 +271,8 @@ export interface ProviderRegistryEntry {
   keyAuthServiceTier?: {
     supportsServiceTier?: boolean;
     modelSupportsServiceTier?: Record<string, boolean>;
+    supportsUltraFast?: boolean;
+    modelSupportsUltraFast?: Record<string, boolean>;
     chatServiceTier?: boolean;
   };
   /** Provider-specific copy for the Codex catalog's Fast tier. */

@@ -280,6 +280,8 @@ Providers can expose a built-in shorthand, such as `agy` for `google-antigravity
 | `responseTierAuthoritative?` | `boolean` | Whether the response tier can confirm or deny Fast. Set `false` explicitly for routes with non-authoritative response metadata; omission preserves existing behavior. This does not enable Fast or change outbound parameters. See [Response service-tier authority](#response-service-tier-authority). |
 | `fastEnabled?` | `boolean` | Operator switch for the provider's Fast lane. `false` turns Fast off (no Fast toggle, no `--fast` row, no fast wire field) and overrides `supportsServiceTier`. `true` enables a lane the registry marks opt-in. Absent keeps the registry default: off for `anthropic` and `anthropic-apikey`, whose fast mode spends usage credits at 2x price, and unchanged for every other provider. The dashboard Models page shows an Off/On row for opt-in providers. |
 | `modelSupportsServiceTier?` | `Record<string, boolean>` | Exact upstream model capability overrides. Exact `true` enables canonical Fast for that model; exact `false` narrows provider defaults. An explicit provider-level `supportsServiceTier: false` remains fail-closed and cannot be reopened. Exact `true` does not authorize foreign caller-tier forwarding on Chat. Undeclared models fall back to provider-wide behavior. Management `PATCH /api/providers` merges entries and accepts `null` to clear one. |
+| `supportsUltraFast?` | `boolean` | Tri-state Ultra Fast capability, one tier above canonical Fast. `true` lets `fastMode: "ultrafast"` set this provider's `ultrafast` wire spelling and lets its models publish the tier in the catalog; `false` denies the tier outright. Capability alone is not enough: the route also needs a `fastWire.canonicalToWire.ultrafast` spelling, because a tier with no wire value has nothing to send. Absent leaves the route unclassified, so a caller-supplied `ultrafast` still passes only under the final wire's forwarding permission. |
+| `modelSupportsUltraFast?` | `Record<string, boolean>` | Exact upstream model overrides for Ultra Fast, resolved exactly like `modelSupportsServiceTier`: exact `true` enables the tier for that model, exact `false` narrows a provider-wide `true`. Prefer this over `supportsUltraFast` when only some rows advertise the tier — a provider-wide `true` offers Ultra Fast on every model, including rows upstream serves at Fast alone. |
 | `chatServiceTier?` | `boolean` | Provider-wide Chat-wire opt-in for forwarding caller `service_tier` values. On a classified route it governs foreign values such as `flex`, not proxy-owned canonical Fast after capability validation; on an unclassified route it governs every caller value because no Fast capability has been validated. Exact model capability does not authorize foreign forwarding. Responses routes retain their capability-based caller forwarding behavior. |
 | `promptCacheKey?` | `boolean` | Provider-wide `openai-chat` opt-in for forwarding a `prompt_cache_key`. The adapter forwards the key it is given and never invents one, but the key is not always the caller's: Claude Messages translation derives one from `metadata.user_id`, or from a model/system/tools cohort when no metadata is sent. Default off. Enable only when the upstream documents support, because strict gateways may reject the unknown field with HTTP 400. |
 | `preserveResponsesReasoningContent?` | `boolean` | Default off for custom providers. In **Providers → Settings**, enable **Replay plaintext reasoning** for a custom Responses endpoint only if it accepts this history. This sends prior plaintext reasoning to that endpoint and may increase token use. Keep plaintext reasoning content on replayed Responses reasoning items instead of blanking it, including custom native v1 compact input (blanking is the ChatGPT backend's rule). Enable for upstreams whose contract accepts reasoning replay, such as DeepSeek or a self-hosted Kimi on vLLM. Proxy-minted `ocxr1` envelopes are always stripped. A hand-configured `openai-responses` provider without it logs one warning per host the first time plaintext reasoning is dropped. `preserveReasoningContentModels` does not affect this wire. |
@@ -772,6 +774,11 @@ contract; existing configurations see these migration deltas:
 
 Explicit capability `false` and Responses caller-tier forwarding retain their existing contracts.
 
+### Ultra Fast (`canonicalToWire.ultrafast`)
+
+See [Ultra Fast configuration](/reference/configuration/ultrafast/) for capability declarations,
+wire mappings, tier demands, and catalog behavior.
+
 ### Anthropic Fast (`anthropic-speed`)
 
 The built-in `anthropic` (stored Claude OAuth) and `anthropic-apikey` entries advertise Fast only
@@ -833,6 +840,10 @@ and for `claude-opus-5` its regular family is quarantined upstream.
 Requests are promoted either way: with `fastMode: true`, picking the umbrella id still
 resolves to the fast variant, so a client whose saved config predates the switch does not
 need to rediscover. Every legacy variant id keeps routing unchanged.
+
+`fastMode: "ultrafast"` is a tier demand rather than a Fast-lane switch, so the rewrite above does
+not follow it: Cursor keeps its umbrella ids, and because the cursor variant wire publishes no
+`ultrafast` spelling the demand is dropped and recorded as a downgrade.
 
 ### xAI Priority Processing
 
