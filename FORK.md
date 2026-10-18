@@ -90,3 +90,20 @@ recorded backup SHA and account for newer fork work.
 ## Nightly release retention
 
 After verifying all release assets and reading back the published package’s `nightly` tag, publication records and reads back a completion marker in the release notes, then retains the five newest marked public fork nightly prereleases. Unmarked historical or interrupted publications are preserved rather than assumed successful. Older matching GitHub release entries and their attached assets are deleted. Stable releases, drafts, unrelated prereleases, Git release tags, backup tags and package versions are preserved. Cleanup never runs merely because a rebase occurred or a build started. An older publication retry cannot prune a newer nightly. If cleanup fails, the verified publication remains available; retrying cleanup resumes from the remaining inventory.
+
+## DeepSeek account authentication patch
+
+The `fix(auth): support DeepSeek browser account authorization` stack entry adds
+PKCE browser sign-in to `dsh-account`, preserving verified Harness import, strict
+account identity, provider separation and local-only account removal. Its source
+contract and implementation-source rationale live in
+[`structure/providers/dsh-account.md`](structure/providers/dsh-account.md).
+The entry is a normal linear commit above the maintained fork tip; the nightly
+refresh inventories it from Git history, so there is no separate patch registry
+to synchronize. Keep it until upstream supplies equivalent supported behavior.
+
+Regression owners are `tests/oauth/dsh-browser.test.ts`,
+`tests/oauth/dsh-login.test.ts`, `tests/providers/dsh-account.test.ts` and
+`tests/adapters/dsh-account-adapter.test.ts`. The browser flow uses a temporary
+loopback listener; remote browser use requires forwarding that port. Adding this
+entry does not install or restart a proxy or publish a release.
