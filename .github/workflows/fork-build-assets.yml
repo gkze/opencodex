@@ -1,0 +1,115 @@
+name: Build fork release assets
+on:
+  workflow_call:
+    inputs:
+      sha:
+        description: Exact accepted fork source commit
+        required: true
+        type: string
+      version:
+        description: Fork nightly version from the parent package job
+        required: true
+        type: string
+# Build-only: no release API, write token, signing credential, or secret inheritance.
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind: standalone
+            target: bun-linux-x64
+            os: ubuntu-24.04
+            dependency_os: linux
+            dependency_cpu: x64
+          - kind: standalone
+            target: bun-linux-arm64
+            os: ubuntu-24.04-arm
+            dependency_os: linux
+            dependency_cpu: arm64
+          - kind: standalone
+            target: bun-darwin-arm64
+            os: macos-15
+            dependency_os: darwin
+            dependency_cpu: arm64
+          - kind: standalone
+            target: bun-darwin-x64
+            os: macos-15-intel
+            dependency_os: darwin
+            dependency_cpu: x64
+          - kind: standalone
+            target: bun-windows-x64
+            os: windows-2025
+            dependency_os: win32
+            dependency_cpu: x64
+          - kind: desktop
+            target: universal-apple-darwin
+            os: macos-15
+            dependency_os: darwin
+            dependency_cpu: '*'
+          - kind: desktop
+            target: x86_64-pc-windows-msvc
+            os: windows-2025
+            dependency_os: win32
+            dependency_cpu: x64
+          - kind: desktop
+            target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+            dependency_os: linux
+            dependency_cpu: x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      FORK_SOURCE: ${{ inputs.sha }}
+      FORK_VERSION: ${{ inputs.version }}
+      FORK_KIND: ${{ matrix.kind }}
+      FORK_TARGET: ${{ matrix.target }}
+      DEPENDENCY_OS: ${{ matrix.dependency_os }}
+      DEPENDENCY_CPU: ${{ matrix.dependency_cpu }}
+      # No signing credentials are requested or inherited. macOS gets an explicit
+      # ad-hoc identity in build-local config; all assets require manual install.
+      CI: 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+      - name: Validate immutable source and artifact contract
+        run: node scripts/fork/build-assets.mjs validate "$FORK_KIND" "$FORK_TARGET" "$FORK_VERSION" "$FORK_SOURCE"
+      - uses: ./.github/actions/setup-project-bun
+      - name: Install pinned dependencies before build-local stamping
+        run: bun install --frozen-lockfile --os="$DEPENDENCY_OS" --cpu="$DEPENDENCY_CPU"
+      - name: Check fork asset contract
+        run: node --test scripts/fork/build-assets.test.js
+      - name: Setup Rust for desktop
+        if: matrix.kind == 'desktop'
+        uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+        with:
+          toolchain: stable
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - name: Install Linux desktop and packaged GUI test dependencies
+        if: matrix.kind == 'desktop' && runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev xvfb xauth openbox wmctrl xdotool dbus-x11
+      - name: Verify native window controls
+        if: matrix.kind == 'desktop' && runner.os == 'macOS'
+        run: swift run --package-path app WindowControlsTests
+      - name: Install desktop CLI
+        if: matrix.kind == 'desktop'
+        working-directory: desktop
+        run: bun install --frozen-lockfile
+      - name: Build and smoke exact manual-install assets
+        run: bun scripts/fork/build-assets.mjs build "$FORK_KIND" "$FORK_TARGET" "$FORK_VERSION" "$FORK_SOURCE"
+      - name: Upload complete verified matrix artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fork-assets-${{ matrix.kind }}-${{ matrix.target }}
+          path: dist/fork-assets/fork-assets-${{ matrix.kind }}-${{ matrix.target }}/*
+          if-no-files-found: error
+          retention-days: 14
