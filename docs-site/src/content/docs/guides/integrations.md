@@ -1,10 +1,10 @@
 ---
 title: Integrations
-description: Connect opencodex to OpenCode, Pi, Gentle Shell, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code and Factory Droid from the dashboard — one switch per client, with a backup taken before every write.
+description: Connect opencodex to OpenCode, Pi, Gentle Shell, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code, Factory Droid and fx from the dashboard — one switch per client, with a backup taken before every write.
 ---
 
 The **Connect** page writes opencodex's provider block into a client's own config
-file, and removes it again. Twenty clients work this way, each with a switch:
+file, and removes it again. Twenty-one clients work this way, each with a switch:
 
 | Client | Config file | Format | When the change takes effect | Credential |
 |---|---|---|---|---|
@@ -28,6 +28,7 @@ file, and removes it again. Twenty clients work this way, each with a switch:
 | Kilo | first existing `kilo.jsonc`, `kilo.json`, `opencode.jsonc`, `opencode.json`, or `config.json` under `~/.config/kilo` | JSONC | new sessions | `OPENCODEX_KILO_API_KEY` |
 | Command Code | `~/.commandcode/providers.json` (on Windows with the default home: use `HOME ?? USERPROFILE` only if nonblank and Windows-absolute, otherwise `homedir()`; a separately supplied home is preserved; append `.commandcode\providers.json`) | JSON | next launch of Command Code | none — keyless loopback (`apiKey: false`) |
 | Factory Droid | `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` on Windows) | JSON | immediately via file watching | none — keyless loopback |
+| fx | `~/.fx/settings.json` | JSON | after restarting fx | none — loopback only |
 
 ## Gentle Shell
 
@@ -986,3 +987,41 @@ OpenCodex refuses those ambiguous settings. It also refuses an
 unsafe target or a row edited since apply. The integration is loopback only and
 never copies provider credentials. Factory documents the [BYOK schema](https://docs.factory.ai/model-independence/byok)
 and [personal settings path](https://docs.factory.ai/droid-cli/settings).
+
+## fx
+
+This integration targets fx's custom model connections, which fx defines only at the **top level**
+of `~/.fx/settings.json`. A workspace `.fx.json` is limited to the project fields and cannot define
+or select a connection, so that is where OpenCodex writes `providers.opencodex` — the user's theme,
+workspaces, permission rules and other connections are left alone.
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+The generated connection uses `openai-chat-completions` with `base_url` pointing at the proxy's
+`/v1` root — fx appends `/chat/completions` itself — and `auth: { "type": "none" }`. fx's
+`model_metadata` is also its model list: `fx models` prints exactly the routed models OpenCodex
+wrote, with the context window where the catalog knows one and image input only where the model
+declares it.
+
+**fx reads this file at startup, so restart fx after applying or syncing.** Enabling the integration
+does not change the selected provider: run `fx provider opencodex` to switch to OpenCodex, and
+`fx status --json` to confirm. Your other connections and their saved models stay as they were.
+
+If the profile already carries a `providers.opencodex` entry — written by hand, or left by an
+earlier setup — there is no ownership record to compare it against, so the switch reports a conflict
+and refuses to apply. **Replace** on the row, or `ocx integration client enable --client fx
+--overwrite-conflict`, rewrites that single entry with the generated connection and leaves the rest
+of the profile — theme, other connections, permission rules — untouched, after taking the snapshot
+that Undo restores.
+
+fx limits a settings file to 64 KiB and reports invalid settings at startup, so a very large routed
+model selection can fill the budget that the rest of your profile also shares. Disable unused
+providers or narrow the model selection if fx reports the file as invalid.
+
+fx sends no custom authentication header, and `/v1/chat/completions` rejects a bearer credential
+while requiring the dedicated `x-opencodex-api-key` header, so this integration is deliberately
+loopback-only. A non-loopback bind refuses instead of writing a connection that cannot authenticate.

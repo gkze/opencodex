@@ -402,3 +402,14 @@ committing it.
   (1.75:1, inside the 2.5 lockup limit), pure geometry (`rect`/`path`), drawn in `currentColor`, so it
   is **masked**: as an image `currentColor` resolves to black and vanishes on the dark tile. The site
   favicon `https://opengateway.ai/icon.svg` was rejected: its "OG" is a `<text>` glyph.
+
+## Export-client mark: fx (2026-09-30)
+
+- `fx.svg` — fetched 2026-09-30 from `https://fx.sh/icon.svg`, fx's own square app
+  icon, committed unmodified (1427 bytes). fx is `vercel-labs/fx`, and the site's
+  brand page (`https://fx.sh/llms.txt`, "Project and policies") publishes this icon
+  and the wordmark as the project's own assets. Painted as an image and never
+  masked: the artwork is an app icon — a `fill="black"` rounded plate carrying a
+  `fill="white"` glyph — so masking would discard the plate and leave the glyph
+  repainted in the theme's text color, and the two inks are exactly what keeps it
+  legible on both surfaces.
