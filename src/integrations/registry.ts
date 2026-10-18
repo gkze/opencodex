@@ -23,6 +23,8 @@ import {
   clineConfigPath,
   clineSettingsDir,
   droidConfigPath,
+  fxConfigPath,
+  fxSettingsDir,
   droidHomeDir,
   EXPORT_CLIENTS,
   asideAccountDir,
@@ -512,6 +514,18 @@ export const INTEGRATION_CLIENTS: Record<IntegrationClientId, IntegrationClientS
     detectDir: (env, home, io) => gentleShellPaths(env, home, io).detectDir,
     resolvePaths: (env, home, _context, io) => gentleShellPaths(env, home, io),
     unresolvedPathHint: (_env, home = homedir()) => join(home, ".gentle-shell", "agent", "models.json"),
+  },
+  fx: {
+    id: "fx",
+    configPath: (env = process.env, home = homedir()) => fxConfigPath(env, home),
+    // The profile directory itself: fx creates `~/.fx` on first run, and the
+    // sessions, recordings and themes it keeps there are the install signal.
+    detectDir: (env = process.env, home = homedir()) => fxSettingsDir(env, home),
+    /*
+     * No `sourcePreservingYaml` (JSON), no `writerLock` (fx holds no lock of its
+     * own and a single writer is the ordinary case) and no `currentStore`: fx
+     * reads custom connections straight from `settings.json` at startup.
+     */
   },
 };
 

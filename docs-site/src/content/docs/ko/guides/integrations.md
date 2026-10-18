@@ -1,9 +1,9 @@
 ---
 title: 연동
-description: 대시보드에서 OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code와 Factory Droid를 opencodex에 연결합니다. 클라이언트마다 스위치가 하나씩 있으며 기록 전마다 백업합니다.
+description: 대시보드에서 OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code, Factory Droid와 fx를 opencodex에 연결합니다. 클라이언트마다 스위치가 하나씩 있으며 기록 전마다 백업합니다.
 ---
 
-**연결** 페이지는 클라이언트의 설정 파일에 opencodex 프로바이더 블록을 쓰고 다시 제거합니다. 다음 18개 클라이언트는 각각 스위치로 관리합니다.
+**연결** 페이지는 클라이언트의 설정 파일에 opencodex 프로바이더 블록을 쓰고 다시 제거합니다. 다음 19개 클라이언트는 각각 스위치로 관리합니다.
 
 | 클라이언트 | 설정 파일 | 형식 | 변경 적용 시점 | 자격 증명 |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@ description: 대시보드에서 OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, 
 | Kilo | `~/.config/kilo`에서 먼저 존재하는 `kilo.jsonc`, `kilo.json`, `opencode.jsonc`, `opencode.json`, `config.json` (`XDG_CONFIG_HOME`로 디렉터리 변경 가능, 모두 없으면 `kilo.jsonc` 생성) | JSONC | 새 세션에서 | `OPENCODEX_KILO_API_KEY` |
 | Command Code | `~/.commandcode/providers.json` (Windows 기본 홈 사용 시: `HOME ?? USERPROFILE` 값이 비어 있거나 공백만으로 구성되지 않은 Windows 절대 경로일 때만 사용하고, 그 외에는 `homedir()` 사용. 별도로 전달된 홈은 유지. 해당 홈 아래의 `.commandcode\providers.json`) | JSON | 다음 Command Code 실행 시 | 없음 — 키 없는 루프백 (`apiKey: false`) |
 | Factory Droid | `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` Windows에서) | JSON | 파일 변경 시 즉시 | 키 없는 루프백 |
+| fx | `~/.fx/settings.json` | JSON | fx를 다시 시작한 뒤 | 없음 — 루프백 전용 |
 
 생성된 카탈로그에는 각 프로바이더 선택에서 활성화된 모델만 들어갑니다. Pi와 Aside를 포함한 다운로드와 관리형 연동 모두에 적용됩니다. 관리 모델 목록에는 전체 모델이 계속 표시되어 추가 모델을 활성화할 수 있습니다.
 
@@ -304,3 +305,39 @@ GitHub Copilot 데스크톱 앱에서 opencodex를 OpenAI 호환 모델 프로�
 행과 기본값이 함께 제거되며, 되돌리기는 저장된 행과 기본값을 함께 복원합니다.
 
 Factory Droid는 `~/.factory/settings.json`(Windows에서는 `%USERPROFILE%\.factory\settings.json`)을 사용합니다. `ocx integration client enable --client droid`로 명시적으로 활성화한 다음 `/model`에서 사용자 지정 모델을 선택하세요. 관리되는 항목에는 키가 없으며 루프백에서만 동작합니다. 비활성화하면 관리되는 항목이 제거되고, Undo는 저장된 원본 바이트를 복원합니다. 기존 `config.json`에 OpenCodex 항목이 있거나 `settings.local.json`이 `customModels`를 덮어쓰면 활성화 전에 충돌을 해결하세요. [Factory BYOK 문서](https://docs.factory.ai/model-independence/byok)를 참고하세요.
+
+## fx
+
+이 연동은 fx가 **`~/.fx/settings.json`의 최상위 수준**에서만 정의할 수 있는 사용자 지정 모델 연결을
+대상으로 합니다. 작업 공간의 `.fx.json`은 프로젝트 필드만 다루며 연결을 정의하거나 선택할 수 없으므로,
+opencodex는 `providers.opencodex`를 이 파일에 기록합니다. 테마, 작업 공간, 권한 규칙, 다른 연결은 그대로
+남습니다.
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+생성된 연결은 `openai-chat-completions`를 사용하고 `base_url`은 프록시의 `/v1` 루트를 가리킵니다
+(fx가 `/chat/completions`를 붙입니다). 인증은 `auth: { "type": "none" }`입니다. fx의 `model_metadata`는
+곧 모델 목록이며, `fx models`는 opencodex가 기록한 라우팅 모델만 표시합니다. 컨텍스트 창은 카탈로그가
+파악한 경우에만, 이미지 입력은 모델이 선언한 경우에만 붙습니다.
+
+**fx는 시작할 때 이 파일을 읽으므로 적용하거나 동기화한 뒤 fx를 다시 시작하세요.** 활성화해도 선택된
+프로바이더는 바뀌지 않으므로 `fx provider opencodex`로 전환하고 `fx status --json`으로 확인합니다. 다른
+연결과 저장된 모델은 그대로 유지됩니다.
+
+프로필에 `providers.opencodex` 항목이 이미 있으면(직접 작성했거나 이전 설정이 남긴 경우) 비교할
+소유 기록이 없으므로 스위치는 충돌로 보고하고 적용을 거부합니다. 행의 **Replace** 또는
+`ocx integration client enable --client fx --overwrite-conflict`는 그 항목 하나만 생성된 연결로 다시 쓰고
+프로필의 나머지(테마, 다른 연결, 권한 규칙)는 그대로 둡니다. 실행 전 스냅샷이 남아 Restore로 되돌릴 수
+있습니다.
+
+fx는 설정 파일을 64 KiB로 제한하고 시작할 때 잘못된 설정을 보고합니다. 라우팅 모델 선택이 매우 크면
+프로필 전체가 공유하는 이 한도를 압박합니다. fx가 파일을 잘못되었다고 보고하면 사용하지 않는
+프로바이더를 끄거나 모델 선택을 줄이세요.
+
+fx는 사용자 지정 인증 헤더를 보내지 않고 `/v1/chat/completions`는 베어러 자격 증명을 거부하며 전용
+`x-opencodex-api-key` 헤더를 요구하므로 이 연동은 의도적으로 루프백 전용입니다. 루프백이 아닌 바인드는
+인증할 수 없는 연결을 쓰는 대신 거부합니다.
