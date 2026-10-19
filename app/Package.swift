@@ -7,12 +7,14 @@ let package = Package(
     products: [
         .library(name: "NativeTray", type: .static, targets: ["NativeTray"]),
         .executable(name: "NativeTrayTests", targets: ["NativeTrayTests"]),
+        .executable(name: "WindowControlsTests", targets: ["WindowControlsTests"]),
         .executable(name: "OpenCodexWidget", targets: ["OpenCodexWidget"]),
         .executable(name: "MenuBarCoreTests", targets: ["MenuBarCoreTests"]),
     ],
     targets: [
         .target(name: "NativeTray", path: "Sources/NativeTray"),
         .executableTarget(name: "NativeTrayTests", dependencies: ["NativeTray"], path: "Sources/NativeTrayTests"),
+        .executableTarget(name: "WindowControlsTests", dependencies: ["NativeTray"], path: "Sources/WindowControlsTests"),
         .target(name: "MenuBarCore", path: "Sources/MenuBarCore"),
         .executableTarget(
             name: "OpenCodexWidget",
