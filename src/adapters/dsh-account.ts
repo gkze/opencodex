@@ -30,7 +30,7 @@ export function createDshAccountAdapter(
 
     formatErrorBody(status: number, headers: Headers, payloadText: string): string {
       if (status === 401) {
-        return "DeepSeek Harness account authentication failed (401 / ACCOUNT_TOKEN_INVALID). Please sign in to DeepSeek Harness Desktop and re-import.";
+        return "DeepSeek Harness account authentication failed (401 / ACCOUNT_TOKEN_INVALID). Please sign in again with ocx login dsh-account.";
       }
       return baseAdapter.formatErrorBody?.(status, headers, payloadText) ?? payloadText;
     },
@@ -38,7 +38,7 @@ export function createDshAccountAdapter(
     async buildRequest(parsed: OcxParsedRequest, incoming: IncomingMeta) {
       const token = provider.apiKey?.trim();
       if (!token) {
-        throw new Error("DeepSeek Harness account token missing — import your account in Providers > DeepSeek Account (DSH)");
+        throw new Error("DeepSeek Harness account token missing — sign in through Providers > DeepSeek Account (DSH)");
       }
 
       // Fail-closed if custom provider configuration attempts to set any reserved header
