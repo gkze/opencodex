@@ -48,6 +48,15 @@
   ],
   "docs": [
     {
+      "path": "ops/source-archives.md",
+      "tier": 6,
+      "title": "Source Archive Identity",
+      "scope": "Compatibility manifest hashing for source archives.",
+      "documents": [
+        "scripts/generate-compatibility-version.ts"
+      ]
+    },
+    {
       "path": "providers/generic-account-pool.md",
       "tier": 4,
       "title": "Generic OAuth Account Pool",
@@ -1048,12 +1057,12 @@
       ]
     },
     {
-      "path": "ops/source-archives.md",
+      "path": "ops/git-installs.md",
       "tier": 6,
-      "title": "Source Archive Identity",
-      "scope": "Compatibility manifest hashing for source archives.",
+      "title": "Git Installation Preparation",
+      "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
       "documents": [
-        "scripts/generate-compatibility-version.ts"
+        "package.json"
       ]
     }
   ],
