@@ -388,7 +388,7 @@ describe("DSH Account Refresh Contract (explicit import only)", () => {
     // Even if credentials file exists with a newer token, background refresh MUST NOT adopt it
     const { refreshDshAccountToken } = await import("../../src/oauth/dsh");
     await expect(refreshDshAccountToken("old-token")).rejects.toThrow(
-      "DeepSeek Harness account session expired or revoked. Please sign in to DeepSeek Harness Desktop and re-import.",
+      "DeepSeek Harness account session expired or revoked. Please sign in again with ocx login dsh-account.",
     );
 
     // Verify the credentials file was NOT modified
