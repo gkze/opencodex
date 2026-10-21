@@ -3524,20 +3524,19 @@ describe("launchctl load verification", () => {
   });
 
 
-  // #3464. start and status compare the live job against the command the plist SHOULD carry.
-  // A launcher install carries the launcher line, so the comparison must follow the recorded
-  // install state or every healthy launcher-backed service reads as "an OLDER plist".
-  describe("expectedLaunchdCommand follows the recorded launcher", () => {
+  // Start and status must expect the same trusted package pair that buildPlist writes.
+  // A pre-pinning launcher record cannot change that command.
+  describe("expectedLaunchdCommand follows the trusted package pair", () => {
     const entry = { bun: "/opt/opencodex/versioned/bun", cli: "/opt/opencodex/versioned/src/cli/index.ts" };
     const base = { version: 2 as const, codexHome: "/h/.codex", opencodexHome: "/h/.opencodex", backend: "scheduler" as const };
 
-    test("a recorded launcher yields the launcher exec line at the installed port", () => {
+    test("a recorded launcher cannot override the package pair at the installed port", () => {
       const command = expectedLaunchdCommand(14001, {
         state: { ...base, bunPath: entry.bun, cliPath: entry.cli, launcherPath: "/home/u/.local/share/mise/shims/ocx" },
         entry,
       });
-      expect(command).toContain("exec '/home/u/.local/share/mise/shims/ocx' start --port 14001");
-      expect(command).not.toContain(entry.cli);
+      expect(command).toContain(`exec '${entry.bun}' '${entry.cli}' start --port 14001`);
+      expect(command).not.toContain("shims/ocx");
     });
 
     test("v1 / legacy state without a launcher yields the Bun + CLI pair", () => {
