@@ -290,7 +290,7 @@ ocx login zed          # Zed native-app callback login (experimental)
 ocx login command-code # Command Code browser OAuth (or import ~/.commandcode/auth.json)
 ocx login orcarouter-oauth # OrcaRouter browser consent + PKCE
 ocx login devin       # Cognition/Devin: import Devin CLI credential, else Auth0 browser sign-in
-ocx login dsh-account # DeepSeek Harness Desktop (import ~/.dsh/.credentials.yaml grant)
+ocx login dsh-account # DeepSeek browser sign-in or validated Harness import
 ocx login github-copilot  # GitHub device flow → Copilot token (Copilot account)
 ocx login codex        # Codex account pool (aliases: chatgpt, openai; needs a running proxy)
 ocx logout <provider>
@@ -309,7 +309,7 @@ ocx logout <provider>
 | `zed` | `zed` | `https://cloud.zed.dev` | Experimental Zed Hosted AI bridge. Uses Zed's native-app RSA callback, exchanges the account token for a short-lived hosted-inference token, and discovers the account's live roster. |
 | `orcarouter-oauth` | `openai-chat` | `https://api.orcarouter.ai/v1` | Browser consent and key exchange use `https://www.orcarouter.ai` with S256 PKCE. The returned user-owned `sk-orca-…` API key is stored in the existing credential store and reused until revoked. |
 | `devin` | `devin` | `https://server.codeium.com` | Experimental unofficial Cognition/Devin bridge. Login first imports the credential the installed Devin CLI already holds (`devin auth login` writes a `devin-session-token` to its own `credentials.toml`); when none is present it opens Auth0 browser sign-in and exchanges the pasted token via Cognition's `RegisterUser` for a long-lived API key. `ocx login devin-cli` remains as a deprecated alias. Models are discovered per account with `GetCascadeModelConfigs`. Account quota comes from `GetUserStatus` under one eight-second request and body deadline: dated daily and weekly windows, plus the monthly prompt and flex credit pool for a credit-billed plan or an unknown strategy with both reset dates absent when a balance field is present. Negative used credits omit the monthly window; valid zero available credits mark it exhausted. A timed-out probe keeps the last good quota. Not shown in the dashboard preset by default. Chat and usage reporting are verified against a live account across three models. |
-| `dsh-account` | `dsh-account` | `https://api.deepseek.com/anthropic` | Experimental import-first account provider reusing an installed and signed-in DeepSeek Harness (DSH) Desktop account. Reads credentials strictly read-only from `~/.dsh/.credentials.yaml` upon explicit import. Independent from DeepSeek API key billing. |
+| `dsh-account` | `dsh-account` | `https://api.deepseek.com/anthropic` | DeepSeek browser sign-in or validated, read-only Harness import. Independent from DeepSeek API keys. |
 | `github-copilot` | `openai-chat` | `https://api.githubcopilot.com` | Experimental. GitHub device flow + `copilot_internal` exchange (VS Code OAuth client). Requires an active Copilot subscription; not an official third-party API. |
 
 Google Antigravity groups a model's complete `low` / `medium` / `high` variants into one entry with an effort selector. This includes Claude Opus and Sonnet 5.5 and future versions discovered during automatic refresh. Partial sets remain separate. Existing enabled/disabled choices carry into the grouped entry; genuinely new models still follow your New model policy. Saved suffix IDs continue to request their original tier. Grouped effort routing survives a proxy restart when model discovery is temporarily unavailable. A running Codex session may need to reload its model list after catalog refresh. Usage groups known Claude Sonnet and Opus 5.5 tier IDs under their base model, including historical tier records. Their displayed costs are derived Anthropic reference estimates, not Antigravity subscription charges.
@@ -646,14 +646,15 @@ The account list marks Kiro accounts excluded from automatic selection with a re
 
 ### DeepSeek Account (DSH)
 
-`dsh-account` is an experimental, import-first account provider designed to reuse the authenticated account credentials of an installed DeepSeek Harness (DSH) Desktop application.
+`dsh-account` supports DeepSeek browser sign-in and validated import from DeepSeek Harness Desktop.
 
-- **Independent from DeepSeek API Key:** `dsh-account` runs on the DeepSeek account signed in to DeepSeek Harness, whereas the `deepseek` provider bills against your platform API key balance. The two credential domains and routes are strictly separate and never fall through into one another.
-- **Explicit import only:** opencodex reads `~/.dsh/.credentials.yaml` (or `$DSH_HOME/.credentials.yaml`) only when you run `ocx login dsh-account` or select **Log in** on the DeepSeek Account (DSH) row of the dashboard's **Add provider** picker. It never copies, imports, or uses the token on its own.
-- **Read-only DSH credential store:** OpenCodeX treats `~/.dsh/.credentials.yaml` as strictly read-only. OpenCodeX never writes, modifies, removes, or alters the permissions of any files belonging to DeepSeek Harness.
-- **Isolated credential copy & logout:** Upon import, OpenCodeX validates the token against DeepSeek's authoritative identity endpoint (`/auth-api/v0/users/current`) and saves its own copy to the OpenCodeX auth store. Logging out or removing the account in OpenCodeX only deletes the OpenCodeX local copy; it never triggers upstream remote session logout and will not sign you out of DeepSeek Harness Desktop.
-- **No background token rotation & 401 re-import:** DSH session grants do not feature an automatic background refresh endpoint. If upstream returns HTTP 401 (`ACCOUNT_TOKEN_INVALID`), OpenCodeX marks the account `needsReauth` and halts routing. To restore access, the user must explicitly re-import via `ocx login dsh-account`.
-- **Third-party disclaimer:** OpenCodeX makes no claim of official endorsement or authorization by DeepSeek for third-party clients reusing session grants.
+- Run `ocx login dsh-account` or select **Log in** for DeepSeek Account (DSH). OpenCodex first tries the local Harness grant. If its identity cannot be verified, it opens DeepSeek browser authorization. Harness installation is optional for browser sign-in.
+- Browser authorization uses PKCE and a temporary loopback callback. Complete it on the same machine, or forward the displayed callback port when using a remote server. The authorization URL expires; start a new login after cancellation or expiry.
+- Identity comes from the authenticated token exchange or the platform profile endpoint. A blocked profile request does not prevent login when the exchange supplies identity. OpenCodex never substitutes an email address or wallet response for a stable account ID.
+- Harness's `$DSH_HOME/.credentials.yaml` (default `~/.dsh/.credentials.yaml`) stays read-only. OpenCodex stores its own credential copy and device ID. Removing an OpenCodex account does not sign Harness out.
+- Grants do not refresh in the background. An upstream 401 requires explicit sign-in again. The API-key `deepseek` provider and `dsh-account` remain separate, with no credential or routing fallback.
+- OpenCodex is a third-party client, not officially endorsed by DeepSeek.
+
 
 ## 3. API-key catalog
 
