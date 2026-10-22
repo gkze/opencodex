@@ -115,7 +115,9 @@ are not rewritten.
 
 The injected `fast_mode` follows the tri-state `fastMode` setting: `true` writes `fast_mode = true`,
 `false` writes `fast_mode = false`, and unset leaves an existing `fast_mode` untouched without
-adding a `[features]` table.
+adding a `[features]` table. `"ultrafast"` also writes `fast_mode = true`, because that key is the
+client's Fast-lane flag rather than a tier selector — which tier OpenCodex sends is decided on the
+proxy side, and the tier itself appears in the picker only where the row declares it.
 
 Fast mode is separate from voice transport. A supported model's service-tier speed description
 does not guarantee lower microphone, WebRTC, or end-to-end voice latency through OpenCodex.
