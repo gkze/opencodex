@@ -1,3 +1,5 @@
+> **Личный форк:** ночные выпуски и инструкции по установке описаны в [FORK.md](../FORK.md). Ниже приведена документация исходного проекта.
+
 <p align="center">
   <img src="../assets/banner.png" alt="opencodex — универсальный прокси провайдеров для Codex, Claude Code, Claude Desktop и Grok Build" width="100%">
 </p>
