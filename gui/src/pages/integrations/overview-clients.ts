@@ -161,6 +161,7 @@ const FILE_LABEL_KEY: Record<FileIntegrationClientId, TKey> = {
   kilo: "integrations.tab.kilo",
   droid: "integrations.tab.droid",
   qoder: "integrations.tab.qoder",
+  fx: "integrations.tab.fx",
 };
 
 /** A file client's block is in the file for both `current` and `stale`. */
