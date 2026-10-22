@@ -1,5 +1,5 @@
 /**
- * DeepSeek Harness Account OAuth implementation (Import-first).
+ * DeepSeek Harness Account authentication (validated import, then browser authorization).
  *
  * Imports existing authenticated account from DeepSeek Harness Desktop
  * (`$DSH_HOME/.credentials.yaml`, default `~/.dsh/.credentials.yaml`).
@@ -14,7 +14,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 
-export const DSH_PLATFORM_ORIGIN = "https://platform.deepseek.com";
+import { DSH_PLATFORM_ORIGIN, dshTokenSchema, dshClientHeaders, dshIdentity, loginDshBrowser } from "./dsh-browser";
+export { DSH_PLATFORM_ORIGIN } from "./dsh-browser";
 export const DSH_INFERENCE_ORIGIN = "https://api.deepseek.com/anthropic";
 
 /**
@@ -95,11 +96,13 @@ export async function validateDshAccountToken(
   signal?: AbortSignal,
 ): Promise<DshValidatedAccountIdentity> {
   try {
+    if (!dshTokenSchema.safeParse(token).success) return { valid: false, error: "ACCOUNT_TOKEN_INVALID" };
     const timeoutSignal = AbortSignal.timeout(DSH_PROFILE_FETCH_TIMEOUT_MS);
     const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
     const response = await fetch(`${DSH_PLATFORM_ORIGIN}/auth-api/v0/users/current`, {
       method: "GET",
       headers: {
+        ...dshClientHeaders(),
         "x-dsh-auth-token": token,
         "accept": "application/json",
       },
@@ -107,11 +110,9 @@ export async function validateDshAccountToken(
       signal: combinedSignal,
     });
 
-    if (response.status === 401) {
-      return { valid: false, error: "ACCOUNT_TOKEN_INVALID" };
-    }
     if (!response.ok) {
-      return { valid: false, error: `Platform returned HTTP ${response.status}` };
+      await response.body?.cancel();
+      return { valid: false, error: response.status === 401 ? "ACCOUNT_TOKEN_INVALID" : `Platform returned HTTP ${response.status}` };
     }
 
     // A declared length past the cap is rejected without touching the stream.
@@ -158,20 +159,9 @@ export async function validateDshAccountToken(
       return { valid: false, error: `Platform error code: ${body.code ?? "unknown"}` };
     }
 
-    const biz = body.data.biz_data;
-    // Account-store slot matching and reauthentication require the same stable upstream ID.
-    // Email/phone/display names and a shared fallback must never identify an imported account.
-    const accountId = typeof biz.id === "string" ? biz.id.trim() : "";
-    if (!accountId) return { valid: false, error: "ACCOUNT_IDENTITY_UNVERIFIED" };
-    const email = typeof biz.email === "string" ? biz.email.trim() || undefined : undefined;
-    const name = typeof biz.id_profile?.name === "string" ? biz.id_profile.name.trim() || undefined : undefined;
-
-    return {
-      valid: true,
-      accountId,
-      email,
-      name,
-    };
+    const identity = dshIdentity(body.data.biz_data);
+    if (!identity) return { valid: false, error: "ACCOUNT_IDENTITY_UNVERIFIED" };
+    return { valid: true, ...identity };
   } catch {
     if (signal?.aborted) throw signal.reason ?? new DOMException("DSH login aborted", "AbortError");
     // Parser and transport errors may contain profile data or credential-file contents.
@@ -185,18 +175,21 @@ export interface DshLoginOptions {
 
 /**
  * Explicit user login action for DSH Account.
- * Reuses the existing DSH local credential after live authoritative validation.
+ * Reuses a verified local grant; otherwise starts an explicit browser sign-in.
+ * forceLogin skips import. Neither path writes to the Harness credential store.
  */
 export async function loginDshAccount(
   ctrl: OAuthController,
-  _opts: DshLoginOptions = {},
+  opts: DshLoginOptions = {},
 ): Promise<OAuthCredentials> {
   if (ctrl.signal?.aborted) {
     throw ctrl.signal.reason ?? new DOMException("DSH login aborted", "AbortError");
   }
 
+  if (opts.forceLogin) return loginDshBrowser(ctrl, validateDshAccountToken);
   const detection = detectDshAccount();
-  if (!detection.detected || !detection.token) {
+  if (!detection.detected || !detection.token || detection.issuer !== DSH_PLATFORM_ORIGIN) {
+    if (ctrl.onAuth) return loginDshBrowser(ctrl, validateDshAccountToken);
     throw new Error(
       "DeepSeek Harness account not found in ~/.dsh/.credentials.yaml. " +
       "Please sign in to DeepSeek Harness Desktop first, then import your account.",
@@ -205,6 +198,10 @@ export async function loginDshAccount(
 
   const validation = await validateDshAccountToken(detection.token, ctrl.signal);
   if (!validation.valid || !validation.accountId) {
+    if (ctrl.onAuth) {
+      ctrl.onProgress?.("Imported session could not establish identity; starting DeepSeek browser sign-in.");
+      return loginDshBrowser(ctrl, validateDshAccountToken);
+    }
     throw new Error(
       `DeepSeek Harness account token in ~/.dsh/.credentials.yaml is invalid or expired (${validation.error ?? "unknown"}). ` +
       "Please re-login in DeepSeek Harness Desktop, then try again.",
@@ -227,7 +224,7 @@ export async function loginDshAccount(
  * In accordance with the explicit-import contract, background or automatic refresh MUST NOT
  * automatically re-read or adopt new credentials from ~/.dsh/.credentials.yaml.
  * If the grant is rejected or expires, this throws a terminal error so the account transitions
- * to needsReauth, requiring explicit user re-import.
+ * to needsReauth, requiring explicit user sign-in.
  */
 export async function refreshDshAccountToken(
   _refreshToken: string,
@@ -235,7 +232,7 @@ export async function refreshDshAccountToken(
   _credential?: OAuthCredentials,
   _accountId?: string,
 ): Promise<OAuthCredentials> {
-  throw new Error("DeepSeek Harness account session expired or revoked. Please sign in to DeepSeek Harness Desktop and re-import.");
+  throw new Error("DeepSeek Harness account session expired or revoked. Please sign in again with ocx login dsh-account.");
 }
 
 /** Provider-owned auth hooks keep the shared OAuth registry within its line budget. */
