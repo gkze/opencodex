@@ -421,15 +421,6 @@
       ]
     },
     {
-      "path": "data-planes/chat-reasoning-details.md",
-      "tier": 3,
-      "title": "Anthropic Thinking Signatures on the Chat Wire",
-      "scope": "The reasoning_details carrier that lets Chat Completions clients round-trip signed Anthropic thinking across tool steps (#7429).",
-      "documents": [
-        "src/chat/reasoning-details.ts"
-      ]
-    },
-    {
       "path": "data-planes/protocol-paths.md",
       "tier": 3,
       "title": "Protocol Paths",
@@ -773,16 +764,6 @@
       ]
     },
     {
-      "path": "quota-pool.md",
-      "tier": 5,
-      "title": "Quota Pool Producer",
-      "scope": "The passive GET /api/quota-pool read GOAT consumes (ocx.quota-pool/1): sources, window mapping, absent-not-zero, and the install identity behind homeId and accountRef.",
-      "documents": [
-        "src/quota-pool/",
-        "src/server/management/quota-pool-routes.ts"
-      ]
-    },
-    {
       "path": "pricing.md",
       "tier": 5,
       "title": "Model Price Overrides",
@@ -1074,12 +1055,40 @@
       ]
     },
     {
+      "path": "data-planes/chat-reasoning-details.md",
+      "tier": 3,
+      "title": "Anthropic Thinking Signatures on the Chat Wire",
+      "scope": "The reasoning_details carrier that lets Chat Completions clients round-trip signed Anthropic thinking across tool steps (#7429).",
+      "documents": [
+        "src/chat/reasoning-details.ts"
+      ]
+    },
+    {
+      "path": "quota-pool.md",
+      "tier": 5,
+      "title": "Quota Pool Producer",
+      "scope": "The passive GET /api/quota-pool read GOAT consumes (ocx.quota-pool/1): sources, window mapping, absent-not-zero, and the install identity behind homeId and accountRef.",
+      "documents": [
+        "src/quota-pool/",
+        "src/server/management/quota-pool-routes.ts"
+      ]
+    },
+    {
       "path": "ops/source-archives.md",
       "tier": 6,
       "title": "Source Archive Identity",
       "scope": "Compatibility manifest hashing for source archives.",
       "documents": [
         "scripts/generate-compatibility-version.ts"
+      ]
+    },
+    {
+      "path": "ops/git-installs.md",
+      "tier": 6,
+      "title": "Git Installation Preparation",
+      "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
+      "documents": [
+        "package.json"
       ]
     }
   ],
