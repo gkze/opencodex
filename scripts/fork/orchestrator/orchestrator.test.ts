@@ -181,3 +181,30 @@ test("worker retry surfaces the second failure instead of retrying forever", asy
   expect(seen).toEqual([0, 1])
   expect(retried).toEqual(["Worker 1 failure"])
 })
+
+test("held revisions resolve to the newest accepted commit for exactly that patch", async () => {
+  const { lastAccepted } = await import("./held.ts")
+  const { git } = await import("./process.ts")
+  const root = mkdtempSync(join(tmpdir(), "ocx-held-test-"))
+  try {
+    await Effect.runPromise(Effect.gen(function*() {
+      yield* git(root, "init")
+      yield* git(root, "config", "user.name", "Fixture")
+      yield* git(root, "config", "user.email", "test@example.com")
+      const commit = (message: string) => Effect.gen(function*() {
+        writeFileSync(join(root, "file"), message)
+        yield* git(root, "add", "file")
+        yield* git(root, "commit", "-m", message)
+        return yield* git(root, "rev-parse", "HEAD")
+      })
+      yield* commit("upstream")
+      const first = yield* commit("Maintain alpha\n\nPatch-Id: alpha")
+      yield* commit("Maintain alpha-beta\n\nPatch-Id: alpha-beta")
+      const second = yield* commit("Maintain alpha\n\nPatch-Id: alpha")
+      const tip = yield* git(root, "rev-parse", "HEAD")
+      expect(yield* lastAccepted(root, tip, "alpha")).toBe(second)
+      expect(yield* lastAccepted(root, tip, "alpha")).not.toBe(first)
+      expect(yield* lastAccepted(root, tip, "missing")).toBe(null)
+    }))
+  } finally {rmSync(root, {recursive:true,force:true})}
+})
