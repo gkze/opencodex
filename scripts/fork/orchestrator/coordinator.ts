@@ -7,6 +7,7 @@ import { decode, Registry, Input, Result, order, type Result as PatchResult } fr
 import { workflowRuntime } from "./runtime.ts"
 import { git, command } from "./process.ts"
 import { dispatch, wait, Repository, request } from "./github.ts"
+import { dispatchWithRetry } from "./retry.ts"
 import { limits, capacity, canStart } from "./limits.ts"
 import { freshWorktree, freshDirectory } from "./recovery.ts"
 import { download } from "./artifact.ts"
@@ -49,12 +50,18 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
       const patch = input.patches.find(p => p.id === definition.id)!
       if (!limits.policy.runnerLabels.includes(patch.runner)) return yield* Effect.fail("Runner outside allowlist")
       const dependencies = parents.map(r => r.candidate)
-      const attempt = `${run}-${patch.id}`
-      const id = Number(yield* step(`dispatch-${patch.id}`, Effect.gen(function*() {
-        if (!canStart(input.deadline, Date.now())) return yield* Effect.fail("Insufficient run time for worker")
-        return String(yield* dispatch(attempt, input.control, JSON.stringify({attempt, control: input.control, upstream: input.upstream, patch, dependencies}), patch.runner))
-      })))
-      yield* step(`wait-${patch.id}`, wait(id, attempt, input.control, input.deadline - limits.policy.cleanupMinutes * 60_000).pipe(Effect.map(String)))
+      // Distinct step names keep a recorded activity failure from being replayed on retry.
+      const worker = (n: number) => Effect.gen(function*() {
+        const tag = n === 0 ? "" : `-retry${n}`
+        const attempt = `${run}-${patch.id}${tag}`
+        const id = Number(yield* step(`dispatch-${patch.id}${tag}`, Effect.gen(function*() {
+          if (!canStart(input.deadline, Date.now())) return yield* Effect.fail("Insufficient run time for worker")
+          return String(yield* dispatch(attempt, input.control, JSON.stringify({attempt, control: input.control, upstream: input.upstream, patch, dependencies}), patch.runner))
+        })))
+        yield* step(`wait-${patch.id}${tag}`, wait(id, attempt, input.control, input.deadline - limits.policy.cleanupMinutes * 60_000).pipe(Effect.map(String)))
+        return {attempt, id}
+      })
+      const {attempt, id} = yield* dispatchWithRetry(worker, failure => console.error(`Retrying ${patch.id} after: ${failure}`))
       const encoded = yield* step(`accept-${patch.id}`, Effect.gen(function*() {
         const destination = join(directory, patch.id)
         freshDirectory(directory, destination)
