@@ -8,6 +8,7 @@ import { workflowRuntime } from "./runtime.ts"
 import { git, command } from "./process.ts"
 import { dispatch, wait, Repository, request } from "./github.ts"
 import { dispatchWithRetry } from "./retry.ts"
+import { lastAccepted } from "./held.ts"
 import { limits, capacity, canStart } from "./limits.ts"
 import { freshWorktree, freshDirectory } from "./recovery.ts"
 import { download } from "./artifact.ts"
@@ -61,8 +62,26 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         yield* step(`wait-${patch.id}${tag}`, wait(id, attempt, input.control, input.deadline - limits.policy.cleanupMinutes * 60_000).pipe(Effect.map(String)))
         return {attempt, id}
       })
-      const {attempt, id} = yield* dispatchWithRetry(worker, failure => console.error(`Retrying ${patch.id} after: ${failure}`))
-      const encoded = yield* step(`accept-${patch.id}`, Effect.gen(function*() {
+      const dispatched = yield* dispatchWithRetry(worker, failure => console.error(`Retrying ${patch.id} after: ${failure}`)).pipe(Effect.result)
+      // A patch that cannot be replayed tonight ships the revision the last accepted stack
+      // published, so one blocked patch costs that patch a night instead of the whole refresh.
+      const hold = (reason: string) => Effect.gen(function*() {
+        const source = yield* lastAccepted(root, input.old, patch.id)
+        if (!source) return yield* Effect.fail(`${reason}; no accepted revision of ${patch.id} to hold`)
+        const cwd = join(directory, `${patch.id}-hold`)
+        yield* freshWorktree(root, directory, cwd, input.upstream)
+        const base = yield* dependencyBase(cwd, input.upstream, dependencies)
+        const replayed = yield* replay(cwd, source, root)
+        if (!replayed.ok) return yield* Effect.fail(`${reason}; held revision does not replay: ${replayed.reason}`)
+        yield* git(cwd, "add", "--all")
+        if (yield* git(cwd, "diff", "--name-only", "--diff-filter=U")) return yield* Effect.fail(`${reason}; held revision leaves unresolved conflicts`)
+        yield* commitPatch(cwd, source, patch.id)
+        const candidate = yield* git(cwd, "rev-parse", "HEAD")
+        yield* git(root, "worktree", "remove", "--force", cwd)
+        yield* Effect.sync(() => console.error(`Holding ${patch.id} at ${source}: ${reason}`))
+        return {id: patch.id, source, upstream: input.upstream, base, candidate, adapted: false, hold: true} satisfies Result
+      })
+      const accept = ({attempt, id}: {attempt: string, id: number}) => Effect.gen(function*() {
         const destination = join(directory, patch.id)
         freshDirectory(directory, destination)
         const artifacts = decode(Schema.Struct({artifacts: Schema.Array(Schema.Struct({id: Schema.Number, digest: Schema.String, name: Schema.String, size_in_bytes: Schema.Number, expired: Schema.Boolean}))}), yield* request(`actions/runs/${id}/artifacts`))
@@ -91,7 +110,10 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         }
         yield* git(root, "worktree", "remove", "--force", expected)
         return JSON.stringify(result)
-      }))
+      })
+      const encoded = dispatched._tag === "Success"
+        ? yield* step(`accept-${patch.id}`, accept(dispatched.success))
+        : yield* step(`hold-${patch.id}`, hold(String(dispatched.failure)).pipe(Effect.map(result => JSON.stringify(result))))
       const result = decode(Result, JSON.parse(encoded))
       if (input.patches.some(p => p.requires.includes(result.id))) yield* step(`expose-${result.id}`, Effect.gen(function*() {
         const ref = `refs/heads/maintenance/${run}/${result.id}`
