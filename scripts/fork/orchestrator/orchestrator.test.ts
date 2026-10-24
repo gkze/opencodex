@@ -102,8 +102,7 @@ test("scheduler bounds total and macOS execution and interrupts siblings on fail
   expect(outcome._tag).toBe("Failure")
 })
 
-test("workflow projections and repository storage budgets agree", async () => {
-  const { checkWorkflows } = await import("./resources.ts")
+test("workflow projections and repository storage budgets agree", async () => {  const { checkWorkflows } = await import("./resources.ts")
   const { checkStorage, limits } = await import("./limits.ts")
   checkWorkflows(join(import.meta.dir, "../../.."))
   expect(() => checkStorage(limits.policy.retainedRepositoryBytes, 1)).toThrow("retained")
@@ -150,4 +149,35 @@ test("zero scheduler capacity and oversized upload outputs fail before execution
     expect(checkOutput(root, 5)).toBe(5)
     expect(() => checkOutput(root, 4)).toThrow("allocation")
   } finally {rmSync(root, {recursive:true,force:true})}
+})
+
+test("worker retry re-dispatches once and preserves the first successful attempt", async () => {
+  const { dispatchWithRetry, workerAttempts } = await import("./retry.ts")
+  expect(workerAttempts).toBe(2)
+  const seen: number[] = []
+  const first = await Effect.runPromise(dispatchWithRetry((attempt) => {
+    seen.push(attempt)
+    return Effect.succeed(attempt === 0 ? "primary" : "retried")
+  }))
+  expect(first).toBe("primary")
+  expect(seen).toEqual([0])
+  const retried = await Effect.runPromise(dispatchWithRetry((attempt) => {
+    seen.push(attempt)
+    return attempt === 0 ? Effect.fail("Worker 1 failure") : Effect.succeed("retried")
+  }))
+  expect(retried).toBe("retried")
+  expect(seen).toEqual([0, 0, 1])
+})
+test("worker retry surfaces the second failure instead of retrying forever", async () => {
+  const { dispatchWithRetry } = await import("./retry.ts")
+  const seen: number[] = []
+  const retried: Array<string> = []
+  const result = await Effect.runPromiseExit(dispatchWithRetry((attempt) => {
+    seen.push(attempt)
+    return Effect.fail(`Worker ${attempt + 1} failure`)
+  }, (failure) => retried.push(failure)))
+  expect(result._tag).toBe("Failure")
+  if (result._tag === "Failure") expect(String(result.cause)).toContain("Worker 2 failure")
+  expect(seen).toEqual([0, 1])
+  expect(retried).toEqual(["Worker 1 failure"])
 })
