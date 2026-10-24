@@ -2,7 +2,7 @@ import { Effect, Schema } from "effect"
 import { resolve, join } from "node:path"
 import { mkdirSync } from "node:fs"
 import { decode, CapturedPatch, Sha, Result as ResultSchema, type Result } from "./model.ts"
-import { git, command } from "./process.ts"
+import { git, command, commandResult } from "./process.ts"
 import { replay, commitPatch } from "./replay.ts"
 import { dependencyBase } from "./dependencies.ts"
 import { limits } from "./limits.ts"
@@ -42,7 +42,10 @@ const prepare = Effect.gen(function*() {
       if (actual !== expected) return yield* Effect.fail(`Agent changed protected path ${path}`)
     }
   }
-  yield* git(cwd, "diff", "--cached", "--check")
+  // `--check` exits 2 on whitespace errors and prints them to stdout, which the throwing
+  // wrapper discards; a bare "exited 2" hid this failure for three consecutive nights.
+  const whitespace = yield* commandResult(["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "diff", "--cached", "--check"], cwd)
+  if (whitespace.status !== 0) return yield* Effect.fail(`Patch introduces whitespace errors: ${whitespace.stdout || whitespace.stderr || `exit ${whitespace.status}`}`)
   yield* commitPatch(cwd, task.patch.source, task.patch.id)
   const candidate = yield* git(cwd, "rev-parse", "HEAD")
   const result: Result = {id: task.patch.id, source: task.patch.source, upstream: task.upstream, base, candidate, adapted}
