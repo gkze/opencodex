@@ -704,7 +704,9 @@ the service deliberately exits cleanly because the desktop app owns the runtime.
 Definitions installed before this change still carry the old versioned paths and cannot migrate
 themselves — once the old executable is deleted, no opencodex code runs to fix it. Run
 `ocx service repair` once after upgrading. Linux service starts then follow the launcher; macOS
-repair writes the new package paths into the launchd definition.
+repair writes the new package paths into the launchd definition. macOS start and status checks
+expect that package pair even when older install metadata still records a launcher path; an old
+launcher-based job needs repair before it is recognized as current.
 An already-running proxy is not replaced by an external upgrade: when the installed CLI is newer
 than the running proxy, run `ocx service restart` so the new build serves. On macOS, `repair` is not
 enough there: the definition did not change, and a repair that changes nothing reloads nothing.
