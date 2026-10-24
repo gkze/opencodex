@@ -33,6 +33,11 @@ const prepare = Effect.gen(function*() {
   }
   yield* git(cwd, "add", "--all")
   if (yield* git(cwd, "diff", "--name-only", "--diff-filter=U")) return yield* Effect.fail("Unresolved conflicts")
+  // `git add` clears unmerged entries, so a repair that resolved the index but left markers in
+  // the file used to reach --check and surface as an unrelated whitespace error.
+  const markers = yield* git(cwd, "grep", "--cached", "-n", "-E", "^(<<<<<<<|>>>>>>>) |^=======$").pipe(Effect.result)
+  if (markers._tag === "Success" && markers.success)
+    return yield* Effect.fail(`Repair left conflict markers: ${markers.success.split("\n").slice(0, 5).join(", ")}`)
   if (adapted) {
     const protectedPaths = [".github", "scripts/fork", "package.json", "bun.lock"]
     // Agent cannot change controls even when the original patch legitimately touches them.
