@@ -136,6 +136,17 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
       yield* commitPatch(cwd, result.candidate, patch.id)
       mapped.push({id: patch.id, commit: yield* git(cwd, "rev-parse", "HEAD")})
     }
+    // Fork-owned controls live on the branch, not in the patch branches. Carry them into the
+    // integration tree so accept sees them identical to the previous tip, as it requires.
+    const base = yield* git(root, "merge-base", input.old, input.upstream)
+    const controls = (yield* git(root, "diff", "--name-only", base, input.old, "--", ".github", "scripts/fork")).split("\n").filter(Boolean)
+    if (controls.length) {
+      yield* git(cwd, "checkout", input.old, "--", ...controls)
+      const last = mapped[mapped.length - 1]
+      if (!last) return yield* Effect.fail("Cannot carry fork controls without an assembled commit")
+      yield* git(cwd, "commit", "--amend", "--no-edit")
+      last.commit = yield* git(cwd, "rev-parse", "HEAD")
+    }
     const candidate = yield* git(cwd, "rev-parse", "HEAD")
     yield* git(cwd, "update-ref", "refs/heads/nightly-candidate", candidate)
     yield* git(cwd, "bundle", "create", join(directory, "candidate.bundle"), "refs/heads/nightly-candidate", ...results.map(r => r.candidate), `^${input.upstream}`)
