@@ -6,7 +6,7 @@ export const command = (argv: readonly string[], cwd: string, env: Record<string
     signal.addEventListener("abort", abort, { once: true })
     try {
       const [stdout, stderr, status] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited])
-      if (status !== 0) throw new Error(`${argv[0]} ${argv[1]} exited ${status}: ${stderr.slice(-4000)}`)
+      if (status !== 0) throw new Error(`${argv.join(" ")} exited ${status} in ${cwd}: ${stderr.slice(-4000)}`)
       return options.trimOutput === false ? stdout : stdout.trim()
     } finally { signal.removeEventListener("abort", abort) }
   }, catch: error => String(error),
