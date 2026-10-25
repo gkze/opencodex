@@ -170,7 +170,7 @@ jobs:
   publish:
     needs: [candidate, validate, test, smoke, assets]
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 60
     permissions:
       contents: write
       packages: write
