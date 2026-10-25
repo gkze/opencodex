@@ -9,7 +9,7 @@ export type Registry = typeof Registry.Type
 export const CapturedPatch = Schema.Struct({ ...Patch.fields, source: Sha })
 export const Input = Schema.Struct({ run: Schema.String, control: Sha, upstream: Sha, old: Sha, patches: Schema.Array(CapturedPatch), deadline: Schema.Number })
 export type Input = typeof Input.Type
-export const Result = Schema.Struct({ id: Id, source: Sha, upstream: Sha, base: Sha, candidate: Sha, adapted: Schema.Boolean })
+export const Result = Schema.Struct({ id: Id, source: Sha, upstream: Sha, base: Sha, candidate: Sha, adapted: Schema.Boolean, hold: Schema.optional(Schema.Boolean) })
 export type Result = typeof Result.Type
 export const decode = <S extends Schema.ConstraintDecoder<unknown, never>>(schema: S, value: unknown): S["Type"] => Schema.decodeUnknownSync(schema)(value)
 

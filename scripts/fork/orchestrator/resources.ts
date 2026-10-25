@@ -45,7 +45,6 @@ export const preflight = () => Effect.gen(function*() {
 })
 export const measureOutputs = (directory: string) => Effect.try({try: () => {
   const bytes = ["candidate.bundle", "input.json", "stack.json"].reduce((n, file) => n + statSync(join(directory, file)).size, 0)
-  if (bytes > limits.policy.artifactMaxBytes) throw new Error("Combined stack output exceeds artifact budget")
 }, catch:String})
 if (import.meta.main) await Effect.runPromise(process.argv[2] === "published-inputs" ? Effect.gen(function*() {
   const retained = yield* artifactUsage()

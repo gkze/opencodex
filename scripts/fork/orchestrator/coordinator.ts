@@ -7,6 +7,8 @@ import { decode, Registry, Input, Result, order, type Result as PatchResult } fr
 import { workflowRuntime } from "./runtime.ts"
 import { git, command } from "./process.ts"
 import { dispatch, wait, Repository, request } from "./github.ts"
+import { dispatchWithRetry } from "./retry.ts"
+import { lastAccepted } from "./held.ts"
 import { limits, capacity, canStart } from "./limits.ts"
 import { freshWorktree, freshDirectory } from "./recovery.ts"
 import { download } from "./artifact.ts"
@@ -49,13 +51,37 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
       const patch = input.patches.find(p => p.id === definition.id)!
       if (!limits.policy.runnerLabels.includes(patch.runner)) return yield* Effect.fail("Runner outside allowlist")
       const dependencies = parents.map(r => r.candidate)
-      const attempt = `${run}-${patch.id}`
-      const id = Number(yield* step(`dispatch-${patch.id}`, Effect.gen(function*() {
-        if (!canStart(input.deadline, Date.now())) return yield* Effect.fail("Insufficient run time for worker")
-        return String(yield* dispatch(attempt, input.control, JSON.stringify({attempt, control: input.control, upstream: input.upstream, patch, dependencies}), patch.runner))
-      })))
-      yield* step(`wait-${patch.id}`, wait(id, attempt, input.control, input.deadline - limits.policy.cleanupMinutes * 60_000).pipe(Effect.map(String)))
-      const encoded = yield* step(`accept-${patch.id}`, Effect.gen(function*() {
+      // Distinct step names keep a recorded activity failure from being replayed on retry.
+      const worker = (n: number) => Effect.gen(function*() {
+        const tag = n === 0 ? "" : `-retry${n}`
+        const attempt = `${run}-${patch.id}${tag}`
+        const id = Number(yield* step(`dispatch-${patch.id}${tag}`, Effect.gen(function*() {
+          if (!canStart(input.deadline, Date.now())) return yield* Effect.fail("Insufficient run time for worker")
+          return String(yield* dispatch(attempt, input.control, JSON.stringify({attempt, control: input.control, upstream: input.upstream, patch, dependencies}), patch.runner))
+        })))
+        yield* step(`wait-${patch.id}${tag}`, wait(id, attempt, input.control, input.deadline - limits.policy.cleanupMinutes * 60_000).pipe(Effect.map(String)))
+        return {attempt, id}
+      })
+      const dispatched = yield* dispatchWithRetry(worker, failure => console.error(`Retrying ${patch.id} after: ${failure}`)).pipe(Effect.result)
+      // A patch that cannot be replayed tonight ships the revision the last accepted stack
+      // published, so one blocked patch costs that patch a night instead of the whole refresh.
+      const hold = (reason: string) => Effect.gen(function*() {
+        const source = yield* lastAccepted(root, input.old, patch.id)
+        if (!source) return yield* Effect.fail(`${reason}; no accepted revision of ${patch.id} to hold`)
+        const cwd = join(directory, `${patch.id}-hold`)
+        yield* freshWorktree(root, directory, cwd, input.upstream)
+        const base = yield* dependencyBase(cwd, input.upstream, dependencies)
+        const replayed = yield* replay(cwd, source, root)
+        if (!replayed.ok) return yield* Effect.fail(`${reason}; held revision does not replay: ${replayed.reason}`)
+        yield* git(cwd, "add", "--all")
+        if (yield* git(cwd, "diff", "--name-only", "--diff-filter=U")) return yield* Effect.fail(`${reason}; held revision leaves unresolved conflicts`)
+        yield* commitPatch(cwd, source, patch.id)
+        const candidate = yield* git(cwd, "rev-parse", "HEAD")
+        yield* git(root, "worktree", "remove", "--force", cwd)
+        yield* Effect.sync(() => console.error(`Holding ${patch.id} at ${source}: ${reason}`))
+        return {id: patch.id, source, upstream: input.upstream, base, candidate, adapted: false, hold: true} satisfies Result
+      })
+      const accept = ({attempt, id}: {attempt: string, id: number}) => Effect.gen(function*() {
         const destination = join(directory, patch.id)
         freshDirectory(directory, destination)
         const artifacts = decode(Schema.Struct({artifacts: Schema.Array(Schema.Struct({id: Schema.Number, digest: Schema.String, name: Schema.String, size_in_bytes: Schema.Number, expired: Schema.Boolean}))}), yield* request(`actions/runs/${id}/artifacts`))
@@ -84,7 +110,10 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         }
         yield* git(root, "worktree", "remove", "--force", expected)
         return JSON.stringify(result)
-      }))
+      })
+      const encoded = dispatched._tag === "Success"
+        ? yield* step(`accept-${patch.id}`, accept(dispatched.success))
+        : yield* step(`hold-${patch.id}`, hold(String(dispatched.failure)).pipe(Effect.map(result => JSON.stringify(result))))
       const result = decode(Result, JSON.parse(encoded))
       if (input.patches.some(p => p.requires.includes(result.id))) yield* step(`expose-${result.id}`, Effect.gen(function*() {
         const ref = `refs/heads/maintenance/${run}/${result.id}`
@@ -106,6 +135,17 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
       if (!merged.ok) return yield* Effect.fail(`Integration ${patch.id}: ${merged.reason}`)
       yield* commitPatch(cwd, result.candidate, patch.id)
       mapped.push({id: patch.id, commit: yield* git(cwd, "rev-parse", "HEAD")})
+    }
+    // Fork-owned controls live on the branch, not in the patch branches. Carry them into the
+    // integration tree so accept sees them identical to the previous tip, as it requires.
+    const base = yield* git(root, "merge-base", input.old, input.upstream)
+    const controls = (yield* git(root, "diff", "--name-only", base, input.old, "--", ".github", "scripts/fork")).split("\n").filter(Boolean)
+    if (controls.length) {
+      yield* git(cwd, "checkout", input.old, "--", ...controls)
+      const last = mapped[mapped.length - 1]
+      if (!last) return yield* Effect.fail("Cannot carry fork controls without an assembled commit")
+      yield* git(cwd, "commit", "--amend", "--no-edit")
+      last.commit = yield* git(cwd, "rev-parse", "HEAD")
     }
     const candidate = yield* git(cwd, "rev-parse", "HEAD")
     yield* git(cwd, "update-ref", "refs/heads/nightly-candidate", candidate)

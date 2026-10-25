@@ -35,7 +35,13 @@ await Effect.runPromise(Effect.gen(function*() {
   }
   for (const result of stack.results) {
     const patch = stack.input.patches.find(p => p.id === result.id)!
-    if (patch.source !== result.source || result.upstream !== stack.input.upstream || (result.adapted && patch.sensitive)) return yield* Effect.fail("Patch provenance mismatch")
+    if (result.upstream !== stack.input.upstream || (result.adapted && patch.sensitive)) return yield* Effect.fail("Patch provenance mismatch")
+    if (result.hold) {
+      // A held patch publishes the revision an earlier accepted stack shipped, so its source
+      // is an ancestor of the previous tip rather than the branch's current patch source.
+      if (result.adapted) return yield* Effect.fail("Held patch cannot carry an adaptation")
+      yield* git(root, "merge-base", "--is-ancestor", result.source, stack.input.old)
+    } else if (patch.source !== result.source) return yield* Effect.fail("Patch provenance mismatch")
     yield* git(root, "fetch", join(directory, "candidate.bundle"), result.candidate)
     yield* git(root, "merge-base", "--is-ancestor", stack.input.upstream, result.candidate)
     if ((yield* git(root, "rev-parse", `${result.candidate}^`)) !== result.base) return yield* Effect.fail("Patch base differs")
