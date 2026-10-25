@@ -8,7 +8,7 @@
  * with EXPORT_CLIENT_IDS by hand; adding a client server-side renders no row
  * until this tuple changes.
  */
-export const CLIENTS = ["qoder", "opencode", "pi", "omp", "hermes", "openclaw", "kimi", "gajae", "dsh", "mcode", "zcode", "commandcode", "prime", "aside", "raycast", "omo", "cline", "kilo", "droid", "gentle-shell"] as const;
+export const CLIENTS = ["qoder", "opencode", "pi", "omp", "hermes", "openclaw", "kimi", "gajae", "dsh", "mcode", "zcode", "commandcode", "prime", "aside", "raycast", "omo", "cline", "kilo", "droid", "gentle-shell", "fx"] as const;
 export type ExportClientId = (typeof CLIENTS)[number];
 
 export const CLIENT_LABEL_KEYS = {
@@ -32,6 +32,7 @@ export const CLIENT_LABEL_KEYS = {
   cline: "api.clientConfig.clientCline",
   kilo: "api.clientConfig.clientKilo",
   droid: "api.clientConfig.clientDroid",
+  fx: "api.clientConfig.clientFx",
 } as const;
 
 /**
@@ -88,6 +89,10 @@ export const CLIENT_MARKS: Partial<Record<ExportClientId, string>> = {
   commandcode: "/provider-icons/commandcode-color.svg",
   kilo: "/provider-icons/kilo.svg",
   droid: "/provider-icons/factory-droid.svg",
+  // fx ships an app-icon mark: a black plate carrying a white glyph, so it is
+  // drawn as an image and never masked. Two inks, and the plate is what makes it
+  // legible on a light surface.
+  fx: "/provider-icons/fx.svg",
 };
 
 /**
