@@ -562,6 +562,21 @@
       ]
     },
     {
+      "path": "providers/workbuddy.md",
+      "tier": 4,
+      "title": "WorkBuddy AI Subscription",
+      "scope": "Browser login, account-bound refresh and catalogs, fixed-origin Chat transport, tool continuity and display-only credit balances.",
+      "documents": [
+        "src/oauth/workbuddy.ts",
+        "src/providers/workbuddy.ts",
+        "src/providers/workbuddy-models.ts",
+        "src/providers/workbuddy-credit-balance.ts",
+        "src/providers/quota/workbuddy.ts",
+        "src/adapters/workbuddy.ts",
+        "src/adapters/workbuddy-schema.ts"
+      ]
+    },
+    {
       "path": "providers/dsh-account.md",
       "tier": 4,
       "title": "DeepSeek Harness Account Provider",
@@ -785,6 +800,24 @@
       "documents": [
         "src/quota-pool/",
         "src/server/management/quota-pool-routes.ts"
+      ]
+    },
+    {
+      "path": "fallback-policy.md",
+      "tier": 3,
+      "title": "Fallback Policy",
+      "scope": "OCX-11 fallback off: what is a model or provider fallback (and what intra-pool rotation is not), scope precedence, the guarded hop sites, the fallback_refused and home_unreachable contracts, and the ocx.fallback/1 state.",
+      "documents": [
+        "src/routing/",
+        "src/types/",
+        "src/config/",
+        "src/client/",
+        "src/server/",
+        "src/cli/",
+        "src/codex/",
+        "src/combos/",
+        "src/remote/",
+        "gui/"
       ]
     },
     {
@@ -1088,45 +1121,21 @@
       ]
     },
     {
-      "path": "providers/workbuddy.md",
-      "tier": 4,
-      "title": "WorkBuddy AI Subscription",
-      "scope": "Browser login, account-bound refresh and catalogs, fixed-origin Chat transport, tool continuity and display-only credit balances.",
-      "documents": [
-        "src/oauth/workbuddy.ts",
-        "src/providers/workbuddy.ts",
-        "src/providers/workbuddy-models.ts",
-        "src/providers/workbuddy-credit-balance.ts",
-        "src/providers/quota/workbuddy.ts",
-        "src/adapters/workbuddy.ts",
-        "src/adapters/workbuddy-schema.ts"
-      ]
-    },
-    {
-      "path": "fallback-policy.md",
-      "tier": 3,
-      "title": "Fallback Policy",
-      "scope": "OCX-11 fallback off: what is a model or provider fallback (and what intra-pool rotation is not), scope precedence, the guarded hop sites, the fallback_refused and home_unreachable contracts, and the ocx.fallback/1 state.",
-      "documents": [
-        "src/routing/",
-        "src/types/",
-        "src/config/",
-        "src/client/",
-        "src/server/",
-        "src/cli/",
-        "src/codex/",
-        "src/combos/",
-        "src/remote/",
-        "gui/"
-      ]
-    },
-    {
       "path": "ops/git-installs.md",
       "tier": 6,
       "title": "Git Installation Preparation",
       "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
       "documents": [
         "package.json"
+      ]
+    },
+    {
+      "path": "ops/fork-release.md",
+      "tier": 6,
+      "title": "Personal Fork Release",
+      "scope": "Fork candidate verification, publication, update isolation and retention.",
+      "documents": [
+        "scripts/fork/"
       ]
     }
   ],
