@@ -205,10 +205,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/fork/orchestrator/resources.ts published-inputs
       - name: Publish checked package and promote fork
+        timeout-minutes: 25
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
           FORK_PUSH_TOKEN: ${{ secrets.FORK_PUSH_TOKEN }}
+          # Nothing here may wait for a human: a prompt on stdin hangs until the job
+          # ceiling and GitHub reports the run as `cancelled` with no failing job.
+          CI: "true"
+          GH_PROMPT_DISABLED: "1"
+          GIT_TERMINAL_PROMPT: "0"
+          GIT_ASKPASS: "true"
+          SSH_ASKPASS: "true"
+          npm_config_yes: "true"
           FORK_OLD: ${{ needs.candidate.outputs.old }}
           FORK_CANDIDATE: ${{ needs.candidate.outputs.sha }}
           FORK_UPSTREAM: ${{ needs.candidate.outputs.upstream }}
