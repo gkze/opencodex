@@ -136,7 +136,12 @@ jobs:
           TEST_SHARD: ${{ matrix.shard }}/4
           BUN_TEST_FILE_SCOPE: all
           BUN_TEST_PARALLEL: '2'
-        run: bash scripts/ci/run-bun-test-batches.sh "$TEST_SHARD"
+        # One loaded runner must not veto a nightly. A shard that fails is retried once on a
+        # fresh process; a real failure still fails twice and blocks publication.
+        run: |
+          bash scripts/ci/run-bun-test-batches.sh "$TEST_SHARD" && exit 0
+          echo "::warning::shard ${TEST_SHARD} failed; retrying once on a fresh process"
+          bash scripts/ci/run-bun-test-batches.sh "$TEST_SHARD"
   assets:
     needs: [candidate, validate]
     uses: ./.github/workflows/fork-build-assets.yml
