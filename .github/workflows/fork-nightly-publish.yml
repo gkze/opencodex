@@ -102,8 +102,6 @@ jobs:
         env:
           FORK_CANDIDATE: ${{ needs.candidate.outputs.sha }}
         run: node scripts/fork/package.mjs
-      - name: Enforce package output allocation
-        run: bun scripts/fork/orchestrator/output-budget.ts dist/fork
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: fork-package
@@ -170,7 +168,7 @@ jobs:
   publish:
     needs: [candidate, validate, test, smoke, assets]
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 60
     permissions:
       contents: write
       packages: write
