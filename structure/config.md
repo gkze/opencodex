@@ -382,7 +382,7 @@ report is additive.
 ## Profile and fast tier
 
 When opencodex owns routing, it also writes `$CODEX_HOME/opencodex.config.toml` as an explicit profile
-target. Codex config uses `service_tier = "fast"` and `[features].fast_mode = true`;
+target. `fastMode` accepts true (Fast), false (default), `"ultrafast"`, or absence (caller policy). `src/codex/inject/config-toml.ts` maps both enabled demands to the boolean `fast_mode` feature; Remote Link preserves this [Home settings projection](remote-link.md). Codex config uses `service_tier = "fast"`;
 catalog/request tier metadata may use `priority`. Do not collapse these spellings into one value. Provider `responseTierAuthoritative` is an optional strict boolean validated by `src/config/schema/leaf-validators.ts`; it changes response evidence only, as defined in the [response-tier observation contract](transports/responses.md#response-tier-observation-authority).
 
 ## Provider output defaults
