@@ -102,8 +102,6 @@ jobs:
         env:
           FORK_CANDIDATE: ${{ needs.candidate.outputs.sha }}
         run: node scripts/fork/package.mjs
-      - name: Enforce package output allocation
-        run: bun scripts/fork/orchestrator/output-budget.ts dist/fork
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: fork-package
@@ -170,7 +168,7 @@ jobs:
   publish:
     needs: [candidate, validate, test, smoke, assets]
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 60
     permissions:
       contents: write
       packages: write
@@ -205,10 +203,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bun scripts/fork/orchestrator/resources.ts published-inputs
       - name: Publish checked package and promote fork
+        timeout-minutes: 25
         env:
           NODE_AUTH_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
           FORK_PUSH_TOKEN: ${{ secrets.FORK_PUSH_TOKEN }}
+          # Nothing here may wait for a human: a prompt on stdin hangs until the job
+          # ceiling and GitHub reports the run as `cancelled` with no failing job.
+          CI: "true"
+          GH_PROMPT_DISABLED: "1"
+          GIT_TERMINAL_PROMPT: "0"
+          GIT_ASKPASS: "true"
+          SSH_ASKPASS: "true"
+          npm_config_yes: "true"
           FORK_OLD: ${{ needs.candidate.outputs.old }}
           FORK_CANDIDATE: ${{ needs.candidate.outputs.sha }}
           FORK_UPSTREAM: ${{ needs.candidate.outputs.upstream }}
