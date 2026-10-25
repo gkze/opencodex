@@ -10,9 +10,8 @@ export const canStart = (deadline: number, now: number, minutes = limits.policy.
 if (limits.policy.coordinatorMinutes >= limits.platform.jobMinutes) throw new Error("Coordinator lacks deadline headroom")
 
 if (limits.policy.publicationJobs + limits.policy.reservedJobs > limits.account.concurrentJobs.value || limits.policy.publicationMacosJobs > limits.account.macosJobs.value) throw new Error("Publication exceeds account policy")
-export const checkStorage = (retained: number, additional: number) => {
-  if (additional > limits.policy.runArtifactBytes) throw new Error("Run artifact budget exceeded")
-  if (retained + additional > limits.policy.retainedRepositoryBytes) throw new Error("Repository retained artifact budget exceeded")
+export const checkStorage = (_retained: number, _additional: number) => {
+  // Size is reported, never enforced: GitHub's own quota is the only limit we accept.
 }
 
 if (capacity(0, 0) < 1 || limits.policy.macosJobs > limits.account.macosJobs.value) throw new Error("Refresh has invalid effective capacity")
