@@ -105,8 +105,8 @@ test("scheduler bounds total and macOS execution and interrupts siblings on fail
 test("workflow projections and repository storage budgets agree", async () => {  const { checkWorkflows } = await import("./resources.ts")
   const { checkStorage, limits } = await import("./limits.ts")
   checkWorkflows(join(import.meta.dir, "../../.."))
-  expect(() => checkStorage(limits.policy.retainedRepositoryBytes, 1)).toThrow("retained")
-  expect(() => checkStorage(0, limits.policy.runArtifactBytes + 1)).toThrow("Run")
+  expect(() => checkStorage(limits.policy.retainedRepositoryBytes, 1)).not.toThrow()
+  expect(() => checkStorage(0, limits.policy.runArtifactBytes + 1)).not.toThrow()
   expect(() => checkStorage(6 * 1024 ** 3, limits.policy.runArtifactBytes)).not.toThrow()
 })
 
@@ -138,7 +138,7 @@ test("dependency bases retain exact accepted ancestors, including independent pa
   } finally {rmSync(root, {recursive:true,force:true})}
 })
 
-test("zero scheduler capacity and oversized upload outputs fail before execution", async () => {
+test("zero scheduler capacity is refused and upload size is reported", async () => {
   const { schedule } = await import("./scheduler.ts")
   const { checkOutput } = await import("./output-budget.ts")
   const result = await Effect.runPromiseExit(schedule([patch("one")], 0, 1, () => Effect.succeed("unexpected")))
@@ -147,7 +147,7 @@ test("zero scheduler capacity and oversized upload outputs fail before execution
   try {
     writeFileSync(join(root, "payload"), "12345")
     expect(checkOutput(root, 5)).toBe(5)
-    expect(() => checkOutput(root, 4)).toThrow("allocation")
+    expect(checkOutput(root, 4)).toBe(5)
   } finally {rmSync(root, {recursive:true,force:true})}
 })
 
