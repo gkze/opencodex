@@ -570,6 +570,30 @@ test("a rejected PUT does not apply fastMode in memory", async () => {
   }
 });
 
+test("fastMode accepts the Ultra Fast tier and rejects a tier it cannot send", async () => {
+  const server = startServer(0);
+  try {
+    const put = async (value: unknown) => fetch(new URL("/api/claude-code", server.url), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fastMode: value }),
+    });
+    expect((await put("ultrafast")).status).toBe(200);
+    expect(loadConfig().fastMode).toBe("ultrafast");
+    const get = await fetch(new URL("/api/claude-code", server.url)).then(r => r.json()) as Record<string, unknown>;
+    expect(get.fastMode).toBe("ultrafast");
+    // A near miss must not be stored as passthrough: the write boundary refuses it.
+    expect((await put("UltraFast")).status).toBe(400);
+    expect((await put("fast")).status).toBe(400);
+    expect(loadConfig().fastMode).toBe("ultrafast");
+    // null restores passthrough, which is how a client that sends no tier behaves.
+    expect((await put(null)).status).toBe(200);
+    expect(loadConfig().fastMode).toBeUndefined();
+  } finally {
+    await server.stop(true);
+  }
+});
+
 test("PUT round-trips three-state authMode (devlog 260720 + 260726_claude_auth_auto)", async () => {
   const server = startServer(0);
   try {
