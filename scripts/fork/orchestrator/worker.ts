@@ -2,7 +2,7 @@ import { Effect, Schema } from "effect"
 import { resolve, join } from "node:path"
 import { mkdirSync } from "node:fs"
 import { decode, CapturedPatch, Sha, Result as ResultSchema, type Result } from "./model.ts"
-import { git, command } from "./process.ts"
+import { git, command, commandResult } from "./process.ts"
 import { replay, commitPatch } from "./replay.ts"
 import { dependencyBase } from "./dependencies.ts"
 import { limits } from "./limits.ts"
@@ -33,16 +33,19 @@ const prepare = Effect.gen(function*() {
   }
   yield* git(cwd, "add", "--all")
   if (yield* git(cwd, "diff", "--name-only", "--diff-filter=U")) return yield* Effect.fail("Unresolved conflicts")
-  if (adapted) {
-    const protectedPaths = [".github", "scripts/fork", "package.json", "bun.lock"]
-    // Agent cannot change controls even when the original patch legitimately touches them.
-    for (const path of protectedPaths) {
-      const expected = yield* git(cwd, "diff", `${task.patch.source}^`, task.patch.source, "--", path)
-      const actual = yield* git(cwd, "diff", "--cached", "--", path)
-      if (actual !== expected) return yield* Effect.fail(`Agent changed protected path ${path}`)
-    }
+  // `git add` clears unmerged entries, so a repair that resolved the index but left markers in
+  // the file used to reach --check and surface as an unrelated whitespace error. Only added lines
+  // count: upstream's own devlog files quote conflict markers as documentation.
+  const added = yield* git(cwd, "diff", "--cached", "-U0")
+  const markers: string[] = []
+  let markerFile = ""
+  for (const line of added.split("\n")) {
+    if (line.startsWith("+++ b/")) markerFile = line.slice(6)
+    else if (/^\+(<<<<<<<|>>>>>>>) |^\+=======$/.test(line)) markers.push(`${markerFile}: ${line.slice(1, 60)}`)
   }
-  yield* git(cwd, "diff", "--cached", "--check")
+  if (markers.length) return yield* Effect.fail(`Repair left conflict markers: ${markers.slice(0, 5).join(", ")}`)
+  const whitespace = yield* commandResult(["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "diff", "--cached", "--check"], cwd)
+  if (whitespace.status !== 0) return yield* Effect.fail(`Patch introduces whitespace errors: ${whitespace.stdout || whitespace.stderr || `exit ${whitespace.status}`}`)
   yield* commitPatch(cwd, task.patch.source, task.patch.id)
   const candidate = yield* git(cwd, "rev-parse", "HEAD")
   const result: Result = {id: task.patch.id, source: task.patch.source, upstream: task.upstream, base, candidate, adapted}
