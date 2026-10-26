@@ -1415,5 +1415,5 @@
   ,"link-codex-settings-digest.test.ts": "clients", "link-apply-record.test.ts": "clients", "client-runtime-restart.test.ts": "clients", "link-parity-reporter.test.ts": "clients",
   "link-apply-restart.test.ts": "cli", "link-child-parity.test.ts": "server", "restart-replacement-not-ready.test.ts": "server",
   "hermes-profiles.test.ts": "clients", "hermes-profile-routes.test.ts": "clients"
-  ,"cli-sync-expect-link.test.ts": "cli","fx-client.test.ts": "clients","link-ultrafast-settings.test.ts": "clients","catalog-ultrafast-cache.test.ts": "codex-integration","fastwire-ultrafast-regressions.test.ts": "routing"
+  ,"cli-sync-expect-link.test.ts": "cli","fx-client.test.ts": "clients","link-ultrafast-settings.test.ts": "clients","catalog-ultrafast-cache.test.ts": "codex-integration","fastwire-ultrafast-regressions.test.ts": "routing","fork-updates.test.ts": "update","fork-nightly.test.ts": "ci-workflows"
 }
