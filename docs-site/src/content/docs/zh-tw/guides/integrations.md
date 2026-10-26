@@ -1,9 +1,9 @@
 ---
 title: 整合
-description: 從儀表板把 opencodex 連接到 OpenCode、Pi、OMP、Hermes、OpenClaw、Kimi Code、gjc、DeepSeek Harness、MiniMax Code、ZCode、Prime Agent、Aside、Raycast、omo、Cline CLI、Kilo、Command Code 與 Factory Droid——每個客戶端一個開關，每次寫入前都會先備份。
+description: 從儀表板把 opencodex 連接到 OpenCode、Pi、OMP、Hermes、OpenClaw、Kimi Code、gjc、DeepSeek Harness、MiniMax Code、ZCode、Prime Agent、Aside、Raycast、omo、Cline CLI、Kilo、Command Code 與 Factory Droid、fx——每個客戶端一個開關，每次寫入前都會先備份。
 ---
 
-**連線** 分頁會把 opencodex 的 provider 區塊寫入客戶端自己的設定檔，也會把它移除。共有十八個客戶端以這種方式運作，每個都有一個開關：
+**連線** 分頁會把 opencodex 的 provider 區塊寫入客戶端自己的設定檔，也會把它移除。共有十九個客戶端以這種方式運作，每個都有一個開關：
 
 | 客戶端 | 設定檔 | 格式 | 變更生效時機 | 憑證 |
 |---|---|---|---|---|
@@ -25,6 +25,7 @@ description: 從儀表板把 opencodex 連接到 OpenCode、Pi、OMP、Hermes、
 | Kilo | `~/.config/kilo` 下最先存在的 `kilo.jsonc`、`kilo.json`、`opencode.jsonc`、`opencode.json` 或 `config.json`（`XDG_CONFIG_HOME` 會移動該目錄；若都不存在則建立 `kilo.jsonc`） | JSONC | 新工作階段 | `OPENCODEX_KILO_API_KEY` |
 | Command Code | `~/.commandcode/providers.json` (Windows 使用預設家目錄時：僅當 `HOME ?? USERPROFILE` 的值非空、非純空白且為 Windows 絕對路徑時使用，否則使用 `homedir()`；另行傳入的家目錄保持不變；檔案位於其下的 `.commandcode\providers.json`) | JSON | 下次啟動 Command Code 時 | 無 — 無金鑰迴環 (`apiKey: false`) |
 | Factory Droid | `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` Windows 上) | JSON | 檔案變更時立即生效 | 無金鑰迴環 |
+| fx | `~/.fx/settings.json` | JSON | 重新啟動 fx 後 | 無 — 僅限 loopback |
 
 具有受支援推理強度階梯的 GJC 模型會匯出 `reasoning: true`、`thinking.levels` 與 `compat.supportsReasoningEffort`，讓 GJC 提供強度選擇。原生 Codex 模型即使未在目錄中列出階梯，也會取得標準階梯。沒有已知階梯的模型會省略這些欄位；`none` 不傳送強度，`ultra` 在傳輸時會折疊成 `max`，因此不會列為選項。重新整理整合即可更新模型選項。
 
@@ -234,3 +235,33 @@ ocx integration client enable --client kilo
 ## Factory Droid
 
 Factory Droid 使用 `~/.factory/settings.json`（Windows 上為 `%USERPROFILE%\.factory\settings.json`）。使用 `ocx integration client enable --client droid` 明確啟用，然後在 `/model` 中選擇自訂模型。受管理的項目不含金鑰，且僅支援迴環連線。停用會移除受管理的項目；Undo 會還原儲存的原始位元組。如果舊版 `config.json` 含有 OpenCodex 項目，或 `settings.local.json` 覆寫了 `customModels`，請先解決衝突再啟用。請參閱 [Factory BYOK 文件](https://docs.factory.ai/model-independence/byok)。
+
+## fx
+
+此整合針對 fx 的自訂模型連線，而 fx 只允許在 `~/.fx/settings.json` 的**最上層**定義這些連線。專案中的
+`.fx.json` 僅限專案欄位，不能定義或選擇連線，因此 opencodex 把 `providers.opencodex` 寫入該檔案。佈景主題、
+工作區、權限規則與其他連線都保持不變。
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+產生的連線使用 `openai-chat-completions`，`base_url` 指向代理的 `/v1` 根路徑（`/chat/completions` 由 fx
+自行附加），驗證為 `auth: { "type": "none" }`。fx 的 `model_metadata` 同時就是模型清單：`fx models`
+只列出 opencodex 寫入的路由模型，僅在目錄已知時附上上下文視窗，僅在模型宣告時啟用影像輸入。
+
+**fx 在啟動時讀取該檔案，因此套用或同步後請重新啟動 fx。** 啟用不會改變已選供應商：請執行
+`fx provider opencodex` 切換，並用 `fx status --json` 確認。其他連線及其已儲存模型保持不變。
+
+如果設定檔中已經有 `providers.opencodex` 項目（手動寫入，或由先前的設定留下），因為沒有可比的歸屬
+記錄，開關會回報衝突並拒絕套用。使用該列的 **Replace**，或
+`ocx integration client enable --client fx --overwrite-conflict`，只會以產生的連線改寫該項目，設定檔其餘部分
+（主題、其他連線、權限規則）維持不變；執行前會先建立快照，可透過 Restore 還原。
+
+fx 將設定檔限制為 64 KiB，並在啟動時回報無效設定；路由模型過多會佔滿整個設定檔共用的這份預算。
+如果 fx 回報檔案無效，請關閉未使用的供應商或縮小模型選擇範圍。
+
+fx 不傳送自訂驗證標頭，而 `/v1/chat/completions` 拒絕 bearer 憑證並要求專用的 `x-opencodex-api-key`
+標頭，因此此整合刻意僅支援 loopback。非 loopback 綁定會被拒絕，而不是寫入無法通過驗證的連線。
