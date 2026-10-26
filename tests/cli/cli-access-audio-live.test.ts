@@ -1,10 +1,16 @@
 import type { AudioClientSocket } from "../../src/cli/access-audio-live";
-import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, setDefaultTimeout, spyOn, test } from "bun:test";
 import { Readable } from "node:stream";
 import { handleAccessAudioCommand, type AccessAudioDeps } from "../../src/cli/access-audio";
 import { resolveAudioClient } from "../../src/server/audio-client";
 import { isolationBudgetMs } from "../helpers/ci-watchdog";
+import { SERVER_BUDGET_MS } from "../helpers/test-budget";
 import type { OcxConfig } from "../../src/types";
+
+// The readiness cases below wait on a real WebSocket lifecycle scaled to 5 s by
+// isolationBudgetMs under the full suite; that wait binds a real socket, so it
+// needs the server budget rather than Bun's 5 s default per-test timeout.
+setDefaultTimeout(SERVER_BUDGET_MS);
 
 const KEY = "ocx_data_audio_live_synthetic";
 const argv = ["live-check", "--model", "synthetic-live", "--api-key-stdin", "--json"];
