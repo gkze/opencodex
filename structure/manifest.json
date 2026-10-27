@@ -48,18 +48,15 @@
   ],
   "docs": [
     {
-      "path": "quota-snapshots.md",
-      "tier": 4,
-      "title": "Account Quota Snapshots",
-      "scope": "Bounded write deferral and cancellation for Codex and provider account quota snapshots.",
-      "documents": ["src/codex/quota.ts", "src/providers/account-quota-disk.ts"]
-    },
-    {
       "path": "providers/generic-account-pool.md",
       "tier": 4,
       "title": "Generic OAuth Account Pool",
       "scope": "Opt-in conversation ownership, request-local selection receipts and bounded release for generic OAuth pools.",
-      "documents": ["src/oauth/", "src/server/", "src/types/"]
+      "documents": [
+        "src/oauth/",
+        "src/server/",
+        "src/types/"
+      ]
     },
     {
       "path": "overview.md",
@@ -138,7 +135,10 @@
       "tier": 2,
       "title": "Custom Codex Provider Routing",
       "scope": "Explicit provider-ID routing consent, URL-only publication and recovery.",
-      "documents": ["src/codex/provider-routing.ts", "src/cli/codex-provider.ts"]
+      "documents": [
+        "src/codex/provider-routing.ts",
+        "src/cli/codex-provider.ts"
+      ]
     },
     {
       "path": "codex-home.md",
@@ -164,7 +164,11 @@
       "tier": 3,
       "title": "Remote Codex Messaging",
       "scope": "Explicit peer enrollment, connection-bound capabilities, bounded foreground SSH ownership and queued remote replies.",
-      "documents": ["src/messaging/", "src/cli/", "src/link/"]
+      "documents": [
+        "src/messaging/",
+        "src/cli/",
+        "src/link/"
+      ]
     },
     {
       "path": "local-messaging.md",
@@ -215,14 +219,19 @@
       "tier": 2,
       "title": "Effort-clamp observations",
       "scope": "Persisted effort-clamp observation identity and idempotent sync notices.",
-      "documents": ["src/codex/runtime.ts", "src/codex/catalog/effort.ts"]
+      "documents": [
+        "src/codex/runtime.ts",
+        "src/codex/catalog/effort.ts"
+      ]
     },
     {
       "path": "catalog-routed-ownership.md",
       "tier": 2,
       "title": "Routed-row authorship",
       "scope": "Generated routed-row ownership signals and combo catalog description overrides.",
-      "documents": ["src/codex/catalog/ownership.ts"]
+      "documents": [
+        "src/codex/catalog/ownership.ts"
+      ]
     },
     {
       "path": "subagents.md",
@@ -284,22 +293,6 @@
       ]
     },
     {
-      "path": "transports/response-turn-membership.md",
-      "tier": 3,
-      "title": "Structural Response Turn Membership",
-      "scope": "Embedding-owned signing material, dedicated authenticated caller/own-thread scope and pre-parser structural normalization.",
-      "documents": [
-        "src/responses/turn-membership.ts",
-        "src/server/responses/turn-membership.ts",
-        "src/bridge/sse.ts",
-        "src/server/responses/adapter-delivery.ts",
-        "src/server/responses/adapter-dispatch.ts",
-        "src/server/responses/request-transport.ts",
-        "src/server/auth-cors.ts",
-        "src/server/responses/request-prepare.ts"
-      ]
-    },
-    {
       "path": "transports/responses.md",
       "tier": 3,
       "title": "Responses Transport",
@@ -323,17 +316,6 @@
         "src/server/",
         "src/adapters/",
         "gui/"
-      ]
-    },
-    {
-      "path": "transports/responses-citations.md",
-      "tier": 3,
-      "title": "Replayed URL Citations",
-      "scope": "Destination-gated citation repair for ordinary Responses and every native compact send.",
-      "documents": [
-        "src/adapters/openai-responses/request-strips.ts",
-        "src/adapters/openai-responses/passthrough.ts",
-        "src/server/responses/compact.ts"
       ]
     },
     {
@@ -461,7 +443,16 @@
       "tier": 4,
       "title": "Anthropic progress updates",
       "scope": "Opus 5.5 progress display, visible commentary, and exact signed-block replay.",
-      "documents": ["src/adapters/", "src/bridge/", "src/responses/", "src/claude/", "src/types/", "src/server/", "src/web-search/", "src/images/"]
+      "documents": [
+        "src/adapters/",
+        "src/bridge/",
+        "src/responses/",
+        "src/claude/",
+        "src/types/",
+        "src/server/",
+        "src/web-search/",
+        "src/images/"
+      ]
     },
     {
       "path": "providers/anthropic-account-thresholds.md",
@@ -477,28 +468,39 @@
       "tier": 4,
       "title": "Meta Muse Login",
       "scope": "CLI credential import, approval lifecycle, explicit recovery and account-free login diagnostics.",
-      "documents": ["src/oauth/meta-muse.ts", "src/oauth/meta-muse-keychain.ts", "src/oauth/meta-muse-errors.ts", "src/oauth/login-cli.ts"]
+      "documents": [
+        "src/oauth/meta-muse.ts",
+        "src/oauth/meta-muse-keychain.ts",
+        "src/oauth/meta-muse-errors.ts",
+        "src/oauth/login-cli.ts"
+      ]
     },
     {
       "path": "providers/oauth-reconciliation.md",
       "tier": 4,
       "title": "OAuth Preset Reconciliation",
       "scope": "Operator limits and per-model declarations across startup reconciliation and OAuth upsert.",
-      "documents": ["src/oauth/"]
+      "documents": [
+        "src/oauth/"
+      ]
     },
     {
       "path": "providers/antigravity-account-import.md",
       "tier": 4,
       "title": "Antigravity Account Import",
       "scope": "Cockpit Tools import schema, identity check, probe-gated project_id fallback and no-write failure paths.",
-      "documents": ["src/oauth/"]
+      "documents": [
+        "src/oauth/"
+      ]
     },
     {
       "path": "providers/claude-cli-replay.md",
       "tier": 4,
       "title": "Claude CLI Replay",
       "scope": "Claude CLI stable replay, canonical tool schemas, capture-only client tool ownership and subscription usage admission.",
-      "documents": ["src/adapters/"]
+      "documents": [
+        "src/adapters/"
+      ]
     },
     {
       "path": "providers-and-adapters.md",
@@ -560,21 +562,6 @@
       ]
     },
     {
-      "path": "providers/workbuddy.md",
-      "tier": 4,
-      "title": "WorkBuddy AI Subscription",
-      "scope": "Browser login, account-bound refresh and catalogs, fixed-origin Chat transport, tool continuity and display-only credit balances.",
-      "documents": [
-        "src/oauth/workbuddy.ts",
-        "src/providers/workbuddy.ts",
-        "src/providers/workbuddy-models.ts",
-        "src/providers/workbuddy-credit-balance.ts",
-        "src/providers/quota/workbuddy.ts",
-        "src/adapters/workbuddy.ts",
-        "src/adapters/workbuddy-schema.ts"
-      ]
-    },
-    {
       "path": "providers/dsh-account.md",
       "tier": 4,
       "title": "DeepSeek Harness Account Provider",
@@ -604,7 +591,10 @@
       "tier": 4,
       "title": "OAuth Code-Display Login",
       "scope": "Headless code-display OAuth login: flow ownership, expiry, unsupported providers, single-operator store.",
-      "documents": ["src/oauth/", "src/server/management/"]
+      "documents": [
+        "src/oauth/",
+        "src/server/management/"
+      ]
     },
     {
       "path": "providers/openai-tiers.md",
@@ -621,7 +611,9 @@
       "tier": 4,
       "title": "Pool credit renewal",
       "scope": "Independent credit-evidence renewal for opted-in exhausted Codex pool accounts.",
-      "documents": ["src/codex/auth-api/pool-mode-gate.ts"]
+      "documents": [
+        "src/codex/auth-api/pool-mode-gate.ts"
+      ]
     },
     {
       "path": "providers/openai-accounts.md",
@@ -638,7 +630,12 @@
       "tier": 4,
       "title": "Preserve Signed-In Codex Quota",
       "scope": "Opt-in effective priority bands that spend other pool accounts before the signed-in identity, its identity observation and management API.",
-      "documents": ["src/codex/account-preservation.ts", "src/codex/signed-in-identity.ts", "src/codex/auth-api/account-preservation.ts", "src/cli/account-preservation.ts"]
+      "documents": [
+        "src/codex/account-preservation.ts",
+        "src/codex/signed-in-identity.ts",
+        "src/codex/auth-api/account-preservation.ts",
+        "src/cli/account-preservation.ts"
+      ]
     },
     {
       "path": "providers/cursor.md",
@@ -689,25 +686,14 @@
       ]
     },
     {
-      "path": "providers/completed-tool-blocks.md",
-      "tier": 4,
-      "title": "Negotiated Completed Tool Blocks",
-      "scope": "Explicit response-only block completion, ordered safe-call delivery and terminal ownership.",
-      "documents": ["src/adapters/base.ts", "src/adapters/unique-tool-call-ids.ts", "src/adapters/openai-chat.ts", "src/adapters/openai-chat/completed-tool-blocks.ts", "src/adapters/openai-chat/serialized-tool-call-content.ts"]
-    },
-    {
       "path": "providers/mimo-bare-calls.md",
       "tier": 4,
       "title": "MiMo Bare Tool Calls",
       "scope": "Standalone MiMo bare-block recovery into declared freeform calls, separate from identified-wrapper reconciliation.",
-      "documents": ["src/adapters/openai-chat/", "src/adapters/openai-chat.ts"]
-    },
-    {
-      "path": "providers/chat-required-tool-results.md",
-      "tier": 4,
-      "title": "Mandatory Translated Chat Tool Results",
-      "scope": "Translated Chat terminal guard that fails a clean completion missing a mandatory client tool call.",
-      "documents": ["src/adapters/openai-chat/required-tool-result.ts"]
+      "documents": [
+        "src/adapters/openai-chat/",
+        "src/adapters/openai-chat.ts"
+      ]
     },
     {
       "path": "adapters/registry.md",
@@ -802,24 +788,6 @@
       ]
     },
     {
-      "path": "fallback-policy.md",
-      "tier": 3,
-      "title": "Fallback Policy",
-      "scope": "OCX-11 fallback off: what is a model or provider fallback (and what intra-pool rotation is not), scope precedence, the guarded hop sites, the fallback_refused and home_unreachable contracts, and the ocx.fallback/1 state.",
-      "documents": [
-        "src/routing/",
-        "src/types/",
-        "src/config/",
-        "src/client/",
-        "src/server/",
-        "src/cli/",
-        "src/codex/",
-        "src/combos/",
-        "src/remote/",
-        "gui/"
-      ]
-    },
-    {
       "path": "pricing.md",
       "tier": 5,
       "title": "Model Price Overrides",
@@ -853,7 +821,10 @@
       "tier": 5,
       "title": "Codex Desktop Compatibility",
       "scope": "Windows package activation, restart context, and protected compatibility authority persistence.",
-      "documents": ["src/codex/", "src/cli/"]
+      "documents": [
+        "src/codex/",
+        "src/cli/"
+      ]
     },
     {
       "path": "clients/chatgpt-desktop.md",
@@ -885,17 +856,6 @@
       "scope": "Verified regular-file reads of Claude Desktop config-library metadata, profiles and snapshots.",
       "documents": [
         "src/claude/"
-      ]
-    },
-    {
-      "path": "clients/hermes.md",
-      "tier": 5,
-      "title": "Hermes Profiles",
-      "scope": "Hermes profile discovery, per-profile selection, ownership stores, and boundaries.",
-      "documents": [
-        "src/cli/",
-        "src/integrations/",
-        "src/server/"
       ]
     },
     {
@@ -958,38 +918,13 @@
       ]
     },
     {
-      "path": "ops/desktop-supervision.md",
-      "tier": 6,
-      "title": "Desktop Supervision",
-      "scope": "Durable Desktop ownership read, takeover-consent handling, live-supervision evidence, the Windows probe's trusted system-directory acquisition, and the supervision latch blocking contract consumed by service and update guards.",
-      "documents": [
-        "bin/ocx.mjs",
-        "desktop/src-tauri/src/claim.rs",
-        "desktop/src-tauri/src/first_run.rs",
-        "desktop/src-tauri/src/identity.rs",
-        "desktop/src-tauri/src/ownership.rs",
-        "desktop/src-tauri/src/resolve.rs",
-        "desktop/src-tauri/src/runtime_stop.rs",
-        "desktop/src-tauri/src/startup.rs",
-        "src/cli/desktop-runtime-guidance.ts",
-        "src/cli/update-restart.ts",
-        "src/service/cli.ts",
-        "src/service/desktop-command-guard.ts",
-        "src/service/desktop-startup.ts",
-        "src/service/desktop-supervision.d.mts",
-        "src/service/desktop-supervision.mjs",
-        "src/service/orchestration.ts",
-        "src/service/repair.ts",
-        "src/update/index.ts",
-        "src/update/restart-ownership.ts"
-      ]
-    },
-    {
       "path": "ops/service-logging.md",
       "tier": 6,
       "title": "Managed Service Logging",
       "scope": "Service-only console timestamps and bounded copy-truncate log retention.",
-      "documents": ["src/service/logging.ts"]
+      "documents": [
+        "src/service/logging.ts"
+      ]
     },
     {
       "path": "ops/service-health-recovery.md",
@@ -1143,6 +1078,145 @@
         "src/config/account-auto-pause-revisions.ts",
         "src/oauth/api-key-pool-preserve.ts",
         "gui/src/account-pause-display.ts"
+      ]
+    },
+    {
+      "path": "quota-snapshots.md",
+      "tier": 4,
+      "title": "Account Quota Snapshots",
+      "scope": "Bounded write deferral and cancellation for Codex and provider account quota snapshots.",
+      "documents": [
+        "src/codex/quota.ts",
+        "src/providers/account-quota-disk.ts"
+      ]
+    },
+    {
+      "path": "transports/response-turn-membership.md",
+      "tier": 3,
+      "title": "Structural Response Turn Membership",
+      "scope": "Embedding-owned signing material, dedicated authenticated caller/own-thread scope and pre-parser structural normalization.",
+      "documents": [
+        "src/responses/turn-membership.ts",
+        "src/server/responses/turn-membership.ts",
+        "src/bridge/sse.ts",
+        "src/server/responses/adapter-delivery.ts",
+        "src/server/responses/adapter-dispatch.ts",
+        "src/server/responses/request-transport.ts",
+        "src/server/auth-cors.ts",
+        "src/server/responses/request-prepare.ts"
+      ]
+    },
+    {
+      "path": "transports/responses-citations.md",
+      "tier": 3,
+      "title": "Replayed URL Citations",
+      "scope": "Destination-gated citation repair for ordinary Responses and every native compact send.",
+      "documents": [
+        "src/adapters/openai-responses/request-strips.ts",
+        "src/adapters/openai-responses/passthrough.ts",
+        "src/server/responses/compact.ts"
+      ]
+    },
+    {
+      "path": "providers/workbuddy.md",
+      "tier": 4,
+      "title": "WorkBuddy AI Subscription",
+      "scope": "Browser login, account-bound refresh and catalogs, fixed-origin Chat transport, tool continuity and display-only credit balances.",
+      "documents": [
+        "src/oauth/workbuddy.ts",
+        "src/providers/workbuddy.ts",
+        "src/providers/workbuddy-models.ts",
+        "src/providers/workbuddy-credit-balance.ts",
+        "src/providers/quota/workbuddy.ts",
+        "src/adapters/workbuddy.ts",
+        "src/adapters/workbuddy-schema.ts"
+      ]
+    },
+    {
+      "path": "providers/completed-tool-blocks.md",
+      "tier": 4,
+      "title": "Negotiated Completed Tool Blocks",
+      "scope": "Explicit response-only block completion, ordered safe-call delivery and terminal ownership.",
+      "documents": [
+        "src/adapters/base.ts",
+        "src/adapters/unique-tool-call-ids.ts",
+        "src/adapters/openai-chat.ts",
+        "src/adapters/openai-chat/completed-tool-blocks.ts",
+        "src/adapters/openai-chat/serialized-tool-call-content.ts"
+      ]
+    },
+    {
+      "path": "providers/chat-required-tool-results.md",
+      "tier": 4,
+      "title": "Mandatory Translated Chat Tool Results",
+      "scope": "Translated Chat terminal guard that fails a clean completion missing a mandatory client tool call.",
+      "documents": [
+        "src/adapters/openai-chat/required-tool-result.ts"
+      ]
+    },
+    {
+      "path": "fallback-policy.md",
+      "tier": 3,
+      "title": "Fallback Policy",
+      "scope": "OCX-11 fallback off: what is a model or provider fallback (and what intra-pool rotation is not), scope precedence, the guarded hop sites, the fallback_refused and home_unreachable contracts, and the ocx.fallback/1 state.",
+      "documents": [
+        "src/routing/",
+        "src/types/",
+        "src/config/",
+        "src/client/",
+        "src/server/",
+        "src/cli/",
+        "src/codex/",
+        "src/combos/",
+        "src/remote/",
+        "gui/"
+      ]
+    },
+    {
+      "path": "clients/hermes.md",
+      "tier": 5,
+      "title": "Hermes Profiles",
+      "scope": "Hermes profile discovery, per-profile selection, ownership stores, and boundaries.",
+      "documents": [
+        "src/cli/",
+        "src/integrations/",
+        "src/server/"
+      ]
+    },
+    {
+      "path": "ops/desktop-supervision.md",
+      "tier": 6,
+      "title": "Desktop Supervision",
+      "scope": "Durable Desktop ownership read, takeover-consent handling, live-supervision evidence, the Windows probe's trusted system-directory acquisition, and the supervision latch blocking contract consumed by service and update guards.",
+      "documents": [
+        "bin/ocx.mjs",
+        "desktop/src-tauri/src/claim.rs",
+        "desktop/src-tauri/src/first_run.rs",
+        "desktop/src-tauri/src/identity.rs",
+        "desktop/src-tauri/src/ownership.rs",
+        "desktop/src-tauri/src/resolve.rs",
+        "desktop/src-tauri/src/runtime_stop.rs",
+        "desktop/src-tauri/src/startup.rs",
+        "src/cli/desktop-runtime-guidance.ts",
+        "src/cli/update-restart.ts",
+        "src/service/cli.ts",
+        "src/service/desktop-command-guard.ts",
+        "src/service/desktop-startup.ts",
+        "src/service/desktop-supervision.d.mts",
+        "src/service/desktop-supervision.mjs",
+        "src/service/orchestration.ts",
+        "src/service/repair.ts",
+        "src/update/index.ts",
+        "src/update/restart-ownership.ts"
+      ]
+    },
+    {
+      "path": "ops/source-archives.md",
+      "tier": 6,
+      "title": "Source Archive Identity",
+      "scope": "Compatibility manifest hashing for source archives.",
+      "documents": [
+        "scripts/generate-compatibility-version.ts"
       ]
     }
   ],
