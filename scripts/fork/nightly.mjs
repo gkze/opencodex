@@ -128,10 +128,17 @@ if (command === "prepare") {
       const matches = stack.results.filter(result => result.id === patch.id)
       assert.equal(matches.length, 1)
       const result = matches[0]
-      assert.equal(result.source, sha(patch.source))
+      if (result.hold) {
+        assert.equal(result.adapted, false, "Held patch cannot carry an adaptation")
+        const accepted = git("log", "-1", "--format=%H", `--grep=^Patch-Id: ${patch.id}$`, old)
+        assert.equal(sha(result.source), accepted, "Held patch must use its last accepted revision")
+      } else {
+        assert.equal(result.source, sha(patch.source))
+      }
       git("fetch", bundle, sha(result.candidate))
       git("merge-base", "--is-ancestor", upstream, result.candidate)
-      updates.push({ref: `refs/heads/${patch.branch}`, old: patch.source, candidate: result.candidate})
+      // Keep a held patch's pending source for the next refresh instead of replacing it.
+      updates.push({ref: `refs/heads/${patch.branch}`, old: patch.source, candidate: result.hold ? patch.source : result.candidate})
     }
   }
   const observed = updates.map(update => ({...update, current: git("ls-remote", "origin", update.ref).split("\t")[0]}))
