@@ -91,7 +91,7 @@ describe("an edit to the setup action alone", () => {
 // Keep runtime and test-runner role selection distinct even when package.json pins both to 1.4.4.
 // Check the active setup at each test command, so a later role switch cannot evade the guard.
 const runsBunTests = (step: Step): boolean =>
-  /\bbun\s+test\b|\bbun\s+run\s+test(?::changed)?(?:\s|$)|\bbun\s+(?:run\s+)?scripts\/test\.ts\b|scripts\/ci\/run-(?:bun|changed)-tests?(?:-batches)?\.sh/.test(
+  /\bbun\s+test\b|\bbun\s+run\s+test(?::changed)?(?:\s|$)|\bbun\s+(?:run\s+)?scripts\/test\.ts\b|scripts\/ci\/run-(?:bun|changed)-tests?(?:-batches)?\.sh|\bbun\s+(?:run\s+)?scripts\/fork\/orchestrator\/worker\.ts\s+verify\b/.test(
     (step.run ?? "").split("\n").filter(line => !line.trimStart().startsWith("#")).join("\n"),
   );
 const workflowJobs = new Map(readdirSync(repoPath(".github", "workflows"))
@@ -104,9 +104,11 @@ const workflowJobs = new Map(readdirSync(repoPath(".github", "workflows"))
 describe("CI Bun roles", () => {
   test("recognizes direct tests, both suite wrappers, and keeps Swift tests on runtime", () => {
     for (const run of ["bun test --isolate tests", "bun run test", "bun run test:changed",
-      "bun scripts/test.ts", "bun run scripts/test.ts", "bash scripts/ci/run-bun-test-batches.sh 1/4"]) {
+      "bun scripts/test.ts", "bun run scripts/test.ts", "bash scripts/ci/run-bun-test-batches.sh 1/4",
+      "bun scripts/fork/orchestrator/worker.ts verify"]) {
       expect(runsBunTests({ run })).toBeTrue();
     }
+    expect(runsBunTests({ run: "bun scripts/fork/orchestrator/worker.ts prepare" })).toBeFalse();
     expect(runsBunTests({ run: "bun run test:macos" })).toBeFalse();
     expect(runsBunTests({ run: "# bun run test" })).toBeFalse();
   });
