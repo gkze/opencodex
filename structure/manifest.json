@@ -48,6 +48,16 @@
   ],
   "docs": [
     {
+      "path": "quota-snapshots.md",
+      "tier": 4,
+      "title": "Account Quota Snapshots",
+      "scope": "Bounded write deferral and cancellation for Codex and provider account quota snapshots.",
+      "documents": [
+        "src/codex/quota.ts",
+        "src/providers/account-quota-disk.ts"
+      ]
+    },
+    {
       "path": "providers/generic-account-pool.md",
       "tier": 4,
       "title": "Generic OAuth Account Pool",
@@ -293,6 +303,22 @@
       ]
     },
     {
+      "path": "transports/response-turn-membership.md",
+      "tier": 3,
+      "title": "Structural Response Turn Membership",
+      "scope": "Embedding-owned signing material, dedicated authenticated caller/own-thread scope and pre-parser structural normalization.",
+      "documents": [
+        "src/responses/turn-membership.ts",
+        "src/server/responses/turn-membership.ts",
+        "src/bridge/sse.ts",
+        "src/server/responses/adapter-delivery.ts",
+        "src/server/responses/adapter-dispatch.ts",
+        "src/server/responses/request-transport.ts",
+        "src/server/auth-cors.ts",
+        "src/server/responses/request-prepare.ts"
+      ]
+    },
+    {
       "path": "transports/responses.md",
       "tier": 3,
       "title": "Responses Transport",
@@ -316,6 +342,17 @@
         "src/server/",
         "src/adapters/",
         "gui/"
+      ]
+    },
+    {
+      "path": "transports/responses-citations.md",
+      "tier": 3,
+      "title": "Replayed URL Citations",
+      "scope": "Destination-gated citation repair for ordinary Responses and every native compact send.",
+      "documents": [
+        "src/adapters/openai-responses/request-strips.ts",
+        "src/adapters/openai-responses/passthrough.ts",
+        "src/server/responses/compact.ts"
       ]
     },
     {
@@ -562,6 +599,21 @@
       ]
     },
     {
+      "path": "providers/workbuddy.md",
+      "tier": 4,
+      "title": "WorkBuddy AI Subscription",
+      "scope": "Browser login, account-bound refresh and catalogs, fixed-origin Chat transport, tool continuity and display-only credit balances.",
+      "documents": [
+        "src/oauth/workbuddy.ts",
+        "src/providers/workbuddy.ts",
+        "src/providers/workbuddy-models.ts",
+        "src/providers/workbuddy-credit-balance.ts",
+        "src/providers/quota/workbuddy.ts",
+        "src/adapters/workbuddy.ts",
+        "src/adapters/workbuddy-schema.ts"
+      ]
+    },
+    {
       "path": "providers/dsh-account.md",
       "tier": 4,
       "title": "DeepSeek Harness Account Provider",
@@ -686,6 +738,19 @@
       ]
     },
     {
+      "path": "providers/completed-tool-blocks.md",
+      "tier": 4,
+      "title": "Negotiated Completed Tool Blocks",
+      "scope": "Explicit response-only block completion, ordered safe-call delivery and terminal ownership.",
+      "documents": [
+        "src/adapters/base.ts",
+        "src/adapters/unique-tool-call-ids.ts",
+        "src/adapters/openai-chat.ts",
+        "src/adapters/openai-chat/completed-tool-blocks.ts",
+        "src/adapters/openai-chat/serialized-tool-call-content.ts"
+      ]
+    },
+    {
       "path": "providers/mimo-bare-calls.md",
       "tier": 4,
       "title": "MiMo Bare Tool Calls",
@@ -693,6 +758,15 @@
       "documents": [
         "src/adapters/openai-chat/",
         "src/adapters/openai-chat.ts"
+      ]
+    },
+    {
+      "path": "providers/chat-required-tool-results.md",
+      "tier": 4,
+      "title": "Mandatory Translated Chat Tool Results",
+      "scope": "Translated Chat terminal guard that fails a clean completion missing a mandatory client tool call.",
+      "documents": [
+        "src/adapters/openai-chat/required-tool-result.ts"
       ]
     },
     {
@@ -788,6 +862,24 @@
       ]
     },
     {
+      "path": "fallback-policy.md",
+      "tier": 3,
+      "title": "Fallback Policy",
+      "scope": "OCX-11 fallback off: what is a model or provider fallback (and what intra-pool rotation is not), scope precedence, the guarded hop sites, the fallback_refused and home_unreachable contracts, and the ocx.fallback/1 state.",
+      "documents": [
+        "src/routing/",
+        "src/types/",
+        "src/config/",
+        "src/client/",
+        "src/server/",
+        "src/cli/",
+        "src/codex/",
+        "src/combos/",
+        "src/remote/",
+        "gui/"
+      ]
+    },
+    {
       "path": "pricing.md",
       "tier": 5,
       "title": "Model Price Overrides",
@@ -859,6 +951,17 @@
       ]
     },
     {
+      "path": "clients/hermes.md",
+      "tier": 5,
+      "title": "Hermes Profiles",
+      "scope": "Hermes profile discovery, per-profile selection, ownership stores, and boundaries.",
+      "documents": [
+        "src/cli/",
+        "src/integrations/",
+        "src/server/"
+      ]
+    },
+    {
       "path": "clients/qoder.md",
       "tier": 5,
       "title": "Qoder Client Integration",
@@ -915,6 +1018,33 @@
         "src/service-manager-probe.ts",
         "src/sidecar/",
         "src/update/"
+      ]
+    },
+    {
+      "path": "ops/desktop-supervision.md",
+      "tier": 6,
+      "title": "Desktop Supervision",
+      "scope": "Durable Desktop ownership read, takeover-consent handling, live-supervision evidence, the Windows probe's trusted system-directory acquisition, and the supervision latch blocking contract consumed by service and update guards.",
+      "documents": [
+        "bin/ocx.mjs",
+        "desktop/src-tauri/src/claim.rs",
+        "desktop/src-tauri/src/first_run.rs",
+        "desktop/src-tauri/src/identity.rs",
+        "desktop/src-tauri/src/ownership.rs",
+        "desktop/src-tauri/src/resolve.rs",
+        "desktop/src-tauri/src/runtime_stop.rs",
+        "desktop/src-tauri/src/startup.rs",
+        "src/cli/desktop-runtime-guidance.ts",
+        "src/cli/update-restart.ts",
+        "src/service/cli.ts",
+        "src/service/desktop-command-guard.ts",
+        "src/service/desktop-startup.ts",
+        "src/service/desktop-supervision.d.mts",
+        "src/service/desktop-supervision.mjs",
+        "src/service/orchestration.ts",
+        "src/service/repair.ts",
+        "src/update/index.ts",
+        "src/update/restart-ownership.ts"
       ]
     },
     {
@@ -1090,142 +1220,21 @@
       ]
     },
     {
-      "path": "quota-snapshots.md",
-      "tier": 4,
-      "title": "Account Quota Snapshots",
-      "scope": "Bounded write deferral and cancellation for Codex and provider account quota snapshots.",
-      "documents": [
-        "src/codex/quota.ts",
-        "src/providers/account-quota-disk.ts"
-      ]
-    },
-    {
-      "path": "transports/response-turn-membership.md",
-      "tier": 3,
-      "title": "Structural Response Turn Membership",
-      "scope": "Embedding-owned signing material, dedicated authenticated caller/own-thread scope and pre-parser structural normalization.",
-      "documents": [
-        "src/responses/turn-membership.ts",
-        "src/server/responses/turn-membership.ts",
-        "src/bridge/sse.ts",
-        "src/server/responses/adapter-delivery.ts",
-        "src/server/responses/adapter-dispatch.ts",
-        "src/server/responses/request-transport.ts",
-        "src/server/auth-cors.ts",
-        "src/server/responses/request-prepare.ts"
-      ]
-    },
-    {
-      "path": "transports/responses-citations.md",
-      "tier": 3,
-      "title": "Replayed URL Citations",
-      "scope": "Destination-gated citation repair for ordinary Responses and every native compact send.",
-      "documents": [
-        "src/adapters/openai-responses/request-strips.ts",
-        "src/adapters/openai-responses/passthrough.ts",
-        "src/server/responses/compact.ts"
-      ]
-    },
-    {
-      "path": "providers/workbuddy.md",
-      "tier": 4,
-      "title": "WorkBuddy AI Subscription",
-      "scope": "Browser login, account-bound refresh and catalogs, fixed-origin Chat transport, tool continuity and display-only credit balances.",
-      "documents": [
-        "src/oauth/workbuddy.ts",
-        "src/providers/workbuddy.ts",
-        "src/providers/workbuddy-models.ts",
-        "src/providers/workbuddy-credit-balance.ts",
-        "src/providers/quota/workbuddy.ts",
-        "src/adapters/workbuddy.ts",
-        "src/adapters/workbuddy-schema.ts"
-      ]
-    },
-    {
-      "path": "providers/completed-tool-blocks.md",
-      "tier": 4,
-      "title": "Negotiated Completed Tool Blocks",
-      "scope": "Explicit response-only block completion, ordered safe-call delivery and terminal ownership.",
-      "documents": [
-        "src/adapters/base.ts",
-        "src/adapters/unique-tool-call-ids.ts",
-        "src/adapters/openai-chat.ts",
-        "src/adapters/openai-chat/completed-tool-blocks.ts",
-        "src/adapters/openai-chat/serialized-tool-call-content.ts"
-      ]
-    },
-    {
-      "path": "providers/chat-required-tool-results.md",
-      "tier": 4,
-      "title": "Mandatory Translated Chat Tool Results",
-      "scope": "Translated Chat terminal guard that fails a clean completion missing a mandatory client tool call.",
-      "documents": [
-        "src/adapters/openai-chat/required-tool-result.ts"
-      ]
-    },
-    {
-      "path": "fallback-policy.md",
-      "tier": 3,
-      "title": "Fallback Policy",
-      "scope": "OCX-11 fallback off: what is a model or provider fallback (and what intra-pool rotation is not), scope precedence, the guarded hop sites, the fallback_refused and home_unreachable contracts, and the ocx.fallback/1 state.",
-      "documents": [
-        "src/routing/",
-        "src/types/",
-        "src/config/",
-        "src/client/",
-        "src/server/",
-        "src/cli/",
-        "src/codex/",
-        "src/combos/",
-        "src/remote/",
-        "gui/"
-      ]
-    },
-    {
-      "path": "clients/hermes.md",
-      "tier": 5,
-      "title": "Hermes Profiles",
-      "scope": "Hermes profile discovery, per-profile selection, ownership stores, and boundaries.",
-      "documents": [
-        "src/cli/",
-        "src/integrations/",
-        "src/server/"
-      ]
-    },
-    {
-      "path": "ops/desktop-supervision.md",
-      "tier": 6,
-      "title": "Desktop Supervision",
-      "scope": "Durable Desktop ownership read, takeover-consent handling, live-supervision evidence, the Windows probe's trusted system-directory acquisition, and the supervision latch blocking contract consumed by service and update guards.",
-      "documents": [
-        "bin/ocx.mjs",
-        "desktop/src-tauri/src/claim.rs",
-        "desktop/src-tauri/src/first_run.rs",
-        "desktop/src-tauri/src/identity.rs",
-        "desktop/src-tauri/src/ownership.rs",
-        "desktop/src-tauri/src/resolve.rs",
-        "desktop/src-tauri/src/runtime_stop.rs",
-        "desktop/src-tauri/src/startup.rs",
-        "src/cli/desktop-runtime-guidance.ts",
-        "src/cli/update-restart.ts",
-        "src/service/cli.ts",
-        "src/service/desktop-command-guard.ts",
-        "src/service/desktop-startup.ts",
-        "src/service/desktop-supervision.d.mts",
-        "src/service/desktop-supervision.mjs",
-        "src/service/orchestration.ts",
-        "src/service/repair.ts",
-        "src/update/index.ts",
-        "src/update/restart-ownership.ts"
-      ]
-    },
-    {
       "path": "ops/git-installs.md",
       "tier": 6,
       "title": "Git Installation Preparation",
       "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
       "documents": [
         "package.json"
+      ]
+    },
+    {
+      "path": "ops/fork-release.md",
+      "tier": 6,
+      "title": "Personal Fork Release",
+      "scope": "Fork candidate verification, publication, update isolation and retention.",
+      "documents": [
+        "scripts/fork/"
       ]
     }
   ],

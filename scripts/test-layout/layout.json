@@ -2450,6 +2450,8 @@
     "fx-client.test.ts": "clients",
     "link-ultrafast-settings.test.ts": "clients",
     "catalog-ultrafast-cache.test.ts": "codex-integration",
-    "fastwire-ultrafast-regressions.test.ts": "routing"
+    "fastwire-ultrafast-regressions.test.ts": "routing",
+    "fork-updates.test.ts": "update",
+    "fork-nightly.test.ts": "ci-workflows"
   }
 }
