@@ -30,6 +30,9 @@ metadata conflicts, and failed validation stop the run for review. GUI and Swift
 checks have explicit execution paths; unsupported checks fail rather than skip.
 Inference credentials are present only in preparation; validation runs in a
 separate step without those credentials. Workers have no fork-push credentials.
+Before validation, workers select the test-runner Bun pin from the replayed
+candidate's package manifest, so an upstream toolchain bump does not leave its
+tests running under the older control branch's pin.
 
 The coordinator independently checks source, dependency trees and unchanged
 replay results. Adapted results must remain within the original patch file set

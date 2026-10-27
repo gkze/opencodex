@@ -11,6 +11,10 @@ description: >-
 # Rejoin only after the upstream runner crash is fixed and a green lane=all
 # dispatch proves the unified version; then delete testRunnerBun and this role input.
 inputs:
+  project-directory:
+    description: Project directory containing the package.json Bun pins.
+    required: false
+    default: .
   role:
     description: Bun role to install (runtime or test-runner).
     required: false
@@ -29,9 +33,10 @@ runs:
       shell: bash
       env:
         BUN_ROLE: ${{ inputs.role }}
+        BUN_PROJECT_DIRECTORY: ${{ inputs.project-directory }}
       run: |
         node <<'NODE'
-        const pkg = require('./package.json');
+        const pkg = require(require('node:path').resolve(process.env.BUN_PROJECT_DIRECTORY || '.', 'package.json'));
         const role = process.env.BUN_ROLE;
         let key;
         let version;
