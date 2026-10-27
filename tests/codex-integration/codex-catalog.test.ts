@@ -3993,7 +3993,14 @@ describe("Codex catalog routed normalization", () => {
     const astra = entries.find(entry => entry.slug === `openai/${NATIVE_GPT6_ASTRA_MODEL}`);
     expect(astra).toMatchObject({
       display_name: "GPT-6-Astra", multi_agent_reasoning_effort: "xhigh",
-      service_tiers: [{ id: "priority", name: "Fast", description: "2x speed, increased usage" }],
+      service_tiers: [
+        { id: "priority", name: "Fast", description: "2x speed, increased usage" },
+        // Astra is one of the two rows the live roster advertises Ultra Fast on (client 0.162.0,
+        // 2026-10-13), so the ChatGPT-forward alias carries the tier beside Fast. The pinned
+        // native row still takes its tiers from upstream data rather than from this declaration.
+        { id: "ultrafast", name: "Ultra Fast" },
+      ],
+      additional_speed_tiers: ["fast", "ultrafast"],
     });
     expect(astra?.base_instructions).toContain(NEUTRAL_IDENTITY_LINE);
     expect(astra?.base_instructions).not.toContain("daybreak");
