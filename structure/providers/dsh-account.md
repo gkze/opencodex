@@ -1,19 +1,26 @@
 # DeepSeek Harness Account Provider
 
-`dsh-account` reuses the DeepSeek account signed in to DeepSeek Harness (DSH) Desktop. It is an OAuth-kind provider with its own credential domain; it shares no key, route or fallback with the API-key `deepseek` provider.
+`dsh-account` supports DeepSeek browser authorization and validated import from DeepSeek Harness (DSH) Desktop. It is an OAuth-kind provider with its own credential domain; it shares no key, route or fallback with the API-key `deepseek` provider.
 
-## Import
+## Browser authorization and import
+
+`src/oauth/dsh-browser.ts` implements the DSH platform's PKCE S256 protocol: `auth_init`, a single-use loopback `/oauth/callback` on an ephemeral loopback port this provider binds for one attempt, then `auth_exchange`. It does not use the shared login listener, whose per-provider fixed port exists so consecutive logins reuse the same number; DSH needs no such reuse because its callback is consumed once per attempt. A 32-byte verifier and independent state bind each attempt. Callback method, path, parameter cardinality and state are validated before consuming the code. Browser URLs are pinned to the platform origin and authorization paths; server requests reject redirects, bound responses to 64 KiB and retain only locally authored stage/status errors, never arbitrary provider or transport text. Attempts expire within ten minutes or the shorter platform deadline, check the absolute deadline before exchange and credential return, honor cancellation, close their listener and attempt `auth_cancel` on failure.
+
+The exchange's authoritative `user.id` establishes account identity directly. If missing, the profile endpoint must establish it; a balance response, token hash or email cannot substitute. CLI and dashboard share this flow through the existing OAuth controller and credential-publication transaction. Browser sign-in runs when import cannot establish identity; `forceLogin` skips import. The browser callback confirms authorization only, leaving credential-publication success to the initiating client. Without an authorization URL handler, import failures remain errors.
+
+OpenCodex keeps its own non-secret UUID in `dsh-device-id` under its configuration home, supplies device/OS and client metadata, and never borrows Harness's device identity. The client version identifies OpenCodex. The existing generic callback helper does not own the callback through exchange or enforce single consumption and duplicate-parameter rejection, so this provider owns that bounded lifecycle using Bun and standard cryptographic primitives. No Harness runtime dependency is required.
+
 
 `src/oauth/dsh.ts` reads `$DSH_HOME/.credentials.yaml` (default `~/.dsh/.credentials.yaml`) only inside `loginDshAccount`, which runs on `ocx login dsh-account` or the dashboard's **Log in** action for the provider. Nothing else reads the file, and nothing in opencodex writes, deletes or changes the permissions of it. The `deepseek-account-platform/default` grant record is validated against `https://platform.deepseek.com/auth-api/v0/users/current` with manual redirects before anything is stored.
 
 Only a successful business response with a nonempty authoritative account ID imports. A missing ID fails closed; email, phone and display name never supply a slot identity, so two DSH accounts sharing an email land in different slots and reauthentication uses the shared account-ID comparison in `src/oauth/index.ts`. Parser and transport failures surface fixed error codes instead of credential or profile fragments.
-The profile body is consumed under a fixed 64 KiB decoded-byte ceiling (`DSH_PROFILE_MAX_BYTES`) with the same bounded-read helper the quota path uses: a Content-Length above the cap is rejected without reading, and cancellation is requested on the streamed body once it exceeds the cap, so a hostile or broken upstream cannot turn an import validation into unbounded memory work. Malformed UTF-8 in the body fails validation instead of letting a replacement character alter the authoritative account ID.
+The profile body is consumed under a fixed 64 KiB decoded-byte ceiling (`DSH_PROFILE_MAX_BYTES`) with the same bounded-read helper the quota path uses: a Content-Length above the cap is rejected without reading, and cancellation is requested on the streamed body once it exceeds the cap, so a hostile or broken upstream cannot turn an import validation into unbounded memory work. Malformed UTF-8 in the body fails validation instead of letting a replacement character alter the authoritative account ID. The profile request and body read retain the upstream ten-second budget; imported tokens and returned identities use the same validation schemas as browser authorization.
 
 The imported copy lives in the opencodex credential store. Removing the account deletes only that copy and never signs DSH Desktop out.
 
 ## Refresh and 401
 
-DSH grants have no rotation endpoint. `defaultRefreshPolicy` is `disabled`, and `refreshDshAccountToken` never re-reads the DSH file: it throws a terminal "revoked" error. An upstream 401 on the replay path therefore marks the account `needsReauth`; the user re-imports explicitly.
+DSH grants have no rotation endpoint. `defaultRefreshPolicy` is `disabled`, and `refreshDshAccountToken` never re-reads the DSH file: it throws a terminal "revoked" error. An upstream 401 on the replay path therefore marks the account `needsReauth`; the user signs in explicitly again.
 
 ## Destinations
 
