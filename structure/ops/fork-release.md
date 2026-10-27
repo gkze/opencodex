@@ -38,6 +38,10 @@ make verified dependency objects available to later workers, with one sequential
 maintained source branches. Combined checks remain in the existing publisher.
 Promotion updates all maintained patch refs and the fork ref atomically, with
 expected old tips and recovery tags, only after all publication gates pass.
+When a worker fails and refresh holds a patch, acceptance and promotion require
+its exact last accepted revision. The release includes that revision rebased onto
+the captured upstream, while its pending patch branch remains unchanged for the
+next refresh. A held result cannot contain an agent adaptation.
 
 `scripts/fork/orchestrator/limits.json` separates documented platform constraints,
 account assumptions with provenance, and operating budgets. Unknown account plan

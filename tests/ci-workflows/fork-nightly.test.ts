@@ -28,7 +28,7 @@ function fixture() {
   git("checkout", "-b", "gkze/patches")
   writeFileSync(path.join(repo, "custom"), "feature")
   git("add", ".")
-  git("commit", "-m", "custom")
+  git("commit", "-m", "custom\n\nPatch-Id: example")
   const old = git("rev-parse", "HEAD")
   git("checkout", "dev")
   writeFileSync(path.join(repo, "upstream"), "new upstream")
@@ -243,4 +243,32 @@ test("stack promotion updates patch and fork refs atomically and refuses a stale
     expect(f.run("promote", {FORK_STACK_MANIFEST:stackPath}, publisher).status).not.toBe(0)
     expect(f.git("ls-remote", "origin", "refs/heads/gkze/patches")).toStartWith(f.candidate)
   } finally { rmSync(f.root, {recursive:true,force:true}) }
+})
+
+test.each(["held", "wrong-source", "adapted", "advanced"])("stack promotion handles %s patch provenance without losing pending work", (scenario) => {
+  const f = fixture()
+  try {
+    f.git("checkout", "-b", "codex/patch/example", f.old)
+    f.git("commit", "--allow-empty", "-m", "pending patch revision")
+    const pending = f.git("rev-parse", "HEAD")
+    f.git("push", "origin", "codex/patch/example")
+    const input = JSON.parse(readFileSync(path.join(f.data, "input.json"), "utf8"))
+    const stackPath = path.join(f.data, "stack.json")
+    writeFileSync(stackPath, JSON.stringify({
+      candidate: f.candidate,
+      input: {...input, patches: [{id: "example", branch: "codex/patch/example", source: pending}]},
+      results: [{id: "example", source: scenario === "wrong-source" ? f.git("rev-parse", `${f.old}^`) : f.old,
+        candidate: f.candidate, hold: true, adapted: scenario === "adapted"}],
+    }))
+    if (scenario === "advanced") {
+      f.git("commit", "--allow-empty", "-m", "concurrent pending work")
+      f.git("push", "origin", "codex/patch/example")
+    }
+    const before = f.git("ls-remote", "origin", "refs/heads/codex/patch/example")
+    const result = f.run("promote", {FORK_STACK_MANIFEST: stackPath})
+    expect(result.status === 0).toBe(scenario === "held")
+    expect(f.git("ls-remote", "origin", "refs/heads/codex/patch/example")).toBe(before)
+    expect(f.git("ls-remote", "origin", "refs/heads/gkze/patches")).toStartWith(scenario === "held" ? f.candidate : f.old)
+    if (scenario === "held") expect(f.run("promote", {FORK_STACK_MANIFEST: stackPath}).status).toBe(0)
+  } finally { rmSync(f.root, {recursive: true, force: true}) }
 })
