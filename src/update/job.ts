@@ -1,3 +1,6 @@
+import type { UpdateCheckResult } from "./check-types";
+export type { UpdateCheckResult } from "./check-types";
+import { isForkVersion, forkReleaseUrl, forkUpdateMessage } from "./fork-policy.mjs";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync, mkdirSync, openSync, readFileSync, writeSync } from "node:fs";
 import { dirname, join, sep } from "node:path";
@@ -75,17 +78,6 @@ export const RESTART_PORT_RECLAIM_MS = 30_000;
 
 export type UpdateJobStatus = "running" | "restarting" | "succeeded" | "failed";
 
-export interface UpdateCheckResult {
-  currentVersion: string;
-  latestVersion: string | null;
-  channel: Channel;
-  installer: Installer;
-  updateAvailable: boolean;
-  canUpdate: boolean;
-  command: string;
-  releaseNotesUrl: string;
-  reason?: string;
-}
 
 export interface UpdateJobState {
   id: string;
@@ -457,6 +449,8 @@ export function checkForUpdate(
   const ownership = deps.detectInstallOwnership?.();
   const installer = ownership?.installer ?? deps.detectInstall();
   const channel = requestedChannel ?? normalizeUpdateChannel(null, current);
+  if (isForkVersion(current)) return { currentVersion: current, latestVersion: null, channel, installer,
+    updateAvailable: false, canUpdate: false, command: forkUpdateMessage, releaseNotesUrl: forkReleaseUrl, reason: "fork_build" };
   const latest = installer === "source" || installer === "standalone" ? null : deps.latestVersion(channel);
   const updateAvailable = !!latest && isNewer(latest, current, channel);
   let reason: string | undefined;
