@@ -9,8 +9,8 @@ import {
   resolveClaudeDesktopApplyMode,
   resolveClaudeDesktopMode,
 } from "../../src/claude/desktop-first-party";
-import { applyDesktop, parseDesktopApplyArgs } from "../../src/cli/claude-desktop";
-import { inspectDesktop3pConfigLibrary, removeDesktop3pStandardPivot } from "../../src/claude/desktop-3p";
+import { applyDesktop as applyDesktopProduction, parseDesktopApplyArgs } from "../../src/cli/claude-desktop";
+import { inspectDesktop3pConfigLibrary, removeDesktop3pStandardPivot as removeDesktop3pStandardPivotProduction } from "../../src/claude/desktop-3p";
 import { persistCommittedDesktopGateway } from "../../src/claude/desktop-gateway-state";
 import { armClaudeCodeBaseline, saveConfigPreservingClaudeCode } from "../../src/config";
 import { ensureClaudeDesktopMatchesDesired } from "../../src/cli/ensure-desired-integrations";
@@ -27,6 +27,10 @@ import { flushConfigDirHardeningAndReaps } from "../../src/config/paths";
 let root = "";
 let library = "";
 let claudeDir = "";
+const applyDesktop = (...[profile, mode, deps]: Parameters<typeof applyDesktopProduction>) =>
+  applyDesktopProduction(profile, mode, { ...deps, lifecycleLockDeps: { lockPath: join(root, "lifecycle.sqlite") } });
+const removeDesktop3pStandardPivot = (options: Parameters<typeof removeDesktop3pStandardPivotProduction>[0]) =>
+  removeDesktop3pStandardPivotProduction({ ...options, lifecycleLockDeps: { lockPath: join(root, "lifecycle.sqlite") } });
 const previous: Record<string, string | undefined> = {};
 const ENV_KEYS = ["OPENCODEX_HOME", "OPENCODEX_CLAUDE_DESKTOP_CONFIG_DIR", "CLAUDE_CONFIG_DIR"] as const;
 
@@ -49,7 +53,7 @@ async function dispatch(path: string, init?: RequestInit, inputConfig: OcxConfig
   const response = await handleManagementAPI(new Request(url, {
     ...init,
     headers: { Host: url.host, "Content-Type": "application/json", ...(init?.headers ?? {}) },
-  }), url, inputConfig, { ensureClaudeIntercept: async () => ({ ok: true, state: { proxyPort: 10200, caCertPath: join(root, "claude-intercept", "ca.pem"), pickerProxyPort: null } }), ...deps }, "admin-token", undefined, { trustedLoopback: true });
+  }), url, inputConfig, { removeDesktop3pStandardPivot, ensureClaudeIntercept: async () => ({ ok: true, state: { proxyPort: 10200, caCertPath: join(root, "claude-intercept", "ca.pem"), pickerProxyPort: null } }), ...deps }, "admin-token", undefined, { trustedLoopback: true });
   return { status: response!.status, body: await response!.json() as Record<string, any> };
 }
 
