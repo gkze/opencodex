@@ -151,6 +151,9 @@ export function deriveRequestFailureCause(facts: RequestFailureFacts): RequestFa
   if (status === 403) return "credential-rejected";
   // Payment required. Waiting out a retry window does not help; the account has to change.
   if (status === 402) return "quota-exhausted";
+  // Account suspension / billing hold. Same account-state family as 402: the request is not
+  // the defect, so it must not read as a rejected payload.
+  if (status === 412) return "quota-exhausted";
   if (status === 413) return "payload-too-large";
   if (status === 429) return "rate-limit";
   if (status === 451) return "policy-refusal";
