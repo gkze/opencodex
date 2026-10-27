@@ -1,8 +1,7 @@
 ---
 title: Интеграции
-description: Подключайте opencodex к OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code и Factory Droid из дашборда — отдельный переключатель для каждого клиента и резервная копия перед каждой записью.
+description: Подключайте opencodex к OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code, Factory Droid и fx из дашборда — отдельный переключатель для каждого клиента и резервная копия перед каждой записью.
 ---
-
 Вкладка **Подключение** записывает блок провайдера opencodex в собственный файл
 конфигурации клиента и при необходимости удаляет его. Так работают следующие
 клиенты, у каждого свой переключатель:
@@ -27,6 +26,7 @@ description: Подключайте opencodex к OpenCode, Pi, OMP, Hermes, Open
 | Kilo | первый существующий файл среди `kilo.jsonc`, `kilo.json`, `opencode.jsonc`, `opencode.json` и `config.json` в `~/.config/kilo` (`XDG_CONFIG_HOME` переносит каталог; если файлов нет, создаётся `kilo.jsonc`) | JSONC | в новых сессиях | `OPENCODEX_KILO_API_KEY` |
 | Command Code | `~/.commandcode/providers.json` (в Windows при использовании домашнего каталога по умолчанию: использовать `HOME ?? USERPROFILE`, только если значение не пустое, не состоит из пробелов и является абсолютным путём Windows, иначе `homedir()`; отдельно переданный домашний каталог сохраняется; добавить `.commandcode\providers.json`) | JSON | при следующем запуске Command Code | нет — loopback без ключа (`apiKey: false`) |
 | Factory Droid | `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` в Windows) | JSON | сразу при изменении файла | loopback без ключа |
+| fx | `~/.fx/settings.json` | JSON | после перезапуска fx | нет — только loopback |
 
 Создаваемые каталоги включают только модели, включённые в настройках каждого
 провайдера. Это относится и к скачиваемым файлам, и к управляемым интеграциям,
@@ -610,3 +610,42 @@ ocx export --client kilo --out ./kilo.jsonc
 ## Factory Droid
 
 Factory Droid использует `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` в Windows). Явно включите интеграцию командой `ocx integration client enable --client droid`, затем выберите пользовательскую модель через `/model`. Управляемые записи не содержат ключа и работают только через loopback. Отключение удаляет управляемые записи, а Undo восстанавливает сохранённые байты. Если в прежнем `config.json` есть записи OpenCodex или `settings.local.json` переопределяет `customModels`, устраните конфликт до включения. См. [документацию Factory BYOK](https://docs.factory.ai/model-independence/byok).
+
+## fx
+
+Эта интеграция работает с пользовательскими подключениями моделей fx, которые fx определяет только на
+**верхнем уровне** `~/.fx/settings.json`. Файл проекта `.fx.json` ограничен полями проекта и не может
+задавать подключение или выбирать его, поэтому opencodex пишет `providers.opencodex` именно туда. Тема,
+рабочие области, правила разрешений и другие подключения остаются нетронутыми.
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+Созданное подключение использует `openai-chat-completions`, а `base_url` указывает на корень `/v1` прокси
+(fx сам добавляет `/chat/completions`); аутентификация — `auth: { "type": "none" }`. Блок
+`model_metadata` у fx одновременно является списком моделей: `fx models` показывает только записанные
+opencodex маршрутизируемые модели, с контекстным окном там, где его знает каталог, и с поддержкой
+изображений только там, где модель её объявляет.
+
+**fx читает этот файл при запуске, поэтому перезапустите fx после применения или синхронизации.**
+Включение не меняет выбранного провайдера: переключитесь командой `fx provider opencodex` и проверьте
+через `fx status --json`. Остальные подключения и сохранённые модели остаются как были.
+
+Если в профиле уже есть запись `providers.opencodex` — созданная вручную или оставшаяся от
+прежней настройки, — сравнивать её не с чем: записи о владении нет, поэтому переключатель сообщает о
+конфликте и отказывается применять изменения. **Replace** в строке или
+`ocx integration client enable --client fx --overwrite-conflict` перезаписывает только эту запись
+сгенерированным подключением, а остальная часть профиля — тема, другие подключения, правила разрешений —
+остаётся нетронутой; перед этим снимается снимок, который возвращает Restore.
+
+fx ограничивает файл настроек 64 КиБ и сообщает о некорректных настройках при запуске, поэтому очень
+большой выбор маршрутизируемых моделей расходует бюджет, который делит весь ваш профиль. Отключите
+неиспользуемых провайдеров или сузьте выбор моделей, если fx считает файл некорректным.
+
+fx не отправляет пользовательских заголовков аутентификации, а `/v1/chat/completions` отклоняет
+bearer-credentials и требует отдельный заголовок `x-opencodex-api-key`, поэтому интеграция намеренно
+работает только через loopback. Привязка вне loopback отклоняется вместо записи подключения, которое не
+сможет аутентифицироваться.

@@ -1,8 +1,7 @@
 ---
 title: 集成
-description: 从仪表盘将 opencodex 连接到 OpenCode、Pi、OMP、Hermes、OpenClaw、Kimi Code、gjc、DeepSeek Harness、MiniMax Code、ZCode、Prime Agent、Aside、Raycast、omo、Cline CLI、Kilo、Command Code 和 Factory Droid；每个客户端都有独立开关，且每次写入前都会备份。
+description: 从仪表盘将 opencodex 连接到 OpenCode、Pi、OMP、Hermes、OpenClaw、Kimi Code、gjc、DeepSeek Harness、MiniMax Code、ZCode、Prime Agent、Aside、Raycast、omo、Cline CLI、Kilo、Command Code 和 Factory Droid、fx；每个客户端都有独立开关，且每次写入前都会备份。
 ---
-
 **连接** 标签页可将 opencodex 的提供商配置块写入客户端自己的配置文件，也可再次移除。以下客户端都采用这种方式，各有独立开关：
 
 | 客户端 | 配置文件 | 格式 | 变更生效时间 | 凭据 |
@@ -25,6 +24,7 @@ description: 从仪表盘将 opencodex 连接到 OpenCode、Pi、OMP、Hermes、
 | Kilo | `~/.config/kilo` 下最先存在的 `kilo.jsonc`、`kilo.json`、`opencode.jsonc`、`opencode.json` 或 `config.json`（`XDG_CONFIG_HOME` 可迁移目录；均不存在时创建 `kilo.jsonc`） | JSONC | 新会话 | `OPENCODEX_KILO_API_KEY` |
 | Command Code | `~/.commandcode/providers.json` (Windows 使用默认主目录时：仅当 `HOME ?? USERPROFILE` 的值非空、非纯空白且为 Windows 绝对路径时使用，否则使用 `homedir()`；单独传入的主目录保持不变；文件位于其下的 `.commandcode\providers.json`) | JSON | 下次启动 Command Code 时 | 无 — 无密钥回环 (`apiKey: false`) |
 | Factory Droid | `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` Windows 上) | JSON | 文件变更时立即生效 | 无密钥回环 |
+| fx | `~/.fx/settings.json` | JSON | 重启 fx 后 | 无 — 仅回环 |
 
 生成的目录只包含各提供商选择中已启用的模型。下载文件和托管集成都遵循这一规则，Pi 和 Aside 也不例外。管理模型列表仍显示完整阵容，以便启用更多模型。
 
@@ -274,3 +274,33 @@ GitHub Copilot 桌面应用可以将 opencodex 用作兼容 OpenAI 的模型提�
 ## Factory Droid
 
 Factory Droid 使用 `~/.factory/settings.json`（Windows 上为 `%USERPROFILE%\.factory\settings.json`）。使用 `ocx integration client enable --client droid` 明确启用，然后在 `/model` 中选择自定义模型。托管条目不含密钥，且仅支持回环连接。禁用会移除托管条目；Undo 会恢复保存的原始字节。如果旧版 `config.json` 含有 OpenCodex 条目，或 `settings.local.json` 覆盖了 `customModels`，请先解决冲突再启用。参见 [Factory BYOK 文档](https://docs.factory.ai/model-independence/byok)。
+
+## fx
+
+此集成针对 fx 的自定义模型连接，而 fx 只允许在 `~/.fx/settings.json` 的**顶层**定义这些连接。项目中的
+`.fx.json` 仅限项目字段，不能定义或选择连接，因此 opencodex 把 `providers.opencodex` 写入该文件。主题、
+工作区、权限规则和其他连接都保持不变。
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+生成的连接使用 `openai-chat-completions`，`base_url` 指向代理的 `/v1` 根路径（`/chat/completions` 由 fx
+自行追加），认证为 `auth: { "type": "none" }`。fx 的 `model_metadata` 同时就是模型列表：`fx models`
+只列出 opencodex 写入的路由模型，仅在目录已知时附带上下文窗口，仅在模型声明时启用图像输入。
+
+**fx 在启动时读取该文件，因此应用或同步后请重启 fx。** 启用不会改变已选提供商：请运行
+`fx provider opencodex` 切换，并用 `fx status --json` 确认。其他连接及其已保存模型保持不变。
+
+如果配置文件中已经存在 `providers.opencodex` 条目（手动写入，或由早先的设置留下），由于没有可比的
+归属记录，开关会报告冲突并拒绝应用。使用该行的 **Replace**，或
+`ocx integration client enable --client fx --overwrite-conflict`，只会用生成的连接重写该条目，配置文件的其他
+部分（主题、其他连接、权限规则）保持不变；执行前会先创建快照，可由 Restore 还原。
+
+fx 将设置文件限制为 64 KiB，并在启动时报告无效设置；路由模型过多会占满整个配置文件共享的这份预算。
+如果 fx 报告文件无效，请关闭未使用的提供商或缩小模型选择范围。
+
+fx 不发送自定义认证标头，而 `/v1/chat/completions` 拒绝 bearer 凭据并要求专用的 `x-opencodex-api-key`
+标头，因此此集成有意仅支持回环。非回环绑定会被拒绝，而不是写入无法通过认证的连接。

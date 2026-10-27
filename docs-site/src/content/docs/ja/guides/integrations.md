@@ -1,8 +1,7 @@
 ---
 title: クライアント統合
-description: ダッシュボードから opencodex を OpenCode、Pi、OMP、Hermes、OpenClaw、Kimi Code、gjc、DeepSeek Harness、MiniMax Code、ZCode、Prime Agent、Aside、Raycast、omo、Cline CLI、Kilo、Command Code、Factory Droid に接続します。クライアントごとにスイッチがあり、書き込み前には必ずバックアップを取ります。
+description: ダッシュボードから opencodex を OpenCode、Pi、OMP、Hermes、OpenClaw、Kimi Code、gjc、DeepSeek Harness、MiniMax Code、ZCode、Prime Agent、Aside、Raycast、omo、Cline CLI、Kilo、Command Code、Factory Droid、fx に接続します。クライアントごとにスイッチがあり、書き込み前には必ずバックアップを取ります。
 ---
-
 **接続** タブは、各クライアントの設定ファイルに opencodex のプロバイダーブロックを書き込み、必要に応じて削除します。以下のクライアントは、それぞれのスイッチで管理できます。
 
 | クライアント | 設定ファイル | 形式 | 変更が反映される時点 | 認証情報 |
@@ -25,6 +24,7 @@ description: ダッシュボードから opencodex を OpenCode、Pi、OMP、Her
 | Kilo | `~/.config/kilo` 内で最初に存在する `kilo.jsonc`、`kilo.json`、`opencode.jsonc`、`opencode.json`、`config.json`（`XDG_CONFIG_HOME` でディレクトリを変更可能。どれもなければ `kilo.jsonc` を作成） | JSONC | 新しいセッション | `OPENCODEX_KILO_API_KEY` |
 | Command Code | `~/.commandcode/providers.json` (Windows の既定ホームを使用する場合: `HOME ?? USERPROFILE` が空文字列や空白のみではなく Windows の絶対パスの場合に限り使用し、それ以外は `homedir()`。別途指定されたホームは保持。その配下の `.commandcode\providers.json`) | JSON | Command Code の次回起動時 | なし — キー不要のループバック (`apiKey: false`) |
 | Factory Droid | `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` Windows の場合) | JSON | ファイル変更を即時反映 | キー不要のループバック |
+| fx | `~/.fx/settings.json` | JSON | fx の再起動後 | なし — ループバック専用 |
 
 生成されるカタログには、各プロバイダーの選択で有効なモデルのみが含まれます。これはダウンロードと管理対象の統合の両方に適用され、Pi と Aside も対象です。管理画面のモデル一覧にはすべてのモデルが表示されるため、追加のモデルを有効にできます。
 
@@ -276,3 +276,40 @@ GitHub Copilot デスクトップアプリでは、opencodex を OpenAI 互換�
 ## Factory Droid
 
 Factory Droid は `~/.factory/settings.json`（Windows では `%USERPROFILE%\.factory\settings.json`）を使用します。`ocx integration client enable --client droid` で明示的に有効化し、`/model` でカスタムモデルを選択します。管理対象の行はキーを使わず、ループバックでのみ動作します。無効化すると管理対象の行が削除され、Undo で保存済みのバイト列が復元されます。従来の `config.json` に OpenCodex の行がある場合や、`settings.local.json` が `customModels` を上書きする場合は、有効化する前に競合を解消してください。[Factory BYOK のドキュメント](https://docs.factory.ai/model-independence/byok)も参照してください。
+
+## fx
+
+この統合は、fx が **`~/.fx/settings.json` のトップレベル**にのみ定義できるカスタムモデル接続を対象と
+します。ワークスペースの `.fx.json` はプロジェクト用フィールドだけを扱い、接続を定義・選択できない
+ため、opencodex は `providers.opencodex` をこのファイルに書き込みます。テーマ、ワークスペース、権限
+ルール、他の接続はそのまま残ります。
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+生成される接続は `openai-chat-completions` を使い、`base_url` はプロキシの `/v1` ルートを指します
+（fx が `/chat/completions` を付加します）。認証は `auth: { "type": "none" }` です。fx の
+`model_metadata` はそのままモデル一覧であり、`fx models` は opencodex が書き込んだルーティング済み
+モデルだけを表示します。コンテキストウィンドウはカタログが把握している場合のみ、画像入力はモデルが
+宣言している場合のみ付与されます。
+
+**fx はこのファイルを起動時に読むため、適用または同期の後に fx を再起動してください。** 有効化しても
+選択中のプロバイダーは変わらないため、`fx provider opencodex` で切り替え、`fx status --json` で確認
+します。他の接続と保存済みモデルはそのままです。
+
+プロファイルに `providers.opencodex` エントリがすでにある場合（手動で、または以前の設定に
+よって残されたもの）、比較できる所有記録がないため、スイッチは競合として報告し適用を拒否します。行の
+**Replace** または `ocx integration client enable --client fx --overwrite-conflict` は、その 1 エントリ
+だけを生成された接続で書き換え、プロファイルの残り（テーマ、他の接続、権限ルール）は変更しません。実行前
+にはスナップショットが取得され、Restore で戻せます。
+
+fx は設定ファイルを 64 KiB に制限し、起動時に不正な設定を報告します。ルーティング済みモデルの選択が
+非常に多いと、プロファイル全体で共有するこの上限を圧迫します。fx がファイルを不正と報告する場合は、
+未使用のプロバイダーを無効にするか、モデル選択を絞ってください。
+
+fx はカスタム認証ヘッダーを送信せず、`/v1/chat/completions` はベアラー資格情報を拒否して専用の
+`x-opencodex-api-key` ヘッダーを要求するため、この統合は意図的にループバック専用です。非ループバック
+のバインドは、認証できない接続を書き込む代わりに拒否します。
