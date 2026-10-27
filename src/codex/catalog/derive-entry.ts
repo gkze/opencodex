@@ -59,32 +59,34 @@ export function isExactComboCatalogEntry(
  * ids differ by a single dash (`command-code` vs `commandcode`), so relabel them to the
  * lowercase-dash style the opencode presets use: `commandcode-auth/x` and `commandcode-api/x`.
  * The model-id portion also carries a redundant `<vendor>-` prefix (`deepseek-deepseek-v4-flash`)
- * that is dropped for display. Google Antigravity is relabeled to the compact `agy/` prefix for
- * the same reason: `google-antigravity/` alone consumes most of the picker row. That prefix comes
- * from the row's own `providerAlias`, decided once per gather flight; `null` means a cross-provider
- * collision suppressed it and the canonical slug stands. This is the raw-slug path only -- a
- * configured `modelAliases` entry is labeled by the effective-alias path in
- * catalog/provider-fetch.ts (#2960) and keeps the canonical provider name. All other providers
- * keep the raw slug exactly as before.
+ * that is dropped for display.
+ *
+ * Every other provider with an effective short alias is labeled `<alias>/<model>`, which is why
+ * Google Antigravity reads `agy/` rather than `google-antigravity/`: the full id alone consumes
+ * most of the picker row. The alias comes from the row's own `providerAlias`, decided once per
+ * gather flight; `null` means a cross-provider collision suppressed it and the canonical slug
+ * stands. The alias is the provider's picker prefix, so the whole provider agrees: an unaliased
+ * model of an aliased provider must not fall back to the raw id while its aliased siblings do
+ * not. This is the raw-slug path only -- a configured `modelAliases` entry is labeled by the
+ * effective-alias path in catalog/provider-fetch.ts (#2960) and keeps the canonical provider
+ * name. Providers with no alias keep the raw slug exactly as before.
  */
 function routedDisplayName(slug: string, model?: CatalogModel, config?: Pick<OcxConfig, "providers">): string {
   const slash = slug.indexOf("/");
   if (slash <= 0) return slug;
   const provider = slug.slice(0, slash);
   let modelId = slug.slice(slash + 1);
-  if (provider === "google-antigravity") {
-    if (model?.providerAlias === null) return slug;
-    const alias = (typeof model?.providerAlias === "string" && model.providerAlias.trim().length > 0)
-      ? model.providerAlias.trim()
-      : effectiveProviderAlias(provider, undefined, config);
-    return alias ? `${alias}/${modelId}` : slug;
-  }
   if (provider === "command-code" || provider === "commandcode") {
     const m = modelId.match(/^([a-z0-9]+)-([a-z0-9]+(?:-[a-z0-9]+)+)$/i);
     if (m && modelId.startsWith(`${m[1]}-${m[1]}-`)) modelId = modelId.slice(m[1]!.length + 1);
     return `${provider === "command-code" ? "commandcode-auth" : "commandcode-api"}/${modelId}`;
   }
-  return slug;
+  if (model?.providerAlias === null) return slug;
+  const stamped = typeof model?.providerAlias === "string" ? model.providerAlias.trim() : "";
+  const alias = stamped.length > 0
+    ? stamped
+    : effectiveProviderAlias(provider, config?.providers?.[provider], config);
+  return alias ? `${alias}/${modelId}` : slug;
 }
 
 function preservePinnedNativeCustomReasoning(model?: CatalogModel): boolean {
