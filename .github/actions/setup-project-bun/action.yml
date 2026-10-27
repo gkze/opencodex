@@ -11,6 +11,10 @@ description: >-
 # Both roles now default to the package's 1.4.4 security transition, retaining role validation.
 # Promotion requires a green full cross-platform lane=all run on the exact candidate head.
 inputs:
+  project-directory:
+    description: Project directory containing the package.json Bun pins.
+    required: false
+    default: .
   role:
     description: Bun role to install (runtime or test-runner).
     required: false
@@ -29,9 +33,10 @@ runs:
       shell: bash
       env:
         BUN_ROLE: ${{ inputs.role }}
+        BUN_PROJECT_DIRECTORY: ${{ inputs.project-directory }}
       run: |
         node <<'NODE'
-        const pkg = require('./package.json');
+        const pkg = require(require('node:path').resolve(process.env.BUN_PROJECT_DIRECTORY || '.', 'package.json'));
         const role = process.env.BUN_ROLE;
         let key;
         let version;
