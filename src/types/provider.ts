@@ -218,7 +218,11 @@ export interface FastWire {
    * src/providers/xai-fast-model.ts, whose only wire value is the serialized model id.
    */
   kind: "service-tier" | "anthropic-speed" | "cursor-variant" | "model-variant";
-  /** Canonical tier name to upstream wire spelling. */
+  /**
+   * Canonical tier name to upstream wire spelling. `priority` is required; `ultrafast` is an
+   * optional second mapping, and declaring it is what makes Ultra Fast a tier this route can be
+   * SET to rather than a value it merely forwards when a caller supplies one.
+   */
   canonicalToWire: Readonly<Record<string, string>>;
   /** Policy for non-canonical caller-provided tier values. */
   foreignCallerTiers: "verbatim" | "drop";
@@ -228,7 +232,7 @@ export interface FastWire {
 
 /** Durable per-attempt service-tier fact produced at the adapter serialization boundary. */
 export interface AttemptTierOutcome {
-  canonical?: "priority";
+  canonical?: "priority" | "ultrafast";
   wireKind?: FastWire["kind"] | null;
   wireValue?: string | null;
   fastOutcome: "not-requested" | "applied" | "downgraded" | "unknown";
@@ -254,7 +258,7 @@ export interface TierObservationContext {
     | "wire-unavailable"
     | "pin-unavailable";
   fastWire: FastWire | null;
-  demandDecision: "force-fast" | "force-default" | "inherit";
+  demandDecision: "force-fast" | "force-default" | "force-ultrafast" | "inherit";
   callerTier?: string;
   /**
    * Whether the destination's echoed `service_tier` is authoritative about Fast scheduling.
@@ -434,6 +438,18 @@ export interface OcxProviderConfig {
   fastEnabled?: boolean;
   /** Exact upstream model ids that override the provider-level service-tier capability. */
   modelSupportsServiceTier?: Record<string, boolean>;
+  /**
+   * Provider fallback for canonical Ultra Fast capability, the tier above canonical Fast.
+   * Declaring it (here or on a registry entry) is one of the two halves Ultra Fast needs: the
+   * other is a `fastWire.canonicalToWire.ultrafast` spelling, because there is no wire value to
+   * send without one. Tri-state like `supportsServiceTier`: `true` lets fast mode set the
+   * ultrafast spelling on eligible routes, `false` denies it outright, and absent leaves the
+   * route unclassified — a caller-supplied `ultrafast` still passes only under the final wire's
+   * forwarding permission, exactly as before.
+   */
+  supportsUltraFast?: boolean;
+  /** Exact upstream model ids that override the provider-level Ultra Fast capability. */
+  modelSupportsUltraFast?: Record<string, boolean>;
   /**
    * Responses upstream whose native contract accepts plaintext reasoning replay
    * (DeepSeek documents reasoning items with plaintext content). When set, the
