@@ -164,6 +164,7 @@ const FILE_LABEL_KEY: Record<FileIntegrationClientId, TKey> = {
   "qoder-cn": "integrations.tab.qoderCn",
   "workbuddy": "integrations.tab.workbuddy",
   "workbuddy-ai": "integrations.tab.workbuddyAi",
+  fx: "integrations.tab.fx",
 };
 
 /** A file client's block is in the file for both `current` and `stale`. */

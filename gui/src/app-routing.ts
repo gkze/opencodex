@@ -152,6 +152,7 @@ export const INTEGRATION_TAB_HASHES = [
   "integrations/qoder-cn",
   "integrations/workbuddy",
   "integrations/workbuddy-ai",
+  "integrations/fx",
 ] as const;
 
 /**
