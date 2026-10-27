@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "platform": {
+    "source": "https://docs.github.com/en/actions/reference/limits",
+    "verifiedAt": "2026-10-17",
+    "jobMinutes": 360,
+    "matrixJobs": 256,
+    "githubTokenRequestsPerHour": 1000
+  },
+  "account": {
+    "owner": "gkze",
+    "plan": {
+      "status": "unknown",
+      "reason": "Authenticated API omits plan; billing credential lacks user scope"
+    },
+    "concurrentJobs": {
+      "value": 20,
+      "status": "assumed",
+      "source": "Conservative GitHub Free floor; no account increase assumed"
+    },
+    "macosJobs": {
+      "value": 5,
+      "status": "assumed",
+      "source": "Conservative documented Free limit"
+    },
+    "artifactBytes": {
+      "value": 524288000,
+      "status": "assumed",
+      "source": "Free allowance; shared usage not verified"
+    },
+    "verifiedAt": "2026-10-17"
+  },
+  "policy": {
+    "workerJobs": 4,
+    "macosJobs": 2,
+    "reservedJobs": 4,
+    "coordinatorMinutes": 300,
+    "workerMinutes": 60,
+    "cleanupMinutes": 10,
+    "pollSeconds": 60,
+    "agentAttempts": 1,
+    "artifactMaxBytes": 20971520,
+    "runnerLabels": [
+      "ubuntu-24.04",
+      "macos-15",
+      "windows-2025"
+    ],
+    "publicationJobs": 15,
+    "publicationMacosJobs": 4,
+    "runArtifactBytes": 2147483648,
+    "retainedRepositoryBytes": 10737418240,
+    "publicationArtifactRetentionDays": 3,
+    "publicationArtifactMaxBytes": 209715200
+  }
+}

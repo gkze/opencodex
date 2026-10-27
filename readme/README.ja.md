@@ -1,3 +1,5 @@
+> **個人フォーク：** ナイトリーリリースとインストール手順は [FORK.md](../FORK.md) を参照してください。以下は上流プロジェクトのドキュメントです。
+
 <p align="center">
   <img src="../assets/banner.png" alt="opencodex — Codex、Claude Code、Claude Desktop、Grok Build のための汎用プロバイダープロキシ" width="100%">
 </p>

@@ -91,7 +91,7 @@ describe("an edit to the setup action alone", () => {
 // Keep runtime and test-runner role selection distinct even when package.json pins both to 1.4.4.
 // Check the active setup at each test command, so a later role switch cannot evade the guard.
 const runsBunTests = (step: Step): boolean =>
-  /\bbun\s+test\b|\bbun\s+run\s+test(?::changed)?(?:\s|$)|\bbun\s+(?:run\s+)?scripts\/test\.ts\b|scripts\/ci\/run-(?:bun|changed)-tests?(?:-batches)?\.sh/.test(
+  /\bbun\s+test\b|\bbun\s+run\s+test(?::changed)?(?:\s|$)|\bbun\s+(?:run\s+)?scripts\/test\.ts\b|scripts\/ci\/run-(?:bun|changed)-tests?(?:-batches)?\.sh|\bbun\s+(?:run\s+)?scripts\/fork\/orchestrator\/worker\.ts\s+verify\b/.test(
     (step.run ?? "").split("\n").filter(line => !line.trimStart().startsWith("#")).join("\n"),
   );
 const workflowJobs = new Map(readdirSync(repoPath(".github", "workflows"))
@@ -104,9 +104,11 @@ const workflowJobs = new Map(readdirSync(repoPath(".github", "workflows"))
 describe("CI Bun roles", () => {
   test("recognizes direct tests, both suite wrappers, and keeps Swift tests on runtime", () => {
     for (const run of ["bun test --isolate tests", "bun run test", "bun run test:changed",
-      "bun scripts/test.ts", "bun run scripts/test.ts", "bash scripts/ci/run-bun-test-batches.sh 1/4"]) {
+      "bun scripts/test.ts", "bun run scripts/test.ts", "bash scripts/ci/run-bun-test-batches.sh 1/4",
+      "bun scripts/fork/orchestrator/worker.ts verify"]) {
       expect(runsBunTests({ run })).toBeTrue();
     }
+    expect(runsBunTests({ run: "bun scripts/fork/orchestrator/worker.ts prepare" })).toBeFalse();
     expect(runsBunTests({ run: "bun run test:macos" })).toBeFalse();
     expect(runsBunTests({ run: "# bun run test" })).toBeFalse();
   });
@@ -169,7 +171,7 @@ const bunAction = Bun.YAML.parse(readFileSync(repoPath(...ACTION_PATH.split("/")
 const resolveStep = bunAction.runs.steps.find(step => step.id === "resolve")!;
 const resolver = resolveStep.run?.match(/node <<'NODE'\n([\s\S]*?)\nNODE/)?.[1];
 
-function resolveBunPin(pkg: unknown, role = bunAction.inputs.role.default) {
+function resolveBunPin(pkg: unknown, role = bunAction.inputs.role.default, candidate?: unknown) {
   if (!resolver) throw new Error("setup-project-bun's Node resolver is missing");
   const scratch = repoPath(".tmp");
   mkdirSync(scratch, { recursive: true });
@@ -177,9 +179,13 @@ function resolveBunPin(pkg: unknown, role = bunAction.inputs.role.default) {
   const output = join(fixture, "output");
   try {
     writeFileSync(join(fixture, "package.json"), JSON.stringify(pkg));
+    if (candidate !== undefined) {
+      mkdirSync(join(fixture, "candidate"));
+      writeFileSync(join(fixture, "candidate", "package.json"), JSON.stringify(candidate));
+    }
     writeFileSync(output, "");
     const result = Bun.spawnSync(["node", "-e", resolver], {
-      cwd: fixture, env: { ...process.env, BUN_ROLE: role, GITHUB_OUTPUT: output },
+      cwd: fixture, env: { ...process.env, BUN_ROLE: role, BUN_PROJECT_DIRECTORY: candidate === undefined ? "." : "candidate", GITHUB_OUTPUT: output },
     });
     return { status: result.exitCode, stderr: result.stderr.toString(), output: readFileSync(output, "utf8") };
   } finally {
@@ -189,6 +195,18 @@ function resolveBunPin(pkg: unknown, role = bunAction.inputs.role.default) {
 
 describe("setup-project-bun pin resolution", () => {
   const pkg = { dependencies: { bun: "1.4.2" }, testRunnerBun: "1.4.0" };
+  test("candidate validation uses its own pin and never falls back to the control pin", () => {
+    expect(resolveBunPin(pkg, "test-runner", { testRunnerBun: "1.4.4" })).toMatchObject({ status: 0, output: "version=1.4.4\n" });
+    expect(resolveBunPin(pkg, "test-runner", {})).toMatchObject({ status: 1, output: "" });
+    const steps = workflowJobs.get("fork-patch-worker.yml")?.patch?.steps ?? [];
+    const prepare = steps.findIndex(step => step.run?.endsWith("worker.ts prepare"));
+    const verify = steps.findIndex(step => step.run?.endsWith("worker.ts verify"));
+    const setup = steps.findIndex(step => step.with?.["project-directory"] === "../candidate");
+    expect(setup).toBeGreaterThan(prepare);
+    expect(setup).toBeLessThan(verify);
+    expect(steps[setup]?.with?.role).toBe("test-runner");
+    expect(steps[verify]?.env?.COPILOT_GITHUB_TOKEN).toBeUndefined();
+  });
   test("defaults to runtime and routes the requested role without changing the output contract", () => {
     expect(bunAction.inputs.role.default).toBe("runtime");
     expect(resolveStep.env?.BUN_ROLE).toBe("${{ inputs.role }}");
