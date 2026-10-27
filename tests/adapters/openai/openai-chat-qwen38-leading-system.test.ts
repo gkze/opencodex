@@ -53,6 +53,9 @@ describe("leading-system chat templates (Qwen3.8-27B, Flash-Next, OrcaSAQ-2-Cybe
     "hosted_vllm/Qwen/Qwen3.8-Flash-Next",
     "Qwen3.8-27B",
     "Qwen/Qwen3.8-27B",
+    // Cerebras serves the same checkpoint under an id with a dash before the version.
+    "qwen-3.8-27b",
+    "cerebras/qwen-3.8-27b",
     // Internal Eliza serves the same pinned template under dashed checkpoint ids.
     "qwen3-8-27b-fp8",
     "qwen3-8-27b-lora",
@@ -135,5 +138,8 @@ describe("leading-system chat templates (Qwen3.8-27B, Flash-Next, OrcaSAQ-2-Cybe
       .toEqual({ role: "system", content: "Answer in one sentence." });
     expect(serialize("Qwen3.8-27B", { ...provider, baseUrl: "https://api.openai.com/v1" })[2])
       .toEqual({ role: "system", content: "Answer in one sentence." });
+    // The Cerebras id covers the bare checkpoint only: a suffixed spelling is not evidence we
+    // have, so it stays outside the rule until a provider is observed serving one.
+    expect(serialize("qwen-3.8-27b-fp8")[2]).toEqual({ role: "system", content: "Answer in one sentence." });
   });
 });
