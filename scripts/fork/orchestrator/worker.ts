@@ -1,0 +1,79 @@
+import { Effect, Schema } from "effect"
+import { resolve, join } from "node:path"
+import { mkdirSync } from "node:fs"
+import { decode, CapturedPatch, Sha, Result as ResultSchema, type Result } from "./model.ts"
+import { git, command, commandResult } from "./process.ts"
+import { replay, commitPatch } from "./replay.ts"
+import { dependencyBase } from "./dependencies.ts"
+import { limits } from "./limits.ts"
+import { repair } from "./agent.ts"
+const Task = Schema.Struct({ attempt: Schema.String, control: Sha, upstream: Sha, patch: CapturedPatch, dependencies: Schema.Array(Sha) })
+const task = decode(Task, JSON.parse(process.env.PATCH_TASK ?? "null"))
+const trusted = process.cwd(), cwd = resolve("../candidate"), output = resolve(process.env.RUNNER_TEMP ?? "..", "result")
+mkdirSync(output, {recursive: true})
+const prepare = Effect.gen(function*() {
+  if ((yield* git(trusted, "rev-parse", "HEAD")) !== task.control) return yield* Effect.fail("Control checkout mismatch")
+  yield* command(["git", "clone", "--no-hardlinks", "--no-checkout", trusted, cwd], trusted)
+  yield* git(cwd, "config", "user.name", "github-actions[bot]")
+  yield* git(cwd, "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
+  yield* git(cwd, "fetch", "https://github.com/lidge-jun/opencodex.git", task.upstream)
+  for (const ref of [task.patch.source, ...task.dependencies]) yield* git(cwd, "fetch", "https://github.com/gkze/opencodex.git", ref)
+  yield* git(cwd, "checkout", "--detach", task.upstream)
+  const timestamp = yield* git(cwd, "show", "-s", "--format=%cI", task.upstream)
+  process.env.GIT_AUTHOR_DATE = timestamp
+  process.env.GIT_COMMITTER_DATE = timestamp
+  const base = yield* dependencyBase(cwd, task.upstream, task.dependencies)
+  const applied = yield* replay(cwd, task.patch.source, trusted)
+  let adapted = false
+  if (!applied.ok) {
+    if (limits.policy.agentAttempts !== 1) return yield* Effect.fail("This protocol supports exactly one bounded repair attempt")
+    const instructions = yield* Effect.promise(() => Bun.file(join(trusted, "scripts/fork/orchestrator/engineering-discipline.md")).text())
+    yield* repair(cwd, task.patch, applied.reason, instructions, (yield* git(cwd, "ls-files")).split("\n"), (yield* git(cwd, "diff", "--name-only", `${task.patch.source}^`, task.patch.source)).split("\n"))
+    adapted = true
+  }
+  yield* git(cwd, "add", "--all")
+  if (yield* git(cwd, "diff", "--name-only", "--diff-filter=U")) return yield* Effect.fail("Unresolved conflicts")
+  // `git add` clears unmerged entries, so a repair that resolved the index but left markers in
+  // the file used to reach --check and surface as an unrelated whitespace error. Only added lines
+  // count: upstream's own devlog files quote conflict markers as documentation.
+  const added = yield* git(cwd, "diff", "--cached", "-U0")
+  const markers: string[] = []
+  let markerFile = ""
+  for (const line of added.split("\n")) {
+    if (line.startsWith("+++ b/")) markerFile = line.slice(6)
+    else if (/^\+(<<<<<<<|>>>>>>>) |^\+=======$/.test(line)) markers.push(`${markerFile}: ${line.slice(1, 60)}`)
+  }
+  if (markers.length) return yield* Effect.fail(`Repair left conflict markers: ${markers.slice(0, 5).join(", ")}`)
+  const whitespace = yield* commandResult(["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "diff", "--cached", "--check"], cwd)
+  if (whitespace.status !== 0) return yield* Effect.fail(`Patch introduces whitespace errors: ${whitespace.stdout || whitespace.stderr || `exit ${whitespace.status}`}`)
+  yield* commitPatch(cwd, task.patch.source, task.patch.id)
+  const candidate = yield* git(cwd, "rev-parse", "HEAD")
+  const result: Result = {id: task.patch.id, source: task.patch.source, upstream: task.upstream, base, candidate, adapted}
+  yield* Effect.promise(() => Bun.write(join(output, "result.json"), JSON.stringify({attempt: task.attempt, control: task.control, ...result}, null, 2)))
+})
+const verify = Effect.gen(function*() {
+  const result = decode(ResultSchema, yield* Effect.promise(() => Bun.file(join(output, "result.json")).json()))
+  if ((yield* git(cwd, "rev-parse", "HEAD")) !== result.candidate) return yield* Effect.fail("Candidate changed before independent verification")
+  delete process.env.COPILOT_GITHUB_TOKEN
+  yield* command(["bun", "install", "--frozen-lockfile", "--linker=hoisted"], cwd)
+  yield* command(["bun", "run", "typecheck"], cwd)
+  const readmeChanges = yield* git(cwd, "diff", "--name-only", result.base, result.candidate, "--", "README.md", "readme")
+  if (readmeChanges) yield* command(["bun", "test", "tests/ci-workflows/docs-readme-translation-parity.test.ts"], cwd)
+  for (const file of task.patch.tests) {
+    if (file.startsWith("tests/") && file.endsWith(".test.ts")) yield* command(["bun", "test", file], cwd)
+    else if (file.startsWith("gui/tests/") && /\.test\.tsx?$/.test(file)) {
+      yield* command(["bun", "install", "--frozen-lockfile", "--linker=hoisted"], join(cwd, "gui"))
+      yield* command(["bun", "test", file.slice(4)], join(cwd, "gui"))
+    } else if (file === "app/Sources/WindowControlsTests/main.swift" && task.patch.runner === "macos-15") {
+      yield* command(["swift", "run", "--package-path", "app", "WindowControlsTests"], cwd)
+    } else return yield* Effect.fail(`Unsupported registered validation: ${file}`)
+  }
+  yield* command(["bun", "run", "structure:check"], cwd)
+  if (yield* git(cwd, "status", "--porcelain")) return yield* Effect.fail("Validation changed tracked/untracked state")
+  yield* git(cwd, "update-ref", "refs/heads/patch-result", result.candidate)
+  yield* git(cwd, "bundle", "create", join(output, "candidate.bundle"), "refs/heads/patch-result", `^${task.upstream}`)
+  if (Bun.file(join(output, "candidate.bundle")).size > limits.policy.artifactMaxBytes) return yield* Effect.fail("Bundle exceeds artifact budget")
+})
+const mode = process.argv[2]
+if (mode !== "prepare" && mode !== "verify") throw new Error("Expected prepare or verify")
+await Effect.runPromise(mode === "prepare" ? prepare : verify)
