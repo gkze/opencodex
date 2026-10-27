@@ -277,6 +277,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/oauth/account-auto-pause-policy.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `src/oauth/account-auto-pause.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `src/oauth/api-key-pool-preserve.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
+| `src/oauth/dsh-browser.ts` | [`providers/dsh-account.md`](providers/dsh-account.md) |
 | `src/oauth/dsh.ts` | [`providers/dsh-account.md`](providers/dsh-account.md) |
 | `src/oauth/login-cli.ts` | [`providers/meta-muse.md`](providers/meta-muse.md) |
 | `src/oauth/meta-muse-errors.ts` | [`providers/meta-muse.md`](providers/meta-muse.md) |
