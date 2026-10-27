@@ -37,6 +37,11 @@ jobs:
           PATCH_TASK: ${{ inputs.payload }}
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: bun scripts/fork/orchestrator/worker.ts prepare
+      - name: Install the candidate test runner
+        uses: ./.github/actions/setup-project-bun
+        with:
+          role: test-runner
+          project-directory: ../candidate
       - name: Independently validate without inference credentials
         env:
           PATCH_TASK: ${{ inputs.payload }}
