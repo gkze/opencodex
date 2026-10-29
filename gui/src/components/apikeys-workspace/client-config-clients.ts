@@ -8,7 +8,7 @@
  * with EXPORT_CLIENT_IDS by hand; adding a client server-side renders no row
  * until this tuple changes.
  */
-export const CLIENTS = ["qoder", "qoder-cn", "workbuddy", "workbuddy-ai", "opencode", "pi", "omp", "hermes", "openclaw", "kimi", "gajae", "dsh", "mcode", "zcode", "commandcode", "prime", "aside", "raycast", "omo", "cline", "kilo", "droid", "gentle-shell", "t3code"] as const;
+export const CLIENTS = ["qoder", "qoder-cn", "workbuddy", "workbuddy-ai", "opencode", "pi", "omp", "hermes", "openclaw", "kimi", "gajae", "dsh", "mcode", "zcode", "commandcode", "prime", "aside", "raycast", "omo", "cline", "kilo", "droid", "gentle-shell", "t3code", "fx"] as const;
 export type ExportClientId = (typeof CLIENTS)[number];
 
 export const CLIENT_LABEL_KEYS = {
@@ -36,6 +36,7 @@ export const CLIENT_LABEL_KEYS = {
   kilo: "api.clientConfig.clientKilo",
   droid: "api.clientConfig.clientDroid",
   t3code: "api.clientConfig.clientT3code",
+  fx: "api.clientConfig.clientFx",
 } as const;
 
 /**
@@ -96,6 +97,10 @@ export const CLIENT_MARKS: Partial<Record<ExportClientId, string>> = {
   // A black plate carrying a white "T3": the plated case `omo` and `qoder` set, so it
   // stays an image — masking would paint the plate and discard the glyph.
   t3code: "/provider-icons/t3code.svg",
+  // fx ships an app-icon mark: a black plate carrying a white glyph, so it is
+  // drawn as an image and never masked. Two inks, and the plate is what makes it
+  // legible on a light surface.
+  fx: "/provider-icons/fx.svg",
 };
 
 /**
