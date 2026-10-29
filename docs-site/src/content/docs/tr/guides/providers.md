@@ -126,7 +126,7 @@ ocx login google-antigravity
 ocx login cursor       # bağımsız Cursor PKCE girişi
 ocx login command-code # Command Code tarayıcı OAuth (veya ~/.commandcode/auth.json içe aktarma)
 ocx login devin       # Cognition/Devin: önce Devin CLI kimliği içe aktarılır, yoksa Auth0 tarayıcı girişi
-ocx login dsh-account # DeepSeek Harness Desktop (~/.dsh/.credentials.yaml yetkisi içe aktarılır)
+ocx login dsh-account # DeepSeek tarayıcı girişi veya doğrulanmış Harness içe aktarımı
 ocx login github-copilot  # GitHub cihaz akışı → Copilot belirteci (Copilot Pro/Business)
 ocx login codex        # Codex hesap havuzu (takma adlar: chatgpt, openai; çalışan bir proxy gerekir)
 ocx logout <saglayici>
@@ -143,7 +143,7 @@ ocx logout <saglayici>
 | `google-antigravity` | `google` | `https://daily-cloudcode-pa.googleapis.com` | Cloud Code Assist hattı üzerinden Google OAuth. Canlı keşif CCA'nın kimlik doğrulamalı `v1internal:fetchAvailableModels` uç noktasını kullanır ve oturum açmış hesap için kullanılabilir olan ajan modellerini yayınlar; sürdürülen katalog geri dönüş olarak kalır. |
 | `cursor` | `cursor` | `https://api2.cursor.sh` | Deneysel PKCE girişi, canlı HTTP/2 aktarımı ve hesap filtreli model keşfi. |
 | `devin` | `devin` | `https://server.codeium.com` | Deneysel, resmi olmayan Cognition/Devin köprüsü. Giriş önce kurulu Devin CLI'nin zaten tuttuğu kimlik bilgisini içe aktarır (`devin auth login`, `devin-session-token`'ı kendi `credentials.toml` dosyasına yazar); yoksa tarayıcıda Auth0 oturumunu açar ve yapıştırılan belirteci `RegisterUser` ile uzun ömürlü bir API anahtarına dönüştürür. `ocx login devin-cli` kullanımdan kaldırılmış bir takma ad olarak çalışmaya devam eder. Modeller hesaba göre `GetCascadeModelConfigs` ile keşfedilir; akış yalnızca Connect-RPC üzerindeki `runTurn` yolunu kullanır. Panel ön ayarında varsayılan olarak yer almaz. |
-| `dsh-account` | `dsh-account` | `https://api.deepseek.com/anthropic` | Kurulu ve oturum açılmış DeepSeek Harness (DSH) Desktop hesabını yeniden kullanan deneysel, içe aktarma öncelikli hesap sağlayıcısı. Açık içe aktarma sırasında `~/.dsh/.credentials.yaml` dosyasından kesinlikle salt okunur kimlik bilgilerini okur. DeepSeek API anahtarı faturalandırmasından bağımsızdır. |
+| `dsh-account` | `dsh-account` | `https://api.deepseek.com/anthropic` | DeepSeek tarayıcı girişi veya doğrulanmış Harness içe aktarımı. |
 | `github-copilot` | `openai-chat` | `https://api.githubcopilot.com` | Deneysel. GitHub cihaz akışı + `copilot_internal` değişimi (VS Code OAuth istemcisi). Aktif bir Copilot aboneliği gerektirir; resmi bir üçüncü taraf API değildir. |
 
 Google Antigravity hesap ve sağlayıcı kota sorguları, model listesine geri dönüş dahil sabit Google uç noktalarını kullanır. Bu hedefler için şeffaf Fake-IP DNS desteklenirken TLS doğrulaması, yönlendirme reddi ve özel adres kontrolleri korunur. Özel base URL yalnızca model isteklerini değiştirir; `NO_PROXY` doğrudan bağlantı politikasını korur.
@@ -330,14 +330,12 @@ olmayan bir makineden oturum açmak bundan etkilenmez.
 
 ### DeepSeek Account (DSH)
 
-`dsh-account`, kurulu bir DeepSeek Harness (DSH) Desktop uygulamasının kimliği doğrulanmış hesap bilgilerini yeniden kullanmak üzere tasarlanmış deneysel, içe aktarma öncelikli bir hesap sağlayıcısıdır.
+`ocx login dsh-account` komutunu çalıştırın veya DeepSeek Account (DSH) için **Log in** seçeneğini seçin. OpenCodex önce yerel Harness kimlik bilgilerini doğrular. Kimlik doğrulanamazsa DeepSeek tarayıcı girişini açar. Tarayıcı girişi için Harness kurulumu gerekmez.
 
-- **DeepSeek API Anahtarından Bağımsız:** `dsh-account`, kullanıcının kimliği doğrulanmış DeepSeek oturum kotasını (normal/bonus cüzdan bakiyeleri ve toplam harcama) kullanırken, `deepseek` sağlayıcısı platform API anahtarı bakiyesinden ücretlendirilir. Bu iki kimlik bilgisi alanı ve yönlendirmesi kesinlikle ayrıdır ve birbirine asla geri dönüş yapmaz.
-- **Yalnızca Açık İçe Aktarma:** OpenCodeX, DeepSeek Harness'in kurulu ve oturum açılmış olup olmadığını (`~/.dsh/.credentials.yaml`) algılar, ancak kullanıcının açık bir komutu (`ocx login dsh-account` veya Web Panelinde İçe Aktar'a tıklama) olmadan belirteci asla otomatik olarak kopyalamaz, içe aktarmaz veya kullanmaz.
-- **Salt Okunur DSH Kimlik Deposu:** OpenCodeX, `~/.dsh/.credentials.yaml` dosyasına kesinlikle salt okunur olarak yaklaşır. OpenCodeX, DeepSeek Harness'e ait hiçbir dosyayı asla yazmaz, değiştirmez, silmez veya dosya izinlerini değiştirmez.
-- **Yalıtılmış Kimlik Bilgisi Kopyası ve Oturumu Kapatma:** İçe aktarma sırasında OpenCodeX, belirteci DeepSeek'in yetkili kimlik uç noktasında (`/auth-api/v0/users/current`) doğrular ve kendi kopyasını OpenCodeX kimlik deposuna kaydeder. OpenCodeX'te oturumu kapatmak veya hesabı kaldırmak yalnızca OpenCodeX'in yerel kopyasını siler; yukarı akış uzak oturum kapatmayı asla tetiklemez ve DeepSeek Harness Desktop oturumunuzu kapatmaz.
-- **Arka Planda Belirteç Döndürme Yok ve 401 Durumunda Yeniden İçe Aktarma:** DSH oturum yetkileri otomatik bir arka plan yenileme uç noktasına sahip değildir. Yukarı akış HTTP 401 (`ACCOUNT_TOKEN_INVALID`) döndürürse OpenCodeX hesabı `needsReauth` olarak işaretler ve yönlendirmeyi durdurur. Erişimi geri yüklemek için kullanıcı `ocx login dsh-account` ile açıkça yeniden içe aktarmalıdır.
-- **Üçüncü Taraf Sorumluluk Reddi:** OpenCodeX, oturum yetkilerini yeniden kullanan üçüncü taraf istemciler için DeepSeek tarafından herhangi bir resmi onay veya yetkilendirme iddiasında bulunmaz.
+Yetkilendirme PKCE ve geçici bir loopback geri çağrısı kullanır. Hesap kimliği, doğrulanmış belirteç değişiminden veya DeepSeek profilinden alınır; e-posta veya bakiye bunun yerine geçmez. `$DSH_HOME/.credentials.yaml` salt okunur kalır. OpenCodex kendi oturumunu ve cihaz kimliğini saklar; hesabı kaldırmak Harness oturumunu kapatmaz. 401 yanıtından sonra açıkça yeniden giriş gerekir. `deepseek` API anahtarları ayrı tutulur.
+
+Uzak sunucular ve yetkilendirme süresi için [İngilizce ayrıntılı açıklamaya](/guides/providers/#deepseek-account-dsh) bakın.
+
 
 ## 3. API anahtarı kataloğu
 

@@ -94,7 +94,7 @@ ocx login cursor       # 独立的 Cursor PKCE 登录
 ocx login command-code # Command Code 浏览器 OAuth（或导入 ~/.commandcode/auth.json）
 ocx login orcarouter-oauth # OrcaRouter 浏览器授权 + PKCE
 ocx login devin       # Cognition/Devin：优先导入 Devin CLI 凭据，否则走 Auth0 浏览器登录
-ocx login dsh-account # DeepSeek Harness Desktop（导入 ~/.dsh/.credentials.yaml 授权）
+ocx login dsh-account # DeepSeek 浏览器登录或经过验证的 Harness 导入
 ocx login github-copilot  # GitHub 设备流 → Copilot 令牌（Copilot 账户）
 ocx login codex        # Codex 账号池（别名：chatgpt、openai；需要代理正在运行）
 ocx logout <provider>
@@ -112,7 +112,7 @@ ocx logout <provider>
 | `cursor` | `cursor` | `https://api2.cursor.sh` | 实验性 PKCE 登录、带可选 HTTP/1.1 兼容路径的 HTTP/2 传输，以及按账号筛选的模型发现。 |
 | `orcarouter-oauth` | `openai-chat` | `https://api.orcarouter.ai/v1` | 浏览器授权与密钥交换走 `https://www.orcarouter.ai` + S256 PKCE。交换结果是用户自己的普通 `sk-orca-…` API key，保存在现有凭据库中并持续复用，直到被撤销。 |
 | `devin` | `devin` | `https://server.codeium.com` | 实验性的非官方 Cognition/Devin 桥接。登录会先导入已安装 Devin CLI 已持有的凭据（`devin auth login` 会把 `devin-session-token` 写入它自己的 `credentials.toml`）；没有则打开 Auth0 浏览器页面，再用 `RegisterUser` 把粘贴的令牌换成长期 API 密钥。`ocx login devin-cli` 仍作为已弃用别名可用。模型列表按账号通过 `GetCascadeModelConfigs` 实时获取，流式仅走 Connect-RPC 上的 `runTurn` 路径。默认不在仪表盘预设中，需要手动启用。 |
-| `dsh-account` | `dsh-account` | `https://api.deepseek.com/anthropic` | 实验性优先导入账户提供商，复用已安装并登录的 DeepSeek Harness (DSH) Desktop 账户。在用户显式导入时严格以只读方式读取 `~/.dsh/.credentials.yaml` 中的凭据。独立于 DeepSeek API Key 计费。 |
+| `dsh-account` | `dsh-account` | `https://api.deepseek.com/anthropic` | DeepSeek 浏览器登录或经过验证的 Harness 导入. |
 | `github-copilot` | `openai-chat` | `https://api.githubcopilot.com` | 实验性。GitHub 设备流 + `copilot_internal` 交换（VS Code OAuth 客户端）。需要有效的 Copilot 订阅；不是官方第三方 API。 |
 
 Google Antigravity 账户和提供方的配额查询（包括模型列表回退）使用固定的 Google 计量端点。这些目标支持透明 Fake-IP DNS，同时保留 TLS 验证、重定向拒绝和私有地址检查。自定义 base URL 仅改变模型请求，不改变配额目标；`NO_PROXY` 仍使用直连策略。
@@ -207,14 +207,12 @@ API Key 提供商，也不负责让 WorkBuddy 桌面客户端使用 OpenCodex �
 
 ### DeepSeek Account (DSH)
 
-`dsh-account` 是一个实验性的、优先导入已有凭据的账户提供商，用于复用已安装并登录的 DeepSeek Harness (DSH) Desktop 应用程序的认证凭据。
+运行 `ocx login dsh-account`，或在 DeepSeek Account (DSH) 中选择 **Log in**。OpenCodex 首先验证本地 Harness 凭据；如果无法确认身份，就打开 DeepSeek 浏览器登录。浏览器登录不要求安装 Harness。
 
-- **独立于 DeepSeek API Key**：`dsh-account` 使用用户的 DeepSeek 认证会话配额（普通/赠送钱包余额与总消费），而 `deepseek` 提供商按平台的 API Key 余额扣费。这两个凭据体系和路由严格隔离，互不回退。
-- **仅显式导入**：OpenCodeX 会检测是否已安装 DeepSeek Harness 且已登录（`~/.dsh/.credentials.yaml`），但绝不会在没有用户明确操作（`ocx login dsh-account` 或在 Web 仪表盘点击导入）的情况下自动复制、导入或使用该令牌。
-- **对 DSH 凭据库只读**：OpenCodeX 将 `~/.dsh/.credentials.yaml` 视为严格只读。OpenCodeX 绝不写入、修改、删除或更改任何属于 DeepSeek Harness 的文件权限。
-- **隔离的凭据副本与登出**：导入后，OpenCodeX 会通过 DeepSeek 权威身份端点（`/auth-api/v0/users/current`）校验令牌，并在 OpenCodeX 认证库中保存独立副本。在 OpenCodeX 中登出或删除该账户仅会删除 OpenCodeX 本地副本，绝不会触发上游远程会话登出，也不会退出 DeepSeek Harness Desktop。
-- **无后台令牌自动刷新与 401 重新导入**：DSH 会话授权不支持自动后台刷新端点。若上游返回 HTTP 401（`ACCOUNT_TOKEN_INVALID`），OpenCodeX 将该账户标记为 `needsReauth` 并停止路由。要恢复访问，用户必须通过 `ocx login dsh-account` 显式重新导入。
-- **第三方免责声明**：OpenCodeX 不主张 DeepSeek 官方对于第三方客户端复用会话授权提供背书或支持。
+授权使用 PKCE 和临时回环地址回调。账户 ID 必须来自已认证的令牌交换或 DeepSeek 用户资料，不能用邮箱或余额代替。`$DSH_HOME/.credentials.yaml` 始终只读。OpenCodex 保存自己的会话和设备 ID，删除 OpenCodex 账户不会退出 Harness。收到 401 后需要显式重新登录。`deepseek` API Key 始终独立，不会互相回退。
+
+远程服务器、授权过期等细节请参阅[完整英文说明](/guides/providers/#deepseek-account-dsh)。
+
 
 ## 3. API 密钥目录
 
