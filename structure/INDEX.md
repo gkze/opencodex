@@ -140,6 +140,7 @@ Background service, docs, release, and design discipline.
 
 | Doc | Scope |
 | --- | --- |
+| [`ops/source-archives.md`](ops/source-archives.md) | Compatibility manifest hashing for source archives. |
 | [`desktop-shell.md`](desktop-shell.md) | Tauri desktop shell, proxy attachment and sidecar lifecycle, tray controls, bootstrap navigation, and desktop companion presence. |
 | [`desktop-terminal-command.md`](desktop-terminal-command.md) | Desktop-owned ocx command on PATH: record and journal, POSIX shim and shell blocks, Windows user Path, private-path ACL policy, and the local Terminal command page. |
 | [`desktop-start-at-login.md`](desktop-start-at-login.md) | macOS tray Start at Login judgment shared with Startup safety, its parity fixture, click rules, and the guarded launch-origin migration. |
@@ -154,7 +155,7 @@ Background service, docs, release, and design discipline.
 | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) | Test-runner home, case-scoped lifecycle teardown, and Bun test lock generation ownership. |
 | [`desktop-recovery.md`](desktop-recovery.md) | Native recovery intent, independently anchored executable and accepted-connection proof, cold-start decisions and installation scope. |
 | [`ops/desktop-supervision.md`](ops/desktop-supervision.md) | Durable Desktop ownership read, takeover-consent handling, live-supervision evidence, the Windows probe's trusted system-directory acquisition, and the supervision latch blocking contract consumed by service and update guards. |
-| [`ops/source-archives.md`](ops/source-archives.md) | Compatibility manifest hashing for source archives. |
+| [`ops/git-installs.md`](ops/git-installs.md) | Trusted Git installation lifecycle and source archive prerequisite. |
 
 ## Which doc describes which source
 
@@ -192,6 +193,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `gui/src/account-pause-display.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `gui/src/components/ModelPriceDialog.tsx` | [`pricing.md`](pricing.md) |
 | `gui/src/hooks/useProviderAccountPools.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
+| `package.json` | [`ops/git-installs.md`](ops/git-installs.md) |
 | `scripts/` | [`overview.md`](overview.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
 | `scripts/generate-compatibility-version.ts` | [`ops/source-archives.md`](ops/source-archives.md) |
 | `scripts/generate-ocx-skill-surface.ts` | [`cli-management.md`](cli-management.md) |
