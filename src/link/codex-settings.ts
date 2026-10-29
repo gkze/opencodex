@@ -69,7 +69,8 @@ export function projectHomeCodexSettings(config: OcxConfig, version: string): Ho
     version: HOME_CODEX_SETTINGS_VERSION,
     home: { name: safeLabel(hostname(), NAME_MAX) ?? "Home", version },
     settings: {
-      fastMode: typeof config.fastMode === "boolean" ? config.fastMode : null,
+      // This document carries the boolean Codex feature, not the proxy-owned tier demand.
+      fastMode: config.fastMode === "ultrafast" ? true : config.fastMode ?? null,
       multiAgentMode: mode && (MULTI_AGENT_MODES as readonly string[]).includes(mode) ? mode : null,
       webSearchSidecarEnabled: config.webSearchSidecar?.enabled !== false,
       subagentDefaults: sync

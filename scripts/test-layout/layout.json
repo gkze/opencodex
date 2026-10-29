@@ -23,6 +23,7 @@
   ],
   "explicit": {
     "service-desktop-recovery.test.ts": "service",
+    "catalog-omit-disabled-native.test.ts": "codex-integration",
     "provider-input-modalities.test.ts": "providers",
     "combo-description.test.ts": "routing",
     "combo-description-catalog.test.ts": "codex-integration",
@@ -204,6 +205,8 @@
     "skill-ocx-workflows.test.ts": "ci-workflows",
     "cli-capability-data.test.ts": "cli",
     "skill-ocx-generated.test.ts": "ci-workflows",
+    "client-support-matrix.test.ts": "ci-workflows",
+    "client-support-runtime.test.ts": "ci-workflows",
     "cli-update-restart.test.ts": "cli",
     "cli-update-restart-child.test.ts": "cli",
     "cli-update-restart-transport.test.ts": "cli",
@@ -655,6 +658,7 @@
     "claude-context-windows.test.ts": "claude-integration",
     "claude-desktop-1m.test.ts": "claude-integration",
     "claude-desktop-cli.test.ts": "claude-integration",
+    "claude-desktop-model-visibility.test.ts": "claude-integration",
     "claude-desktop-config-path.test.ts": "claude-integration",
     "claude-desktop-discovery.test.ts": "claude-integration",
     "claude-desktop-first-party.test.ts": "claude-integration",
@@ -1411,6 +1415,7 @@
     "kiro-builder-id-profile.test.ts": "providers/kiro",
     "kiro-calibration.test.ts": "providers/kiro",
     "kiro-device-builder.test.ts": "providers/kiro",
+    "kiro-device-iam.test.ts": "providers/kiro",
     "kiro-device-social.test.ts": "providers/kiro",
     "kiro-fallback-error-body.test.ts": "providers/kiro",
     "kiro-images.test.ts": "providers/kiro",
@@ -2385,6 +2390,7 @@
     "win-exec.test.ts": "windows",
     "win-paths.test.ts": "windows",
     "windows-acl-start-cost.test.ts": "windows",
+    "windows-atomic-write-acl-rearm.test.ts": "windows",
     "windows-atomic-replace.test.ts": "windows",
     "windows-deploy-close-regressions.test.ts": "windows",
     "windows-elevation-spawn.test.ts": "windows",
@@ -2488,12 +2494,9 @@
     "advisor-scope-transport.test.ts": "advisor",
     "local-credentials.test.ts": "cli",
     "local-credential-generation.test.ts": "config",
-    "catalog-omit-disabled-native.test.ts": "codex-integration",
-    "client-support-matrix.test.ts": "ci-workflows",
-    "client-support-runtime.test.ts": "ci-workflows",
-    "claude-desktop-model-visibility.test.ts": "claude-integration",
-    "kiro-device-iam.test.ts": "providers/kiro",
-    "windows-atomic-write-acl-rearm.test.ts": "windows",
-    "fx-client.test.ts": "clients"
+    "fx-client.test.ts": "clients",
+    "link-ultrafast-settings.test.ts": "clients",
+    "catalog-ultrafast-cache.test.ts": "codex-integration",
+    "fastwire-ultrafast-regressions.test.ts": "routing"
   }
 }
