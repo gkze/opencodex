@@ -48,15 +48,6 @@
   ],
   "docs": [
     {
-      "path": "ops/source-archives.md",
-      "tier": 6,
-      "title": "Source Archive Identity",
-      "scope": "Compatibility manifest hashing for source archives.",
-      "documents": [
-        "scripts/generate-compatibility-version.ts"
-      ]
-    },
-    {
       "path": "providers/generic-account-pool.md",
       "tier": 4,
       "title": "Generic OAuth Account Pool",
@@ -1060,6 +1051,15 @@
       ]
     },
     {
+      "path": "ops/source-archives.md",
+      "tier": 6,
+      "title": "Source Archive Identity",
+      "scope": "Compatibility manifest hashing for source archives.",
+      "documents": [
+        "scripts/generate-compatibility-version.ts"
+      ]
+    },
+    {
       "path": "transports/timeouts.md",
       "tier": 3,
       "title": "Upstream Timeouts",
@@ -1342,6 +1342,15 @@
       "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
       "documents": [
         "package.json"
+      ]
+    },
+    {
+      "path": "ops/fork-release.md",
+      "tier": 6,
+      "title": "Personal Fork Release",
+      "scope": "Fork candidate verification, publication, update isolation and retention.",
+      "documents": [
+        "scripts/fork/"
       ]
     }
   ],

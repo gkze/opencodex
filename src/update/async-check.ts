@@ -1,7 +1,8 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { probeSpawn } from "./mutation-guard.mjs";
 import { unprivilegedOwnershipMutationEnvironment } from "../service/ownership-mutation-lease.mjs";
-import { PKG, registrySpawnTarget, type Channel, type Installer } from "./index";
+import { isForkVersion } from "./fork-policy.mjs";
+import { currentVersion, PKG, registrySpawnTarget, type Channel, type Installer } from "./index";
 import type { PnpmGlobalOwner } from "./pnpm-global-install.mjs";
 import { PNPM_READ_CWD, pnpmReadEnvironment } from "./pnpm-read-policy.mjs";
 
@@ -52,7 +53,7 @@ export async function latestVersionAsync(
   installer: Installer,
   deps: AsyncLookupDeps = defaultDeps,
 ): Promise<string | null> {
-  if (installer === "source" || installer === "standalone" || installer === "mise") return null;
+  if (isForkVersion(currentVersion()) || installer === "source" || installer === "standalone" || installer === "mise") return null;
   let owner: PnpmGlobalOwner | null | undefined;
   try { owner = installer === "pnpm" ? await deps.ownerFn() : undefined; }
   catch { return null; }

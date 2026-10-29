@@ -1,3 +1,5 @@
+> **Kişisel fork:** gecelik sürümler ve kurulum talimatları [FORK.md](../FORK.md) dosyasında açıklanmıştır. Aşağıda kaynak projenin belgeleri yer almaktadır.
+
 <p align="center">
   <img src="../assets/banner.png" alt="opencodex — Codex, Claude Code, Claude Desktop ve Grok Build için evrensel sağlayıcı proxy'si" width="100%">
 </p>
