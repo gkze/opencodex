@@ -17,6 +17,7 @@ import { schedule } from "./scheduler.ts"
 import { dependencyBase } from "./dependencies.ts"
 import { preflight, measureOutputs } from "./resources.ts"
 import { isForkControl } from "./controls.ts"
+import { assertMergeDriver, configureMergeDriver } from "./merge-driver.ts"
 import registryJson from "./registry.json"
 const root = process.cwd(), directory = resolve(process.env.RUN_STATE ?? "../fork-state")
 mkdirSync(directory, {recursive: true})
@@ -28,6 +29,10 @@ const Refresh = Workflow.make("ForkRefreshV1", { payload: { run: Schema.String }
 const step = (name: string, execute: Effect.Effect<string, string>) => Activity.make({name, success: Schema.String, error: Schema.String, execute})
 const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
   yield* preflight()
+  // The worker verifies candidates by replaying them here, so both ends must merge identically.
+  yield* Effect.sync(() => configureMergeDriver(root, process.env.MERGIRAF_BIN ?? ""))
+  yield* Effect.sync(() => assertMergeDriver(root))
+  yield* Effect.sync(() => console.error(`Structural merge driver: ${process.env.MERGIRAF_BIN}`))
   const input = decode(Input, JSON.parse(yield* step("capture", Effect.gen(function*() {
     const control = yield* git(root, "rev-parse", "HEAD")
     const old = (yield* git(root, "ls-remote", "origin", "refs/heads/gkze/patches")).split("\t")[0]

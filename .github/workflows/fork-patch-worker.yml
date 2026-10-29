@@ -32,6 +32,10 @@ jobs:
         with:
           role: test-runner
       - run: bun install --cwd scripts/fork/orchestrator --frozen-lockfile --ignore-scripts
+      - name: Install the structural merge driver
+        run: |
+          bin=$(bun scripts/fork/orchestrator/merge-driver.ts install "$RUNNER_TEMP/mergiraf")
+          echo "MERGIRAF_BIN=$bin" >> "$GITHUB_ENV"
       - name: Replay and verify captured patch
         env:
           PATCH_TASK: ${{ inputs.payload }}

@@ -8,6 +8,7 @@ import { dependencyBase } from "./dependencies.ts"
 import { limits } from "./limits.ts"
 import { repair } from "./agent.ts"
 import { isForkControl } from "./controls.ts"
+import { assertMergeDriver, configureMergeDriver } from "./merge-driver.ts"
 const Task = Schema.Struct({ attempt: Schema.String, control: Sha, upstream: Sha, patch: CapturedPatch, dependencies: Schema.Array(Sha) })
 const task = decode(Task, JSON.parse(process.env.PATCH_TASK ?? "null"))
 const trusted = process.cwd(), cwd = resolve("../candidate"), output = resolve(process.env.RUNNER_TEMP ?? "..", "result")
@@ -17,12 +18,15 @@ const prepare = Effect.gen(function*() {
   yield* command(["git", "clone", "--no-hardlinks", "--no-checkout", trusted, cwd], trusted)
   yield* git(cwd, "config", "user.name", "github-actions[bot]")
   yield* git(cwd, "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
+  // Dependency merges conflict too, so the driver must be active before the first one.
+  yield* Effect.sync(() => configureMergeDriver(cwd, process.env.MERGIRAF_BIN ?? ""))
   yield* git(cwd, "fetch", "https://github.com/lidge-jun/opencodex.git", task.upstream)
   for (const ref of [task.patch.source, ...task.dependencies]) yield* git(cwd, "fetch", "https://github.com/gkze/opencodex.git", ref)
   yield* git(cwd, "checkout", "--detach", task.upstream)
   const timestamp = yield* git(cwd, "show", "-s", "--format=%cI", task.upstream)
   process.env.GIT_AUTHOR_DATE = timestamp
   process.env.GIT_COMMITTER_DATE = timestamp
+  yield* Effect.sync(() => assertMergeDriver(cwd))
   const base = yield* dependencyBase(cwd, task.upstream, task.dependencies)
   // `git add` clears unmerged entries, so a repair that resolved the index but left markers in
   // the file used to reach --check and surface as an unrelated whitespace error. Only added lines
