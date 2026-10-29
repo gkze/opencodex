@@ -41,6 +41,7 @@ import {
   captureFastPolicyAuthority,
   fastPolicyForModel,
   serviceTierSupportFromPolicy,
+  ultraFastSettableFromPolicy,
 } from "../../providers/service-tier";
 import type { FastPolicyAuthority } from "../../providers/fastwire";
 import { effectiveGoogleMode, getProviderRegistryEntry, providerMatchesRegistryTransport, registryEntryForProviderDestination } from "../../providers/registry";
@@ -622,6 +623,9 @@ async function gatherRoutedModelsUncached(
     const supportsServiceTier = fastPolicy
       ? serviceTierSupportFromPolicy(fastPolicy)
       : undefined;
+    // Same evidence rule as Fast, one tier up: declaration plus a wire spelling, never a guess.
+    const supportsUltraFast = fastPolicy !== undefined
+      && ultraFastSettableFromPolicy(fastPolicy);
     const base: CatalogModel = {
       id: cm.modelId,
       provider: cm.provider,
@@ -663,6 +667,7 @@ async function gatherRoutedModelsUncached(
       ...(typeof supportsServiceTier === "boolean" ? { supportsServiceTier } : {}),
       supportsUltraFastTier: supportsConfiguredUltraFast(fastPolicy),
       supportsFlexTier: supportsConfiguredFlex(fastPolicy),
+      ...(supportsUltraFast ? { supportsUltraFast: true } : {}),
       ...(supportsServiceTier === true && fastPolicy?.fastTierDescription !== undefined
         ? { fastTierDescription: fastPolicy.fastTierDescription }
         : {}),
