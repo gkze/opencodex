@@ -2487,6 +2487,9 @@
     "advisor-scope-transport.test.ts": "advisor",
     "local-credentials.test.ts": "cli",
     "local-credential-generation.test.ts": "config",
-    "fx-client.test.ts": "clients"
+    "fx-client.test.ts": "clients",
+    "link-ultrafast-settings.test.ts": "clients",
+    "catalog-ultrafast-cache.test.ts": "codex-integration",
+    "fastwire-ultrafast-regressions.test.ts": "routing"
   }
 }

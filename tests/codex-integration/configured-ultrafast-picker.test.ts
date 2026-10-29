@@ -59,7 +59,11 @@ describe("configured Ultra Fast in the native Codex speed picker", () => {
     expect(row.default_service_tier).toBeNull();
     expect(row.service_tier).toBeUndefined();
     expect(merge([], { ultraFastTier: false })[0]!.service_tiers).toEqual(row.service_tiers);
+    // Fork Ultra Fast capability is a separate axis: an unclassified route forwards the caller's
+    // tier verbatim, and only a declared one is set from the wire mapping.
     expect(decideTier(fastPolicyForModel(provider(), "task-model", "gateway"), undefined, "ultrafast"))
+      .toEqual({ kind: "forward-caller" });
+    expect(decideTier(fastPolicyForModel(provider({ supportsUltraFast: true }), "task-model", "gateway"), undefined, "ultrafast"))
       .toEqual({ kind: "set", value: "ultrafast" });
   });
 
