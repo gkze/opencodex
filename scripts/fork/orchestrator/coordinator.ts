@@ -16,6 +16,7 @@ import { replay, commitPatch } from "./replay.ts"
 import { schedule } from "./scheduler.ts"
 import { dependencyBase } from "./dependencies.ts"
 import { preflight, measureOutputs } from "./resources.ts"
+import { isForkControl } from "./controls.ts"
 import registryJson from "./registry.json"
 const root = process.cwd(), directory = resolve(process.env.RUN_STATE ?? "../fork-state")
 mkdirSync(directory, {recursive: true})
@@ -104,9 +105,13 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         if (!result.adapted) {
           if (!merged.ok || (yield* git(expected, "write-tree")) !== (yield* git(root, "rev-parse", `${result.candidate}^{tree}`))) return yield* Effect.fail("Unadapted worker changed patch semantics")
         } else {
-          const changed = (yield* git(root, "diff", "--name-only", result.base, result.candidate)).split("\n")
-          const allowed = new Set((yield* git(root, "diff", "--name-only", `${patch.source}^`, patch.source)).split("\n"))
-          if (changed.some(p => !allowed.has(p) || p.startsWith(".github/") || p.startsWith("scripts/fork/") || /(^|\/)(package.json|bun.lock)$/.test(p))) return yield* Effect.fail("Adaptation exceeds reviewed scope")
+          // A rework may follow upstream into files the patch never touched, so scope is the
+          // tree minus the fork's controls, capped so a repair cannot become a rewrite.
+          const changed = (yield* git(root, "diff", "--name-only", result.base, result.candidate)).split("\n").filter(Boolean)
+          if (changed.some(path => isForkControl(path))) return yield* Effect.fail("Adaptation touched a fork control")
+          const shortstat = yield* git(root, "diff", "--shortstat", result.base, result.candidate)
+          const lines = Number(shortstat.match(/(\d+) insertion/)?.[1] ?? 0) + Number(shortstat.match(/(\d+) deletion/)?.[1] ?? 0)
+          if (lines > limits.policy.adaptationMaxLines) return yield* Effect.fail(`Adaptation rewrote ${lines} lines; budget is ${limits.policy.adaptationMaxLines}`)
         }
         yield* git(root, "worktree", "remove", "--force", expected)
         return JSON.stringify(result)

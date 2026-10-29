@@ -6,6 +6,7 @@ import { Effect } from "effect"
 import { order, decode, Registry } from "./model.ts"
 import { merge, renderMetadata } from "./merge.ts"
 import { capacity, canStart } from "./limits.ts"
+import { isForkControl } from "./controls.ts"
 import { safeFile } from "./agent.ts"
 import { command } from "./process.ts"
 const patch = (id: string, requires: string[] = []) => ({id, requires, branch: `codex/patch/${id}`, sensitive: false, runner: "ubuntu-24.04" as const, tests: []})
@@ -15,6 +16,10 @@ test("dependency order rejects missing, duplicate and cyclic identities", () => 
   expect(() => order([patch("one"), patch("one")])).toThrow("Duplicate")
   expect(() => order([patch("one", ["two"]), patch("two", ["one"])])).toThrow("cycle")
   expect(() => decode(Registry, {version:1, patches:[{...patch("one"), branch:"../../main"}]})).toThrow()
+})
+test("fork controls stay outside a rework's write scope", () => {
+  expect([".github/workflows/fork-stack-refresh.yml", "scripts/fork/orchestrator/worker.ts", "package.json", "bun.lock"].every(isForkControl)).toBe(true)
+  expect(["src/oauth/dsh.ts", "docs-site/src/content/docs/fr/guides/integrations.md", "src/cli/registry.ts"].some(isForkControl)).toBe(false)
 })
 test("metadata retains both independent changes and rejects overlapping changes", () => {
   expect(merge({a:1,b:2},{a:3,b:2},{a:1,b:4})).toEqual({a:3,b:4})
