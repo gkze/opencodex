@@ -70,6 +70,7 @@ export const INTEGRATION_MARKS: Record<OverviewClientId, string | null> = {
   workbuddy: null,
   "workbuddy-ai": null,
   t3code: CLIENT_MARKS.t3code ?? null,
+  fx: CLIENT_MARKS.fx ?? null,
 };
 
 /**

@@ -521,7 +521,7 @@ export const CLI_COMMANDS: CliCommandEntry[] = [
   {
     name: "export",
     usage: `ocx export --client <${EXPORT_CLIENT_IDS.join("|")}> [--model-names <alias|routed>] [--json] [--out <path>] [--force]`,
-    summary: "Print a client config (OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Command Code, Prime Agent, Aside, Raycast, omo, Cline, Kilo, Factory Droid, Qoder, Qoder CN, WorkBuddy, WorkBuddy AI, Gentle Shell, T3 Code) wired to the running proxy.",
+    summary: "Print a client config (OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Command Code, Prime Agent, Aside, Raycast, omo, Cline, Kilo, Factory Droid, Qoder, Qoder CN, WorkBuddy, WorkBuddy AI, Gentle Shell, T3 Code, fx) wired to the running proxy.",
     details: [
       "--json prints the generated document as JSON on stdout; use --out for the client's native format.",
       "--out <path> writes the native config there and refuses to replace an existing file without --force.",
