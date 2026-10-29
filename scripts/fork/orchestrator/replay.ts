@@ -2,6 +2,7 @@ import { Effect } from "effect"
 import { git, command } from "./process.ts"
 import { merge, renderMetadata } from "./merge.ts"
 import { join } from "node:path"
+import { reconcileReadme } from "./readme-metadata.ts"
 const metadata = ["structure/manifest.json", "scripts/test-layout/layout.json", "tests/fixtures/test-layout-expected.json"]
 export const replay = (cwd: string, source: string, trustedRoot: string) => Effect.gen(function*() {
   const parent = yield* git(cwd, "rev-parse", `${source}^`)
@@ -18,6 +19,7 @@ export const replay = (cwd: string, source: string, trustedRoot: string) => Effe
   // Use the captured control revision's generator, never agent-proposed executable code.
   yield* command(["bun", join(trustedRoot, "scripts/fork/orchestrator/render-index.ts"), cwd], trustedRoot)
   yield* git(cwd, "add", "structure/INDEX.md")
+  yield* reconcileReadme(cwd, parent, before, source)
   const conflicts = yield* git(cwd, "diff", "--name-only", "--diff-filter=U")
   if (conflicts) return { ok: false as const, reason: `Conflicts: ${conflicts}` }
   if (attempt._tag === "Failure" && !(yield* git(cwd, "diff", "--cached", "--name-only"))) return { ok: false as const, reason: "Replay failed without staged changes" }
