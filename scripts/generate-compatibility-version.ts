@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { lstatSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -41,15 +41,26 @@ function sha256(bytes: Uint8Array): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-/** Build the frozen CL-00 compatibility-version manifest from exact Git-tracked working-tree bytes. */
+// Bun's Git dependency cache contains the source archive without .git. In that
+// case the archive itself is the authority; never borrow a parent checkout's index.
+function sourceArchivePaths(root: string, path = "src"): string[] {
+  const stat = lstatSync(join(root, path));
+  if (stat.isSymbolicLink()) throw new Error(`symbolic link in source archive: ${path}`);
+  if (stat.isDirectory()) {
+    return readdirSync(join(root, path)).flatMap(name => sourceArchivePaths(root, `${path}/${name}`));
+  }
+  if (!stat.isFile()) throw new Error(`non-regular source archive entry: ${path}`);
+  return path === SELF_PATH ? [] : [path];
+}
+
+/** Hash tracked checkout files, or exact source-archive files for Git installs. */
 export function buildCompatibilityVersionManifest(repoRoot: string): CompatibilityVersionManifest {
   const root = resolve(repoRoot);
-  const output = execFileSync(
-    "git",
-    ["ls-files", "-z", "--", "src", ...REQUIRED_ROOT_FILES],
-    { cwd: root },
-  );
-  const rawPaths = decodeGitPaths(new Uint8Array(output));
+  const rawPaths = existsSync(join(root, ".git"))
+    ? decodeGitPaths(new Uint8Array(execFileSync(
+      "git", ["ls-files", "-z", "--", "src", ...REQUIRED_ROOT_FILES], { cwd: root },
+    )))
+    : [...sourceArchivePaths(root), ...REQUIRED_ROOT_FILES];
   const seen = new Set<string>();
   const rows: Array<{ path: string; sha256: string }> = [];
 
