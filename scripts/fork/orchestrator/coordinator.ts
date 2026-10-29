@@ -1,7 +1,7 @@
 import { Effect, Layer, Schema, Semaphore } from "effect"
 import * as Workflow from "effect/workflow/Workflow"
 import * as Activity from "effect/workflow/Activity"
-import { mkdirSync } from "node:fs"
+import { appendFileSync, mkdirSync } from "node:fs"
 import { resolve, join } from "node:path"
 import { decode, Registry, Input, Result, order, type Result as PatchResult } from "./model.ts"
 import { workflowRuntime } from "./runtime.ts"
@@ -16,6 +16,7 @@ import { replay, commitPatch } from "./replay.ts"
 import { schedule } from "./scheduler.ts"
 import { dependencyBase } from "./dependencies.ts"
 import { preflight, measureOutputs } from "./resources.ts"
+import { quarantine } from "./quarantine.ts"
 import registryJson from "./registry.json"
 const root = process.cwd(), directory = resolve(process.env.RUN_STATE ?? "../fork-state")
 mkdirSync(directory, {recursive: true})
@@ -25,6 +26,9 @@ const registry = decode(Registry, registryJson)
 
 const Refresh = Workflow.make("ForkRefreshV1", { payload: { run: Schema.String }, success: Schema.String, error: Schema.String, idempotencyKey: p => p.run })
 const step = (name: string, execute: Effect.Effect<string, string>) => Activity.make({name, success: Schema.String, error: Schema.String, execute})
+/** One patch's night: a candidate to assemble, or a reason it sits this build out. */
+type Outcome = {result: PatchResult} | {skipped: {id: string, reason: string}}
+const skipped = (id: string, reason: string): Outcome => ({skipped: {id, reason}})
 const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
   yield* preflight()
   const input = decode(Input, JSON.parse(yield* step("capture", Effect.gen(function*() {
@@ -47,10 +51,12 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
   process.env.GIT_AUTHOR_DATE = timestamp
   process.env.GIT_COMMITTER_DATE = timestamp
   const writer = yield* Semaphore.make(1)
-  const results = yield* schedule(registry.patches, capacity(0, 0), limits.policy.macosJobs, (definition, parents: readonly PatchResult[]) => Effect.gen(function*() {
+  const outcomes = yield* schedule(registry.patches, capacity(0, 0), limits.policy.macosJobs, (definition, parents: readonly Outcome[]) => Effect.gen(function*() {
       const patch = input.patches.find(p => p.id === definition.id)!
       if (!limits.policy.runnerLabels.includes(patch.runner)) return yield* Effect.fail("Runner outside allowlist")
-      const dependencies = parents.map(r => r.candidate)
+      const dependencies = parents.flatMap(p => "result" in p ? [p.result.candidate] : [])
+      const blocked = parents.find(p => !("result" in p))
+      if (blocked && !("result" in blocked)) return skipped(patch.id, `requires quarantined ${blocked.skipped.id}`)
       // Distinct step names keep a recorded activity failure from being replayed on retry.
       const worker = (n: number) => Effect.gen(function*() {
         const tag = n === 0 ? "" : `-retry${n}`
@@ -111,26 +117,44 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         yield* git(root, "worktree", "remove", "--force", expected)
         return JSON.stringify(result)
       })
-      const encoded = dispatched._tag === "Success"
-        ? yield* step(`accept-${patch.id}`, accept(dispatched.success))
-        : yield* step(`hold-${patch.id}`, hold(String(dispatched.failure)).pipe(Effect.map(result => JSON.stringify(result))))
-      const result = decode(Result, JSON.parse(encoded))
-      if (input.patches.some(p => p.requires.includes(result.id))) yield* step(`expose-${result.id}`, Effect.gen(function*() {
-        const ref = `refs/heads/maintenance/${run}/${result.id}`
-        const current = (yield* git(root, "ls-remote", "origin", ref)).split("\t")[0]
-        if (current === result.candidate) return result.candidate
-        if (current) return yield* Effect.fail("Dependency staging ref unexpectedly advanced")
-        yield* git(root, "push", `--force-with-lease=${ref}:`, "origin", `${result.candidate}:${ref}`)
-        return result.candidate
-      }).pipe(writer.withPermits(1)))
-      return result
+      let outcome: Outcome
+      if (dispatched._tag === "Success") {
+        outcome = {result: decode(Result, JSON.parse(yield* step(`accept-${patch.id}`, accept(dispatched.success))))}
+      } else {
+        // A patch that cannot be replayed tonight ships the revision the last accepted stack
+        // published. When even that revision cannot replay — the usual shape of an upstream
+        // rewrite — quarantining it keeps the rest of the stack publishable tonight.
+        const held = yield* hold(String(dispatched.failure)).pipe(Effect.result)
+        outcome = held._tag === "Success"
+          ? {result: held.success}
+          : skipped(patch.id, held.failure)
+      }
+      if ("result" in outcome) {
+        const result = outcome.result
+        if (input.patches.some(p => p.requires.includes(result.id))) yield* step(`expose-${result.id}`, Effect.gen(function*() {
+          const ref = `refs/heads/maintenance/${run}/${result.id}`
+          const current = (yield* git(root, "ls-remote", "origin", ref)).split("\t")[0]
+          if (current === result.candidate) return result.candidate
+          if (current) return yield* Effect.fail("Dependency staging ref unexpectedly advanced")
+          yield* git(root, "push", `--force-with-lease=${ref}:`, "origin", `${result.candidate}:${ref}`)
+          return result.candidate
+        }).pipe(writer.withPermits(1)))
+      }
+      return outcome
   }))
   return yield* step("assemble", Effect.gen(function*() {
     const cwd = join(directory, "integration")
+    const results = outcomes.flatMap(o => "result" in o ? [o.result] : [])
+    const quarantined = quarantine(order(input.patches), new Map(outcomes.flatMap(o => "result" in o ? [] : [[o.skipped.id, o.skipped.reason] as const])))
+    // Publishing upstream alone would look like a fork build that dropped every fork control.
+    if (results.length + quarantined.size !== input.patches.length) return yield* Effect.fail("Patch outcomes do not cover the registry")
+    if (results.length === 0) return yield* Effect.fail("Every patch was quarantined; nothing fork-owned would ship")
     yield* freshWorktree(root, directory, cwd, input.upstream)
     const mapped: Array<{id: string, commit: string}> = []
     for (const patch of order(input.patches)) {
-      const result = results.find(r => r.id === patch.id)!
+      if (quarantined.has(patch.id)) continue
+      const result = results.find(r => r.id === patch.id)
+      if (!result) return yield* Effect.fail(`Missing worker result for ${patch.id}`)
       const merged = yield* replay(cwd, result.candidate, root)
       if (!merged.ok) return yield* Effect.fail(`Integration ${patch.id}: ${merged.reason}`)
       yield* commitPatch(cwd, result.candidate, patch.id)
@@ -151,7 +175,19 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
     yield* git(cwd, "update-ref", "refs/heads/nightly-candidate", candidate)
     yield* git(cwd, "bundle", "create", join(directory, "candidate.bundle"), "refs/heads/nightly-candidate", ...results.map(r => r.candidate), `^${input.upstream}`)
     yield* Effect.promise(() => Bun.write(join(directory, "input.json"), JSON.stringify(input)))
-    yield* Effect.promise(() => Bun.write(join(directory, "stack.json"), JSON.stringify({input, results, mapped, candidate}, null, 2)))
+    yield* Effect.promise(() => Bun.write(join(directory, "stack.json"), JSON.stringify({input, results, mapped, quarantined: [...quarantined].map(([id, reason]) => ({id, reason})), candidate}, null, 2)))
+    if (quarantined.size) {
+      const lines = [...quarantined].map(([id, reason]) => `- \`${id}\`: ${reason}`)
+      for (const [id, reason] of quarantined) console.error(`::warning title=Quarantined patch::${id} ships at its last accepted revision or not at all: ${reason}`)
+      // A sensitive patch is a fork control (install path, release plumbing). Shipping without one
+      // still beats shipping nothing, but it must never look like an ordinary skip.
+      for (const [id] of quarantined) {
+        if (input.patches.find(p => p.id === id)?.sensitive) console.error(`::error title=Sensitive patch quarantined::${id} is missing from this build; review before installing it`)
+      }
+      console.error(`Quarantined ${quarantined.size} patch(es): ${[...quarantined.keys()].join(", ")}`)
+      const summary = process.env.GITHUB_STEP_SUMMARY
+      if (summary) appendFileSync(summary, `### Quarantined patches\n\nThis build publishes without the patches below. The rest of the stack is unaffected.\n\n${lines.join("\n")}\n`)
+    }
     yield* measureOutputs(directory)
     yield* git(root, "worktree", "remove", "--force", cwd)
     return candidate

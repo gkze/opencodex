@@ -19,7 +19,13 @@ await Effect.runPromise(Effect.gen(function*() {
     if (actual !== patch.source) return yield* Effect.fail(`Patch advanced: ${patch.id}`)
   }
   const ids = registry.patches.map(p => p.id).sort().join("\n")
-  if (stack.results.map(p => p.id).sort().join("\n") !== ids || stack.mapped.map(p => p.id).sort().join("\n") !== ids) return yield* Effect.fail("Incomplete or duplicate patch mapping")
+  // Quarantined patches ship at their last accepted revision or not at all, so the stack must
+  // still account for every registry identity exactly once.
+  const covered = [...stack.results.map(p => p.id), ...stack.quarantined.map(p => p.id)]
+  if (covered.length !== registry.patches.length || covered.sort().join("\n") !== ids) return yield* Effect.fail("Incomplete or duplicate patch mapping")
+  if (stack.mapped.map(p => p.id).sort().join("\n") !== stack.results.map(p => p.id).sort().join("\n")) return yield* Effect.fail("Mapped commits must cover every accepted patch")
+  if (stack.results.length === 0) return yield* Effect.fail("Every patch was quarantined")
+  if (stack.quarantined.length) console.log(`::warning title=Quarantined patches::Publishing without ${stack.quarantined.map(q => q.id).join(", ")}`)
   yield* git(root, "fetch", "https://github.com/lidge-jun/opencodex.git", "dev")
   yield* git(root, "merge-base", "--is-ancestor", stack.input.upstream, "FETCH_HEAD")
   yield* git(root, "bundle", "verify", join(directory, "candidate.bundle"))
