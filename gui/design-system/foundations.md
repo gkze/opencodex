@@ -30,6 +30,8 @@
 외부 CDN 폰트를 사용하지 않는다. 프록시 관리 화면은 오프라인에서도 열려야 하고, 폰트
 다운로드 실패가 레이아웃 이동이나 한글 누락으로 이어지면 안 되기 때문이다.
 
+Ordinary dashboard text uses the platform's default font smoothing to avoid unnecessarily thin glyphs on 1× displays. Font family, size and weight tokens remain its typography controls. The tray popup and desktop bootstrap have separate styles that explicitly select antialiased smoothing; this dashboard rule does not change those surfaces.
+
 ### Type scale
 
 | 역할 | 클래스 | 토큰 | 크기 | 대표 용도 |
@@ -82,3 +84,7 @@
 - `prefers-reduced-motion: reduce`에서는 transition과 animation을 제거한다.
 
 모션은 상태 이해를 돕는 범위에서만 사용하며 장식 목적의 반복 애니메이션은 추가하지 않는다.
+
+## Scrollbars
+
+Scroll containers use native browser scrollbars so macOS can hide them when idle and honor the user’s Show scroll bars preference. Do not apply global `::-webkit-scrollbar` painting rules. The quota strip intentionally hides its horizontal scrollbar because it provides paging buttons.

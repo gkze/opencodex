@@ -11,7 +11,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { SidebarTopStrip } from "../src/components/app-titlebar";
 import { useSidebarCollapse } from "../src/use-sidebar-collapse";
 import { LanguageProvider } from "../src/i18n/provider";
-import { watchMacTitlebarMetrics } from "../src/lib/window-chrome";
+import { syncWindowTheme, watchMacTitlebarMetrics } from "../src/lib/window-chrome";
 
 const globals = ["document", "window", "navigator", "localStorage", "HTMLElement", "Element", "IS_REACT_ACT_ENVIRONMENT"] as const;
 const WINDOW_EVENT_STUB: { event: undefined } = { event: undefined };
@@ -146,29 +146,28 @@ test("the shortcut stays off in the plain browser shell", async () => {
 });
 
 test("the traffic-light position and the CSS row stay in step", () => {
-  // desktop/src-tauri/src/lib.rs parks the lights with `traffic_light_position`; the
-  // strips' height and the lights inset live in app-titlebar.css. Drift between them
-  // puts the lights on top of the toggle — this is the check for that.
   const lib = readFileSync(new URL("../../desktop/src-tauri/src/lib.rs", import.meta.url), "utf8");
   const css = readFileSync(new URL("../src/components/app-titlebar.css", import.meta.url), "utf8");
   const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
-  const position = lib.match(/traffic_light_position\(\s*tauri::Position::Logical\(\s*tauri::LogicalPosition::new\(\s*([\d.]+),\s*([\d.]+)/);
-  expect(position).not.toBeNull();
-  const [lightX, lightY] = [Number(position![1]), Number(position![2])];
-  const inset = Number(css.match(/--tl-inset:\s*(\d+)px/)?.[1]);
-  const row = Number(css.match(/--titlebar-h:\s*(\d+)px/)?.[1]);
-  const clear = Number(css.match(/\.app--macos\s*\{\s*--chrome-clear:\s*(\d+)px/)?.[1]);
-  // 52px of lights + 10px of air after the lead inset; the collapsed indent clears
-  // inset + toggle (28px) + padding (16px).
-  expect(inset).toBe(lightX + 52 + 10);
-  // Measured on-device: tao treats y like a container inset, not the buttons' top
-  // edge — the light centers land ~2px BELOW y. Verified center = row/2 at y=22.
-  expect(row).toBe(2 * (lightY - 2));
-  expect(clear).toBeGreaterThanOrEqual(inset + 28 + 16);
+  // A second writer in Wry's drawRect would undo the AppKit observer's placement.
+  expect(lib).not.toContain(".traffic_light_position(");
+  const inset = Number(css.match(/--tl-inset:\s*([\d.]+)px/)?.[1]);
+  const row = Number(css.match(/--titlebar-h:\s*([\d.]+)px/)?.[1]);
+  const clear = Number(css.match(/\.app--macos\s*\{\s*--chrome-clear:\s*([\d.]+)px/)?.[1]);
+  // Shared visual contract, also exercised by WindowControlsTests in AppKit:
+  // centers [19.5, 42.5, 65.5], 14pt buttons, 10pt clearance, a 40px row.
+  // Check values, not the Swift expressions used to produce native geometry.
+  expect(inset).toBe(82.5);
+  expect(row).toBe(40);
+  expect(clear).toBe(126.5);
   // The expanded strip floats over exactly the sidebar column (.app's first grid track).
-  const column = Number(styles.match(/\.app\s*\{[^}]*grid-template-columns:\s*(\d+)px/)?.[1]);
-  const stripWidth = Number(css.match(/\.sidebar-top\s*\{[^}]*width:\s*(\d+)px/)?.[1]);
+  const column = Number(styles.match(/\.app\s*\{[^}]*grid-template-columns:\s*([\d.]+)px/)?.[1]);
+  const stripWidth = Number(css.match(/\.sidebar-top\s*\{[^}]*width:\s*([\d.]+)px/)?.[1]);
   expect(stripWidth).toBe(column);
+  expect(css).toContain("translate: 0 var(--titlebar-center-offset, 0px)");
+  const collapsedStrip = css.match(/\.app--nav-collapsed \.sidebar-top \{([^}]+)\}/)?.[1];
+  expect(collapsedStrip).toContain("border-bottom-color: transparent");
+  expect(collapsedStrip).not.toContain("border-bottom: none");
 });
 
 test("macOS titlebar clearance follows page zoom and monitor scale", async () => {
@@ -181,7 +180,7 @@ test("macOS titlebar clearance follows page zoom and monitor scale", async () =>
   } } };
   const stop = watchMacTitlebarMetrics(host);
   await Promise.resolve();
-  expect(host.style.getPropertyValue("--tl-inset")).toBe("80px");
+  expect(host.style.getPropertyValue("--tl-inset")).toBe("82.5px");
   expect(host.style.getPropertyValue("--titlebar-h")).toBe("40px");
   expect(host.classList.contains("app--reduced-zoom")).toBe(false);
 
@@ -189,9 +188,9 @@ test("macOS titlebar clearance follows page zoom and monitor scale", async () =>
   // controls stay in window points, so CSS clearance must grow fivefold.
   Object.defineProperty(win, "devicePixelRatio", { configurable: true, value: 0.4 });
   win.dispatchEvent(new win.Event("resize"));
-  expect(host.style.getPropertyValue("--tl-inset")).toBe("400px");
+  expect(host.style.getPropertyValue("--tl-inset")).toBe("415px");
   expect(host.style.getPropertyValue("--titlebar-h")).toBe("200px");
-  expect(host.style.getPropertyValue("--chrome-clear")).toBe("620px");
+  expect(host.style.getPropertyValue("--chrome-clear")).toBe("635px");
   expect(host.classList.contains("app--reduced-zoom")).toBe(true);
 
   // Moving to a non-Retina monitor at the same zoom changes the native scale.
@@ -199,9 +198,35 @@ test("macOS titlebar clearance follows page zoom and monitor scale", async () =>
   Object.defineProperty(win, "devicePixelRatio", { configurable: true, value: 0.2 });
   win.dispatchEvent(new win.Event("resize"));
   await new Promise((resolve) => setTimeout(resolve, 100));
-  expect(host.style.getPropertyValue("--tl-inset")).toBe("400px");
+  expect(host.style.getPropertyValue("--tl-inset")).toBe("415px");
   expect(calls).toContain("plugin:window|scale_factor");
   stop();
+});
+
+test("supported zoom levels preserve pixel-aligned native centers on 1x and 2x displays", async () => {
+  for (const monitorScale of [1, 2]) {
+    win.__TAURI__ = { core: { invoke: async () => monitorScale } };
+    // Explicit physical centers shared with the AppKit harness, including tie rounding.
+    for (const [zoom, row, oneX, twoX] of [
+      [0.5, 80, 20, 20], [0.9, 45, 20, 20], [1, 40, 20, 19.5],
+      [1.1, 40, 21, 21.5], [2, 40, 39, 39], [3, 40, 59, 58.5],
+    ]) {
+      Object.defineProperty(win, "devicePixelRatio", { configurable: true, value: monitorScale * zoom });
+      const stop = watchMacTitlebarMetrics(host);
+      await Promise.resolve();
+      const center = monitorScale === 1 ? oneX : twoX;
+      const inset = Number.parseFloat(host.style.getPropertyValue("--tl-inset"));
+      const offset = Number.parseFloat(host.style.getPropertyValue("--titlebar-center-offset"));
+      expect(Number.parseFloat(host.style.getPropertyValue("--titlebar-h"))).toBe(row);
+      expect(inset * zoom).toBeCloseTo(center + 63);
+      expect(((row - 1) / 2 + offset) * zoom).toBeCloseTo(center);
+      expect(Number.parseFloat(host.style.getPropertyValue("--chrome-clear")))
+        .toBeCloseTo(inset + 44 * Math.max(1, 1 / zoom));
+      const nativeLeftPixel = (inset * zoom - 63 - 7) * monitorScale;
+      expect(nativeLeftPixel).toBeCloseTo(Math.round(nativeLeftPixel));
+      stop();
+    }
+  }
 });
 
 test("zooming in shrinks only the lights' clearance so the narrow menu stays on screen", async () => {
@@ -210,12 +235,12 @@ test("zooming in shrinks only the lights' clearance so the narrow menu stays on 
   Object.defineProperty(win, "devicePixelRatio", { configurable: true, value: 6 });
   const stop = watchMacTitlebarMetrics(host);
   await Promise.resolve();
-  expect(host.style.getPropertyValue("--tl-inset")).toBe("27px");
-  expect(host.style.getPropertyValue("--chrome-clear")).toBe("71px");
+  expect(host.style.getPropertyValue("--tl-inset")).toBe("40.5px");
+  expect(host.style.getPropertyValue("--chrome-clear")).toBe("84.5px");
   expect(host.style.getPropertyValue("--titlebar-h")).toBe("40px");
   expect(host.classList.contains("app--reduced-zoom")).toBe(false);
   // A 360pt window at 300% is 120 CSS pixels: the inset plus the 44px menu must fit.
-  expect(27 + 44).toBeLessThanOrEqual(120);
+  expect(Number.parseFloat(host.style.getPropertyValue("--chrome-clear"))).toBeLessThanOrEqual(120);
   stop();
 });
 
@@ -233,10 +258,39 @@ test("the narrow macOS strip and drawer reserve the native controls", () => {
   const css = readFileSync(new URL("../src/components/app-titlebar.css", import.meta.url), "utf8");
   const lib = readFileSync(new URL("../../desktop/src-tauri/src/lib.rs", import.meta.url), "utf8");
   const mobile = css.slice(css.indexOf("@media (max-width: 760px)"));
-  expect(mobile).toContain(".app--macos .mobile-topbar { padding-left: var(--tl-inset, 80px); }");
+  expect(mobile).toContain(".app--macos .mobile-topbar { padding-left: var(--tl-inset, 82.5px); }");
   expect(mobile).toContain(".app--macos .sidebar.open { padding-top: calc(var(--titlebar-h, 40px) + 18px); }");
   expect(css).toContain("--sidebar-column: max(232px, calc(var(--tl-inset) + 52px))");
   expect(css).toContain(".app--macos.app--reduced-zoom { transition: none; }");
   expect(css).toContain(".app--macos .mobile-topbar { flex-wrap: wrap; }");
   expect(lib).toContain(".min_inner_size(360.0, 320.0)");
+});
+
+test("dashboard theme selects native appearance and system restores OS following", async () => {
+  const calls: unknown[] = [];
+  window.__TAURI__ = { core: { invoke: async (...args) => { calls.push(args); } } };
+  for (const theme of ["light", "dark", "system"] as const) await syncWindowTheme(theme);
+  expect(calls).toEqual([
+    ["plugin:window|set_theme", { value: "light" }],
+    ["plugin:window|set_theme", { value: "dark" }],
+    ["plugin:window|set_theme", { value: null }],
+  ]);
+});
+
+test("native theme synchronization tolerates browsers and older shells", async () => {
+  delete window.__TAURI__;
+  await syncWindowTheme("light");
+  window.__TAURI__ = { core: { invoke: async () => { throw new Error("command unavailable"); } } };
+  await expect(syncWindowTheme("dark")).resolves.toBeUndefined();
+});
+
+
+test("1x titlebar controls land on physical pixels", async () => {
+  win.__TAURI__ = { core: { invoke: async () => 1 } };
+  Object.defineProperty(win, "devicePixelRatio", { configurable: true, value: 1 });
+  const stop = watchMacTitlebarMetrics(host);
+  await Promise.resolve();
+  expect(host.style.getPropertyValue("--tl-inset")).toBe("83px");
+  expect(host.style.getPropertyValue("--titlebar-center-offset")).toBe("0.5px");
+  stop();
 });
