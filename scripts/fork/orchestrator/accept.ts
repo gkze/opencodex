@@ -4,6 +4,7 @@ import { appendFileSync } from "node:fs"
 import { decode, Stack, Registry } from "./model.ts"
 import { git } from "./process.ts"
 import registryJson from "./registry.json"
+import { lastAccepted } from "./held.ts"
 const directory = resolve(process.argv[2]), root = process.cwd()
 const stack = decode(Stack, await Bun.file(join(directory, "stack.json")).json())
 const registry = decode(Registry, registryJson)
@@ -35,7 +36,13 @@ await Effect.runPromise(Effect.gen(function*() {
   }
   for (const result of stack.results) {
     const patch = stack.input.patches.find(p => p.id === result.id)!
-    if (patch.source !== result.source || result.upstream !== stack.input.upstream || (result.adapted && patch.sensitive)) return yield* Effect.fail("Patch provenance mismatch")
+    if (result.upstream !== stack.input.upstream || (result.adapted && patch.sensitive)) return yield* Effect.fail("Patch provenance mismatch")
+    if (result.hold) {
+      // A held patch must publish the newest accepted revision for this identity,
+      // rather than an arbitrary ancestor or the branch's pending source.
+      if (result.adapted) return yield* Effect.fail("Held patch cannot carry an adaptation")
+      if (result.source !== (yield* lastAccepted(root, stack.input.old, patch.id))) return yield* Effect.fail("Held patch must use its last accepted revision")
+    } else if (patch.source !== result.source) return yield* Effect.fail("Patch provenance mismatch")
     yield* git(root, "fetch", join(directory, "candidate.bundle"), result.candidate)
     yield* git(root, "merge-base", "--is-ancestor", stack.input.upstream, result.candidate)
     if ((yield* git(root, "rev-parse", `${result.candidate}^`)) !== result.base) return yield* Effect.fail("Patch base differs")

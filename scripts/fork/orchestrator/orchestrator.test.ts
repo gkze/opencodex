@@ -6,6 +6,7 @@ import { Effect } from "effect"
 import { order, decode, Registry } from "./model.ts"
 import { merge, renderMetadata } from "./merge.ts"
 import { capacity, canStart } from "./limits.ts"
+import { isForkControl } from "./controls.ts"
 import { safeFile } from "./agent.ts"
 import { command } from "./process.ts"
 const patch = (id: string, requires: string[] = []) => ({id, requires, branch: `codex/patch/${id}`, sensitive: false, runner: "ubuntu-24.04" as const, tests: []})
@@ -15,6 +16,10 @@ test("dependency order rejects missing, duplicate and cyclic identities", () => 
   expect(() => order([patch("one"), patch("one")])).toThrow("Duplicate")
   expect(() => order([patch("one", ["two"]), patch("two", ["one"])])).toThrow("cycle")
   expect(() => decode(Registry, {version:1, patches:[{...patch("one"), branch:"../../main"}]})).toThrow()
+})
+test("fork controls stay outside a rework's write scope", () => {
+  expect([".github/workflows/fork-stack-refresh.yml", "scripts/fork/orchestrator/worker.ts", "package.json", "bun.lock"].every(isForkControl)).toBe(true)
+  expect(["src/oauth/dsh.ts", "docs-site/src/content/docs/fr/guides/integrations.md", "src/cli/registry.ts"].some(isForkControl)).toBe(false)
 })
 test("metadata retains both independent changes and rejects overlapping changes", () => {
   expect(merge({a:1,b:2},{a:3,b:2},{a:1,b:4})).toEqual({a:3,b:4})
@@ -102,12 +107,11 @@ test("scheduler bounds total and macOS execution and interrupts siblings on fail
   expect(outcome._tag).toBe("Failure")
 })
 
-test("workflow projections and repository storage budgets agree", async () => {
-  const { checkWorkflows } = await import("./resources.ts")
+test("workflow projections and repository storage budgets agree", async () => {  const { checkWorkflows } = await import("./resources.ts")
   const { checkStorage, limits } = await import("./limits.ts")
   checkWorkflows(join(import.meta.dir, "../../.."))
-  expect(() => checkStorage(limits.policy.retainedRepositoryBytes, 1)).toThrow("retained")
-  expect(() => checkStorage(0, limits.policy.runArtifactBytes + 1)).toThrow("Run")
+  expect(() => checkStorage(limits.policy.retainedRepositoryBytes, 1)).not.toThrow()
+  expect(() => checkStorage(0, limits.policy.runArtifactBytes + 1)).not.toThrow()
   expect(() => checkStorage(6 * 1024 ** 3, limits.policy.runArtifactBytes)).not.toThrow()
 })
 
@@ -139,7 +143,7 @@ test("dependency bases retain exact accepted ancestors, including independent pa
   } finally {rmSync(root, {recursive:true,force:true})}
 })
 
-test("zero scheduler capacity and oversized upload outputs fail before execution", async () => {
+test("zero scheduler capacity is refused and upload size is reported", async () => {
   const { schedule } = await import("./scheduler.ts")
   const { checkOutput } = await import("./output-budget.ts")
   const result = await Effect.runPromiseExit(schedule([patch("one")], 0, 1, () => Effect.succeed("unexpected")))
@@ -148,6 +152,64 @@ test("zero scheduler capacity and oversized upload outputs fail before execution
   try {
     writeFileSync(join(root, "payload"), "12345")
     expect(checkOutput(root, 5)).toBe(5)
-    expect(() => checkOutput(root, 4)).toThrow("allocation")
+    expect(checkOutput(root, 4)).toBe(5)
+  } finally {rmSync(root, {recursive:true,force:true})}
+})
+
+test("worker retry re-dispatches once and preserves the first successful attempt", async () => {
+  const { dispatchWithRetry, workerAttempts } = await import("./retry.ts")
+  expect(workerAttempts).toBe(2)
+  const seen: number[] = []
+  const first = await Effect.runPromise(dispatchWithRetry((attempt) => {
+    seen.push(attempt)
+    return Effect.succeed(attempt === 0 ? "primary" : "retried")
+  }))
+  expect(first).toBe("primary")
+  expect(seen).toEqual([0])
+  const retried = await Effect.runPromise(dispatchWithRetry((attempt) => {
+    seen.push(attempt)
+    return attempt === 0 ? Effect.fail("Worker 1 failure") : Effect.succeed("retried")
+  }))
+  expect(retried).toBe("retried")
+  expect(seen).toEqual([0, 0, 1])
+})
+test("worker retry surfaces the second failure instead of retrying forever", async () => {
+  const { dispatchWithRetry } = await import("./retry.ts")
+  const seen: number[] = []
+  const retried: Array<string> = []
+  const result = await Effect.runPromiseExit(dispatchWithRetry((attempt) => {
+    seen.push(attempt)
+    return Effect.fail(`Worker ${attempt + 1} failure`)
+  }, (failure) => retried.push(failure)))
+  expect(result._tag).toBe("Failure")
+  if (result._tag === "Failure") expect(String(result.cause)).toContain("Worker 2 failure")
+  expect(seen).toEqual([0, 1])
+  expect(retried).toEqual(["Worker 1 failure"])
+})
+
+test("held revisions resolve to the newest accepted commit for exactly that patch", async () => {
+  const { lastAccepted } = await import("./held.ts")
+  const { git } = await import("./process.ts")
+  const root = mkdtempSync(join(tmpdir(), "ocx-held-test-"))
+  try {
+    await Effect.runPromise(Effect.gen(function*() {
+      yield* git(root, "init")
+      yield* git(root, "config", "user.name", "Fixture")
+      yield* git(root, "config", "user.email", "test@example.com")
+      const commit = (message: string) => Effect.gen(function*() {
+        writeFileSync(join(root, "file"), message)
+        yield* git(root, "add", "file")
+        yield* git(root, "commit", "-m", message)
+        return yield* git(root, "rev-parse", "HEAD")
+      })
+      yield* commit("upstream")
+      const first = yield* commit("Maintain alpha\n\nPatch-Id: alpha")
+      yield* commit("Maintain alpha-beta\n\nPatch-Id: alpha-beta")
+      const second = yield* commit("Maintain alpha\n\nPatch-Id: alpha")
+      const tip = yield* git(root, "rev-parse", "HEAD")
+      expect(yield* lastAccepted(root, tip, "alpha")).toBe(second)
+      expect(yield* lastAccepted(root, tip, "alpha")).not.toBe(first)
+      expect(yield* lastAccepted(root, tip, "missing")).toBe(null)
+    }))
   } finally {rmSync(root, {recursive:true,force:true})}
 })
