@@ -29,4 +29,5 @@ export const order = (patches: ReadonlyArray<Patch>): ReadonlyArray<Patch> => {
   patches.forEach(p => visit(p.id))
   return result
 }
-export const Stack = Schema.Struct({input: Input, results: Schema.Array(Result), mapped: Schema.Array(Schema.Struct({id: Id, commit: Sha})), candidate: Sha})
+export const Quarantined = Schema.Struct({id: Id, reason: Schema.String})
+export const Stack = Schema.Struct({input: Input, results: Schema.Array(Result), mapped: Schema.Array(Schema.Struct({id: Id, commit: Sha})), quarantined: Schema.Array(Quarantined), candidate: Sha})

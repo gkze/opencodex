@@ -59,11 +59,14 @@ const release = spawnSync('gh', ['release', 'view', manifest.tag, '--repo', 'gkz
 // A held patch ships the revision the previous accepted stack built, so the release has to
 // say so: the build is behind the patch branches and must not look like a clean refresh.
 const stackManifest = process.env.FORK_STACK_MANIFEST;
-const held = stackManifest && existsSync(stackManifest)
-  ? JSON.parse(readFileSync(stackManifest, 'utf8')).results.filter(result => result.hold).map(result => result.id)
-  : [];
+const stack = stackManifest && existsSync(stackManifest) ? JSON.parse(readFileSync(stackManifest, 'utf8')) : undefined;
+const held = stack ? stack.results.filter(result => result.hold).map(result => result.id) : [];
+// A quarantined patch is absent from the build entirely, which is stronger than being held and
+// must read that way: the release has to say the fork shipped without it.
+const quarantined = stack?.quarantined?.map(entry => entry.id) ?? [];
 const heldNote = held.length ? ` Held at its previous accepted revision: ${held.join(', ')}.` : '';
-if (release.status !== 0) execFileSync('gh', ['release', 'create', manifest.tag, '--repo', 'gkze/opencodex', '--verify-tag', '--draft', '--prerelease', '--title', `OpenCodex ${manifest.version}`, '--notes', `CLI package, five standalone builds, and desktop bundles. Source: ${manifest.source}. Manual installation only; upstream self-update is disabled. macOS is ad-hoc signed without notarization; Windows is unsigned. These are personal builds, not official signed releases.${heldNote}`], { stdio: 'inherit' });
+const quarantineNote = quarantined.length ? ` Built without these patches, which could not replay onto tonight's upstream: ${quarantined.join(', ')}.` : '';
+if (release.status !== 0) execFileSync('gh', ['release', 'create', manifest.tag, '--repo', 'gkze/opencodex', '--verify-tag', '--draft', '--prerelease', '--title', `OpenCodex ${manifest.version}`, '--notes', `CLI package, five standalone builds, and desktop bundles. Source: ${manifest.source}. Manual installation only; upstream self-update is disabled. macOS is ad-hoc signed without notarization; Windows is unsigned. These are personal builds, not official signed releases.${heldNote}${quarantineNote}`], { stdio: 'inherit' });
 const alreadyVisible = release.status === 0 && !JSON.parse(release.stdout).isDraft;
 if (!alreadyVisible) {
   execFileSync('gh', ['release', 'upload', manifest.tag, ...releaseNames.map(name => path.join(directory, name)), '--clobber', '--repo', 'gkze/opencodex'], { stdio: 'inherit' });
