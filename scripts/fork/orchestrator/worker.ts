@@ -56,8 +56,12 @@ const prepare = Effect.gen(function*() {
       if (again.ok) { applied = again; break }
       failure = again.reason
     }
-    yield* repair(cwd, task.patch, failure, instructions, readable, writable)
+    const report = yield* repair(cwd, task.patch, failure, instructions, readable, writable)
     adapted = true
+    // A silent no-op used to surface as "left conflict markers", which reads like a failed merge
+    // rather than an agent that never touched the file. Keep the two findings distinct.
+    console.error(`Repair attempt ${attempt} wrote ${report.writes} file(s)${report.files.length ? `: ${report.files.join(", ")}` : ""}`)
+    if (report.writes === 0) { failure = "Repair produced no edits"; applied = {ok: false as const, reason: failure}; continue }
     yield* git(cwd, "add", "--all")
     const conflicts = yield* git(cwd, "diff", "--name-only", "--diff-filter=U")
     const markers = yield* conflictMarkers()
