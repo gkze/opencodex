@@ -1,3 +1,5 @@
+> **个人分支：** 每夜发布版本和安装说明见 [FORK.md](../FORK.md)。下方为上游项目文档。
+
 <p align="center">
   <img src="../assets/banner.png" alt="opencodex — 连接 Codex、Claude Code、Claude Desktop、Grok Build 等工具的本地网关" width="100%">
 </p>
