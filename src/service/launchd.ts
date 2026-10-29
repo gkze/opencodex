@@ -11,8 +11,8 @@ import { BUN_RUNTIME_PATH_ENV, BUN_RUNTIME_SOURCE_ENV, durableBunRuntime, type D
 import { serviceApiTokenFilePath } from "../lib/service-secrets";
 import { recordOwnedConfigPath } from "../lib/config-ownership";
 import { writeServiceApiTokenFile, assertLiveServiceManagerAllowed } from "./guards";
-import { resolveServiceListenPort, buildServiceShellCommand, buildServiceLauncherShellCommand, resolvedProxyEnv } from "./definition";
-import { SERVICE_MANAGED_ENV, LABEL, cliEntry, filterTransientServicePath, logPath, serviceStatePath, currentCodexSqliteHomeAbsolute, type ServiceInstallState, writeServiceInstallState, readServiceInstallState } from "./state";
+import { resolveServiceListenPort, buildServiceShellCommand, resolvedProxyEnv } from "./definition";
+import { SERVICE_MANAGED_ENV, LABEL, cliEntry, filterTransientServicePath, logPath, serviceStatePath, currentCodexSqliteHomeAbsolute, type ServiceInstallState, writeServiceInstallState } from "./state";
 import { writeServiceDefinitionFile } from "./windows-ops";
 import { readTextOrNull } from "./windows-taskxml";
 
@@ -135,9 +135,7 @@ export function reusePreviousPlistPathVariable(previous: string, rendered: strin
 /**
  * The exec line {@link buildPlist} bakes, for the runtime a single install already
  * resolved. Shared so `installLaunchd` can verify the live job against the exact string it
- * just wrote instead of re-deriving it from install state that has not been written yet
- * (a fresh install has no state, so `expectedLaunchdCommand` falls back to the package
- * pair — identical here, but only by accident of the fresh state).
+ * just wrote. Install state never overrides this trusted package selection.
  */
 function launchdServiceCommand(
   runtime: DurableBunRuntime = durableBunRuntime(),
@@ -148,18 +146,14 @@ function launchdServiceCommand(
 }
 
 /**
- * The exec line the installed launchd plist is expected to carry, derived from the recorded
- * install state rather than rediscovered: a launcher install runs the launcher, a legacy or
- * stateless install runs the Bun + CLI pair. `start` and `status` compare the live job
- * against this, so both must follow the launcher or a healthy launcher-backed job reads as
- * "an OLDER plist" (#3464). PATH is deliberately NOT re-walked here.
+ * Match the trusted package pair that buildPlist bakes, including standalone binaries.
+ * Legacy launcher state is accepted for API compatibility but cannot select the command.
+ * Start, status and guarded manager binding must all use this same expectation.
  */
 export function expectedLaunchdCommand(
   port: number,
   deps: { state?: ServiceInstallState | null; entry?: { bun: string; cli: string | null } } = {},
 ): string {
-  const state = deps.state === undefined ? readServiceInstallState() : deps.state;
-  if (state?.launcherPath) return buildServiceLauncherShellCommand(state.launcherPath, port);
   const entry = deps.entry ?? cliEntry();
   return buildServiceShellCommand(entry.bun, entry.cli, port);
 }
@@ -506,10 +500,7 @@ export function installLaunchd(deps: {
   // Keep launchd bound to the package paths selected by this trusted invocation. A PATH
   // launcher can be replaced later and would inherit the service token and proxy
   // environment.
-  // The command THIS install bakes, not the one install state remembers: on a fresh
-  // install there is no state yet, and after a lost state file `expectedLaunchdCommand`
-  // falls back to the Bun + CLI pair, which happens to be the same answer only by accident
-  // of the empty state.
+  // Verify the exact command this trusted invocation bakes.
   const expectedCommand = launchdServiceCommand();
   const uid = process.getuid?.() ?? 0;
   const guiDomain = launchdGuiDomain();
@@ -559,8 +550,7 @@ export function installLaunchd(deps: {
     // The plist is not rewritten and launchd is not touched; only the owner-only mode
     // is re-asserted, for a definition an older version may have left at 0644.
     try { chmodSync(p, 0o600); } catch { /* best-effort */ }
-    // Install state is refreshed because it is what `expectedLaunchdCommand` reads, and
-    // a repair that leaves it stale re-creates the false "OLDER plist" report.
+    // Refresh provenance, including removal of any legacy launcher record.
     writeServiceInstallState("scheduler");
     console.log("ℹ️  service is already loaded from the current plist; nothing to do.");
     // The ONLY `reloaded: false` exit: the process launchd was running when this command
