@@ -28,6 +28,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   buildPlist,
+  expectedLaunchdCommand,
+  launchdListenPort,
   deriveLaunchdServiceDiagnostic,
   installLaunchd,
   launchdEvictionTargets,
@@ -46,6 +48,9 @@ import type {
 } from "../../src/service";
 import { protectedLaunchAgentsDirForTests } from "../../src/lib/test-home-guard";
 import { repoPath } from "../helpers/repo-root";
+import { inspectGuardedManagerTarget } from "../../src/service/guarded-manager-target";
+import { cliEntry } from "../../src/service/state";
+import { buildServiceLauncherShellCommand } from "../../src/service/definition";
 import { reportServiceServing } from "../../src/service/health";
 
 /**
@@ -1283,5 +1288,47 @@ describe("service outcome reporting after a failed operation (#4914)", () => {
     expect(silent.err).toContain("Service repaired, but no proxy answered on port 10100");
     expect(silent.err).toContain("that is not the same as serving");
     expect(silent.exitCode).toBe(1);
+  });
+});
+
+
+describe("launchd package command with legacy launcher metadata", () => {
+  test("rendered pair is current and bindable; a legacy launcher is stale and refused", () => {
+    const runtime = { path: "/opt/trusted bun", source: "override" as const };
+    const launcherPath = "/opt/legacy/ocx";
+    const plist = buildPlist([], { runtime, launcher: launcherPath });
+    const port = launchdListenPort({ readPlist: () => plist })!;
+    const entry = cliEntry(runtime);
+    const expectedCommand = () => expectedLaunchdCommand(port, {
+      entry,
+      state: { version: 2, backend: "scheduler", codexHome: "/h/.codex",
+        opencodexHome: "/h/.opencodex", launcherPath },
+    });
+    const escaped = expectedCommand().replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+    expect(plist).toContain(`<string>${escaped}</string>`);
+    for (const legacy of [false, true]) {
+      const command = legacy ? buildServiceLauncherShellCommand(launcherPath, port) : expectedCommand();
+      const launchctl: typeof runLaunchctl = (args) => args[1]?.startsWith("gui/")
+        ? ok(`arguments = {
+${command}
+}
+pid = 123
+`) : fail(113, "absent");
+      expect(probeLaunchdLoadState({ launchctl, expectedCommand }).state)
+        .toBe(legacy ? "loaded-stale" : "loaded-current");
+      expect(inspectGuardedManagerTarget(123, port, {
+        platform: "darwin", launchctl, expectedCommand,
+        verifyPid: pid => pid, parentOf: () => null,
+      }).kind).toBe(legacy ? "unknown" : "bound");
+    }
+  });
+
+  test("standalone command ignores a legacy launcher too", () => {
+    expect(expectedLaunchdCommand(14001, {
+      entry: { bun: "/opt/standalone", cli: null },
+      state: { version: 2, backend: "scheduler", codexHome: "/h/.codex",
+        opencodexHome: "/h/.opencodex", launcherPath: "/opt/legacy/ocx" },
+    })).toContain("exec '/opt/standalone' start --port 14001");
   });
 });
