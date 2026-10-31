@@ -334,7 +334,6 @@
     "client-config-export-output-limit.test.ts": "config",
     "qoder-client.test.ts": "clients",
     "t3code-client.test.ts": "clients",
-    "fx-client.test.ts": "clients",
     "responses-skills-snapshot.test.ts": "responses",
     "responses-code-mode-mcp-direct.test.ts": "responses",
     "responses-phase-inference.test.ts": "responses",
@@ -2503,6 +2502,10 @@
     "advisor-adaptive.test.ts": "advisor",
     "advisor-scope-transport.test.ts": "advisor",
     "local-credentials.test.ts": "cli",
-    "local-credential-generation.test.ts": "config"
+    "local-credential-generation.test.ts": "config",
+    "fx-client.test.ts": "clients",
+    "link-ultrafast-settings.test.ts": "clients",
+    "catalog-ultrafast-cache.test.ts": "codex-integration",
+    "fastwire-ultrafast-regressions.test.ts": "routing"
   }
 }
