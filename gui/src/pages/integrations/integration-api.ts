@@ -26,6 +26,7 @@ export const FILE_INTEGRATION_CLIENTS = [
   "droid",
   "gentle-shell",
   "t3code",
+  "fx",
 ] as const;
 
 export type FileIntegrationClientId = (typeof FILE_INTEGRATION_CLIENTS)[number];

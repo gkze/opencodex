@@ -1,10 +1,10 @@
 ---
 title: Entegrasyonlar
-description: Kontrol panelinden OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code ve Factory Droid'u opencodex'e bağlayın — istemci başına tek bir anahtar ve her yazmadan önce alınan bir yedek.
+description: Kontrol panelinden OpenCode, Pi, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Cline CLI, Kilo, Command Code, Factory Droid ve fx'i opencodex'e bağlayın — istemci başına tek bir anahtar ve her yazmadan önce alınan bir yedek.
 ---
 
 **Bağlantı** sekmesi, opencodex'in sağlayıcı bloğunu istemcinin kendi
-yapılandırma dosyasına yazar ve tekrar kaldırır. On sekiz istemci bu şekilde
+yapılandırma dosyasına yazar ve tekrar kaldırır. On dokuz istemci bu şekilde
 çalışır, her biri bir anahtarla:
 
 Windows'ta mutlak yol gerektiren geçersiz kılmalar bir sürücü harfi (`C:\Users\me\client`) veya UNC paylaşımı (`\\server\share\client`) içermelidir. Geçerli sürücüye bağlı `\Users\me\client` ve `/client/config` biçimleri reddedilir. `~` desteği belgelenmiş seçiciler bunu etkin ev dizinine göre genişletir; Gentle Shell `~` işaretini genişletmez.
@@ -29,6 +29,7 @@ Windows'ta mutlak yol gerektiren geçersiz kılmalar bir sürücü harfi (`C:\Us
 | Kilo | `~/.config/kilo` altında ilk bulunan `kilo.jsonc`, `kilo.json`, `opencode.jsonc`, `opencode.json` veya `config.json` (`XDG_CONFIG_HOME` bu dizini taşır; hiçbiri yoksa `kilo.jsonc` oluşturulur) | JSONC | yeni oturumlarda | `OPENCODEX_KILO_API_KEY` |
 | Command Code | `~/.commandcode/providers.json` (Windows’ta varsayılan ana dizin kullanılırken: `HOME ?? USERPROFILE` değerini yalnızca boş veya sırf boşluklardan oluşmayan mutlak bir Windows yoluysa kullanır, aksi halde `homedir()` kullanılır; ayrıca verilen ana dizin korunur; sonuna `.commandcode\providers.json` eklenir) | JSON | Command Code'un sonraki başlatılmasında | yok — anahtarsız geri döngü (`apiKey: false`) |
 | Factory Droid | `~/.factory/settings.json` (`%USERPROFILE%\.factory\settings.json` Windows'ta) | JSON | dosya değişince hemen | anahtarsız geri döngü |
+| fx | `~/.fx/settings.json` | JSON | fx'i yeniden başlattıktan sonra | yok — yalnızca loopback |
 
 Desteklenen akıl yürütme düzeylerine sahip GJC modelleri, GJC'nin düzey seçimi sunabilmesi için `reasoning: true`, `thinking.levels` ve `compat.supportsReasoningEffort` alanlarını dışa aktarır. Yerel Codex modelleri, katalogda belirtilmese bile standart düzeylerini alır. Bilinen düzeyi olmayan modellerde bu alanlar bulunmaz. `none` düzey göndermez ve `ultra` gönderimde `max` düzeyine dönüşür; bu yüzden seçeneklerde yer almazlar. Model seçeneklerini güncellemek için entegrasyonu yenileyin.
 
@@ -384,3 +385,39 @@ already loaded catalog without writing client files or managed state; a cold or
 stale catalog returns unavailable. Explicit `--out` writes an export artifact.
 See the [English integration guide](/guides/integrations/#opt-in-alias-model-names)
 for the canonical workflow.
+## fx
+
+Bu entegrasyon, fx'in yalnızca `~/.fx/settings.json` dosyasının **üst düzeyinde** tanımlayabildiği özel model
+bağlantılarını hedefler. Çalışma alanındaki `.fx.json` yalnızca proje alanlarını taşır ve bağlantı tanımlayamaz
+veya seçemez; bu yüzden opencodex `providers.opencodex` girdisini bu dosyaya yazar. Tema, çalışma alanları,
+izin kuralları ve diğer bağlantılar olduğu gibi kalır.
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+Oluşturulan bağlantı `openai-chat-completions` kullanır ve `base_url` proxy'nin `/v1` kökünü gösterir (fx
+`/chat/completions` ekini kendisi ekler); kimlik doğrulama `auth: { "type": "none" }` olur. fx'in
+`model_metadata` bloğu aynı zamanda model listesidir: `fx models` yalnızca opencodex'in yazdığı yönlendirilmiş
+modelleri gösterir; bağlam penceresi yalnızca katalog biliyorsa, görüntü girişi yalnızca model bildiriyorsa
+eklenir.
+
+**fx bu dosyayı başlangıçta okur, bu yüzden uyguladıktan veya eşitledikten sonra fx'i yeniden başlatın.**
+Etkinleştirme seçili sağlayıcıyı değiştirmez: geçiş için `fx provider opencodex` çalıştırın ve
+`fx status --json` ile doğrulayın. Diğer bağlantılarınız ve kayıtlı modelleri olduğu gibi kalır.
+
+Profilde zaten bir `providers.opencodex` girdisi varsa (elle yazılmış veya önceki bir kurulumdan
+kalmış), karşılaştırılacak bir sahiplik kaydı yoktur; bu yüzden anahtar çakışma bildirir ve uygulamayı reddeder.
+Satırdaki **Replace** veya `ocx integration client enable --client fx --overwrite-conflict`, yalnızca o girdiyi
+üretilen bağlantıyla yeniden yazar; profilin geri kalanı (tema, diğer bağlantılar, izin kuralları) değişmez.
+Öncesinde bir anlık görüntü alınır ve Geri yükle bunu geri getirir.
+
+fx ayar dosyasını 64 KiB ile sınırlar ve başlangıçta geçersiz ayarları bildirir; çok büyük bir yönlendirilmiş
+model seçimi, profilinizin tamamının paylaştığı bu bütçeyi doldurur. fx dosyayı geçersiz olarak bildirirse
+kullanmadığınız sağlayıcıları kapatın veya model seçimini daraltın.
+
+fx özel kimlik doğrulama başlığı göndermez ve `/v1/chat/completions` bearer kimlik bilgisini reddedip özel
+`x-opencodex-api-key` başlığını ister; bu nedenle entegrasyon bilinçli olarak yalnızca loopback'tir. Loopback
+dışı bir bağlama, kimlik doğrulayamayan bir bağlantı yazmak yerine reddedilir.
