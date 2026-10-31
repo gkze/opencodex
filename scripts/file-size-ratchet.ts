@@ -67,10 +67,17 @@ export const I18N_CATALOG_PATHS = [
  *
  * model-metadata.source.json is the generator's INPUT, which is why naming it generated was
  * backwards. Its output, src/generated/model-metadata.ts, is 108 lines and is scanned normally.
+ *
+ * layout.json is the test-layout registry: one entry per test file, so its size tracks the suite
+ * rather than any one module, and it cannot be split without breaking the single authoritative
+ * map of file to domain. It sits one line under the threshold on the commit that added this
+ * member, and `updateBaseline` is seed-only, so without the exemption the next explicit entry
+ * could never be baselined.
  */
 export const DATA_SNAPSHOT_PATHS = [
   "docs-site/src/data/frontier-benchmarks.json",
   "scripts/model-metadata.source.json",
+  "scripts/test-layout/layout.json",
 ] as const;
 
 /** Every path exempt from a size cap, whatever the reason. */
