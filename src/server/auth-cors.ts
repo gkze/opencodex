@@ -1090,6 +1090,8 @@ const PROVIDER_CONFIG_FIELD_POLICY = {
   supportsServiceTier: "editor",
   modelSupportsServiceTier: "editor",
   promoteAdditionalTools: "editor",
+  supportsUltraFast: "editor",
+  modelSupportsUltraFast: "editor",
   preserveResponsesReasoningContent: "editor",
   preserveResponsesInputItemIds: "editor",
   preserveResponsesMessageMetadata: "editor",

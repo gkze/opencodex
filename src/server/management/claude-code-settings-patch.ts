@@ -158,8 +158,9 @@ export function prepareClaudeCodePatch(config: OcxConfig, body: Record<string, u
   }
   let nextFastMode = config.fastMode;
   if (body.fastMode !== undefined) {
-    if (body.fastMode !== true && body.fastMode !== false && body.fastMode !== null) {
-      return jsonResponse({ error: "fastMode must be true, false, or null" }, 400);
+    if (body.fastMode !== true && body.fastMode !== false
+      && body.fastMode !== "ultrafast" && body.fastMode !== null) {
+      return jsonResponse({ error: "fastMode must be true, false, \"ultrafast\", or null" }, 400);
     }
     nextFastMode = body.fastMode === null ? undefined : body.fastMode;
   }
