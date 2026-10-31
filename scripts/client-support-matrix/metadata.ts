@@ -209,6 +209,18 @@ export const EXPORT_CLIENT_METADATA: Readonly<Record<string, ExportClientMetadat
     protocolFields: [{ path: "providerInstances.opencodex.driver", values: { claudeAgent: "anthropic-messages" } }],
     test: { file: "tests/clients/t3code-client.test.ts", title: "the provider instance routes T3 Code's Claude driver through the proxy origin with a non-secret marker", mentions: ["t3code", "T3"] },
   },
+  fx: {
+    label: "fx",
+    // fx's connection names its wire protocol explicitly, so the matrix reads it from there
+    // rather than inferring from the base URL.
+    protocolFields: [{ path: "providers.opencodex.protocol", values: { "openai-chat-completions": "chat-completions" } }],
+    clientSelected: {
+      file: "src/clients/config-export/fx.ts",
+      anchor: "fx appends `/chat/completions`, so the proxy's `/v1` root passes through",
+      reviewedSha: "f267d710b9fcfe29130f7b3d4032c984b5f53e3c463ac16ef825a3eafe251fbb",
+    },
+    test: { file: "tests/clients/fx-client.test.ts", title: "emits one top-level connection with canonical selectors and no invented limits", mentions: ["fx"] },
+  },
 };
 
 /**
