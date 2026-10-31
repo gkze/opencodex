@@ -7,6 +7,7 @@ import { order, decode, Registry } from "./model.ts"
 import { merge, renderMetadata } from "./merge.ts"
 import { capacity, canStart } from "./limits.ts"
 import { isForkControl } from "./controls.ts"
+import { mergirafTarget } from "./merge-driver.ts"
 import { safeFile } from "./agent.ts"
 import { command } from "./process.ts"
 const patch = (id: string, requires: string[] = []) => ({id, requires, branch: `codex/patch/${id}`, sensitive: false, runner: "ubuntu-24.04" as const, tests: []})
@@ -20,6 +21,12 @@ test("dependency order rejects missing, duplicate and cyclic identities", () => 
 test("fork controls stay outside a rework's write scope", () => {
   expect([".github/workflows/fork-stack-refresh.yml", "scripts/fork/orchestrator/worker.ts", "package.json", "bun.lock"].every(isForkControl)).toBe(true)
   expect(["src/oauth/dsh.ts", "docs-site/src/content/docs/fr/guides/integrations.md", "src/cli/registry.ts"].some(isForkControl)).toBe(false)
+})
+test("the merge driver is pinned per runner and refuses an unpinned one", () => {
+  for (const [platform, arch] of [["linux", "x64"], ["darwin", "arm64"], ["darwin", "x64"]] as const) {
+    expect(mergirafTarget(platform, arch).sha256).toMatch(/^[a-f0-9]{64}$/)
+  }
+  expect(() => mergirafTarget("win32", "x64")).toThrow("No pinned mergiraf build")
 })
 test("metadata retains both independent changes and rejects overlapping changes", () => {
   expect(merge({a:1,b:2},{a:3,b:2},{a:1,b:4})).toEqual({a:3,b:4})

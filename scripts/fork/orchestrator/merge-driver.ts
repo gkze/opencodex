@@ -6,33 +6,43 @@ import { join } from "node:path"
 /**
  * Structural merge driver for the replay path. Upstream rewrites that only touch the inside of a
  * function are the common conflict shape, and a syntax-aware merge resolves them deterministically
- * where a line-based merge leaves markers for the repair agent to guess at. The tarball is pinned
+ * where a line-based merge leaves markers for the repair agent to guess at. The tarballs are pinned
  * by digest because the driver decides what the published tree contains.
  */
-export const mergiraf = {
-  version: "0.20.0",
-  url: "https://codeberg.org/mergiraf/mergiraf/releases/download/v0.20.0/mergiraf_x86_64-unknown-linux-gnu.tar.gz",
-  bytes: 7_472_707,
-  sha256: "4341127da8d1da29eced669fbacc1e5d6e530115098de0b82cc9dc551a1acf37",
-} as const
+const version = "0.20.0"
+const release = `https://codeberg.org/mergiraf/mergiraf/releases/download/v${version}`
+interface Pinned { readonly file: string; readonly bytes: number; readonly sha256: string }
+/** Every runner the registry can name: linux x64 for the Ubuntu workers, both macOS shapes. */
+const pinned: Readonly<Record<string, Pinned>> = {
+  "linux-x64": { file: "mergiraf_x86_64-unknown-linux-gnu.tar.gz", bytes: 7_472_707, sha256: "4341127da8d1da29eced669fbacc1e5d6e530115098de0b82cc9dc551a1acf37" },
+  "darwin-arm64": { file: "mergiraf_aarch64-apple-darwin.tar.gz", bytes: 7_954_953, sha256: "641b8a0c379d56b8b4b61070e60c3dac6e1a2fba5b59edd374a9e795b992ee5b" },
+  "darwin-x64": { file: "mergiraf_x86_64-apple-darwin.tar.gz", bytes: 7_549_084, sha256: "86e5ef67c0212433238ad24dba86bee9495b6ed4c0f9695e2533c4f56017c7e4" },
+}
 
 const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex")
 
+/** A runner without a pinned build must fail loudly; an unpinned download would decide the tree. */
+export const mergirafTarget = (platform: NodeJS.Platform = process.platform, arch: string = process.arch): Pinned => {
+  const target = pinned[`${platform}-${arch}`]
+  if (!target) throw new Error(`No pinned mergiraf build for ${platform}-${arch}`)
+  return target
+}
+
 /** Downloads, verifies and unpacks the pinned driver; returns the binary path. */
-export const installMergeDriver = async (directory: string): Promise<string> => {
-  const response = await fetch(mergiraf.url)
+export const installMergeDriver = async (directory: string, target: Pinned = mergirafTarget()): Promise<string> => {
+  const response = await fetch(`${release}/${target.file}`)
   if (!response.ok) throw new Error(`Mergiraf download failed: HTTP ${response.status}`)
   const archive = new Uint8Array(await response.arrayBuffer())
-  if (archive.byteLength !== mergiraf.bytes) throw new Error(`Mergiraf archive is ${archive.byteLength} bytes, expected ${mergiraf.bytes}`)
-  if (digest(archive) !== mergiraf.sha256) throw new Error("Mergiraf archive digest does not match the pin")
+  if (archive.byteLength !== target.bytes) throw new Error(`Mergiraf archive is ${archive.byteLength} bytes, expected ${target.bytes}`)
+  if (digest(archive) !== target.sha256) throw new Error("Mergiraf archive digest does not match the pin")
   mkdirSync(directory, { recursive: true })
-  const tar = join(directory, "mergiraf.tar.gz")
+  const tar = join(directory, target.file)
   writeFileSync(tar, archive)
   execFileSync("tar", ["-xzf", tar, "-C", directory], { stdio: "inherit" })
   const binary = join(directory, "mergiraf")
   chmodSync(binary, 0o755)
   const reported = execFileSync(binary, ["--version"], { encoding: "utf8" }).trim()
-  if (reported !== `mergiraf ${mergiraf.version}`) throw new Error(`Mergiraf reports "${reported}", expected ${mergiraf.version}`)
+  if (reported !== `mergiraf ${version}`) throw new Error(`Mergiraf reports "${reported}", expected ${version}`)
   return binary
 }
 
