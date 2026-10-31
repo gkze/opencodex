@@ -45,14 +45,11 @@ The wire surfaces a client actually talks to.
 
 | Doc | Scope |
 | --- | --- |
-| [`transports/timeouts.md`](transports/timeouts.md) | Local header and JSON body deadlines, cancellation and optional OpenCode timeout export. |
 | [`remote-messaging.md`](remote-messaging.md) | Explicit peer enrollment, connection-bound capabilities, bounded foreground SSH ownership and queued remote replies. |
 | [`local-messaging.md`](local-messaging.md) | Command-local metadata discovery, Unix RPC queued submission, peer envelopes, receipts and owned lifecycle bounds. |
 | [`transports/byte-accounting.md`](transports/byte-accounting.md) | Request-copy and stream-buffer byte accounting shared by parsing, SSE rewriting, the adapters, and the translator budget, plus durable spill admission. |
 | [`transports/anthropic-thinking-recovery.md`](transports/anthropic-thinking-recovery.md) | One-shot exact signature-binding recovery before output, and successful-retry memo boundaries. |
 | [`transports/response-turn-membership.md`](transports/response-turn-membership.md) | Embedding-owned signing material, dedicated authenticated caller/own-thread scope and pre-parser structural normalization. |
-| [`transports/response-citations.md`](transports/response-citations.md) | OpenAI-operated outbound citation repair and generated JSON/SSE annotation titles. |
-| [`transports/max-output-completion.md`](transports/max-output-completion.md) | Default-off translated Responses text-only token-limit completion and exclusions. |
 | [`transports/responses.md`](transports/responses.md) | The Responses HTTP/SSE endpoint, dispatch, credential and upload boundaries, and core module ownership. |
 | [`transports/native-reasoning-retention.md`](transports/native-reasoning-retention.md) | Optional native reasoning ciphertext forwarding on model/account switches, configuration and management controls. |
 | [`transports/responses-citations.md`](transports/responses-citations.md) | Destination-gated citation repair for ordinary Responses and every native compact send. |
@@ -66,12 +63,15 @@ The wire surfaces a client actually talks to.
 | [`data-planes/images.md`](data-planes/images.md) | Standalone image generation/edit relay and local hosted Responses image display. |
 | [`data-planes/search.md`](data-planes/search.md) | Hosted search relay and exact account selectors. |
 | [`data-planes/inbound-compat.md`](data-planes/inbound-compat.md) | Chat Completions inbound, Anthropic-shaped clients, and JSON-upstream streaming clients. |
-| [`data-planes/claude-tool-loading.md`](data-planes/claude-tool-loading.md) | Physical-adapter tool-loading projection, preserved catalogs, fallback exclusions and opt-in prerequisites. |
 | [`data-planes/chat-reasoning-details.md`](data-planes/chat-reasoning-details.md) | The reasoning_details carrier that lets Chat Completions clients round-trip signed Anthropic thinking across tool steps (#7429). |
 | [`data-planes/protocol-paths.md`](data-planes/protocol-paths.md) | Shared protocol vocabulary, declared feature dispositions, the ingress-by-upstream baseline, plan/trace shapes, and protocol settings. |
 | [`fallback-policy.md`](fallback-policy.md) | OCX-11 fallback off: what is a model or provider fallback (and what intra-pool rotation is not), scope precedence, the guarded hop sites, the fallback_refused and home_unreachable contracts, and the ocx.fallback/1 state. |
 | [`remote-workspace.md`](remote-workspace.md) | Opt-in workspace identity, executor grants, runtime adapters, management and dashboard integration. |
 | [`remote-link.md`](remote-link.md) | SSH machine-link building blocks: OpenSSH argument policy, ssh_config candidates, tunnel lifecycle reducer, the private link store, and standalone pairing-grant delivery. |
+| [`transports/timeouts.md`](transports/timeouts.md) | Local header and JSON body deadlines, cancellation and optional OpenCode timeout export. |
+| [`transports/response-citations.md`](transports/response-citations.md) | OpenAI-operated outbound citation repair and generated JSON/SSE annotation titles. |
+| [`transports/max-output-completion.md`](transports/max-output-completion.md) | Default-off translated Responses text-only token-limit completion and exclusions. |
+| [`data-planes/claude-tool-loading.md`](data-planes/claude-tool-loading.md) | Physical-adapter tool-loading projection, preserved catalogs, fallback exclusions and opt-in prerequisites. |
 
 ### Tier 4 — Providers and adapters
 
@@ -103,7 +103,6 @@ Per-vendor contracts and the adapter authority that constructs them.
 | [`providers/google.md`](providers/google.md) | Gemini thought-text, response parts, thought-signature replay, and adjacency repair. |
 | [`providers/kiro.md`](providers/kiro.md) | Kiro parallel-tool hints, Responses text controls, and reasoning round-trip. |
 | [`providers/xai-grok.md`](providers/xai-grok.md) | Grok Build contract parity and hardening. |
-| [`providers/lm-studio-chat.md`](providers/lm-studio-chat.md) | Preset-scoped single-leading-system normalization, configuration and editor policy. |
 | [`providers/chat-compat.md`](providers/chat-compat.md) | Cross-vendor Chat Completions behavior: reasoning, tool results, structured output, parallel tools. |
 | [`providers/completed-tool-blocks.md`](providers/completed-tool-blocks.md) | Explicit response-only block completion, ordered safe-call delivery and terminal ownership. |
 | [`providers/mimo-bare-calls.md`](providers/mimo-bare-calls.md) | Standalone MiMo bare-block recovery into declared freeform calls, separate from identified-wrapper reconciliation. |
@@ -111,6 +110,7 @@ Per-vendor contracts and the adapter authority that constructs them.
 | [`adapters/registry.md`](adapters/registry.md) | The single adapter construction authority and contract inheritance. |
 | [`adapters/compatibility-contracts.md`](adapters/compatibility-contracts.md) | Versioned provider compatibility claims and fixture-evidence boundaries. |
 | [`adapters/compatibility-lab.md`](adapters/compatibility-lab.md) | Optional Lab evidence, automation, and its core-runtime isolation boundary. |
+| [`providers/lm-studio-chat.md`](providers/lm-studio-chat.md) | Preset-scoped single-leading-system normalization, configuration and editor policy. |
 
 ### Tier 5 — Surfaces and clients
 
@@ -124,20 +124,20 @@ The dashboard, the management API, and third-party client config ownership.
 | [`dashboard-and-usage.md`](dashboard-and-usage.md) | Dashboard page contracts, usage accounting and request metrics, and per-surface management settings. |
 | [`quota-pool.md`](quota-pool.md) | The passive GET /api/quota-pool read GOAT consumes (ocx.quota-pool/1): sources, window mapping, absent-not-zero, and the install identity behind homeId and accountRef. |
 | [`pricing.md`](pricing.md) | User price policies, prompt-length rate selection, persistence and estimate cache invalidation. |
-| [`clients/export-model-names.md`](clients/export-model-names.md) | Per-connection naming policy, router-proven aliases and passive export previews. |
-| [`clients/omo-export-dialect.md`](clients/omo-export-dialect.md) | Opt-in Responses dialect for the managed Pi-based omo export and its refresh lifecycle. |
 | [`clients/integrations.md`](clients/integrations.md) | Third-party client config ownership, snapshots, refresh, disable, and restore. |
 | [`clients/codex-desktop.md`](clients/codex-desktop.md) | Windows package activation, restart context, and protected compatibility authority persistence. |
 | [`clients/chatgpt-desktop.md`](clients/chatgpt-desktop.md) | Experimental macOS app-server stdout shim, opt-in launch, restore and failure boundaries. |
 | [`clients/claude-desktop.md`](clients/claude-desktop.md) | Claude Desktop profile ownership and config-library resolution. |
 | [`clients/claude-desktop-config-reads.md`](clients/claude-desktop-config-reads.md) | Verified regular-file reads of Claude Desktop config-library metadata, profiles and snapshots. |
-| [`clients/claude-desktop-model-visibility.md`](clients/claude-desktop-model-visibility.md) | Per-client selection of the rows the Claude Desktop 3P model list carries. |
 | [`clients/hermes.md`](clients/hermes.md) | Hermes profile discovery, per-profile selection, ownership stores, and boundaries. |
 | [`clients/qoder.md`](clients/qoder.md) | Qoder settings.json provider and custom-model ownership, export and loopback placeholder rules. |
-| [`clients/client-support-matrix.md`](clients/client-support-matrix.md) | Generated client support page: registry sources, curated protocol and test claims, drift checks. |
-| [`clients/t3code.md`](clients/t3code.md) | T3 Code settings.json Claude provider-instance ownership, proxy environment, custom models and loopback marker rules. |
 | [`companion.md`](companion.md) | Shared timeline filtering, usage/quotas, native and web tray title, and WidgetKit display contracts. |
 | [`codex-account-controls.md`](codex-account-controls.md) | Account selection order, custom usage thresholds, and stable account-card editing. |
+| [`clients/export-model-names.md`](clients/export-model-names.md) | Per-connection naming policy, router-proven aliases and passive export previews. |
+| [`clients/omo-export-dialect.md`](clients/omo-export-dialect.md) | Opt-in Responses dialect for the managed Pi-based omo export and its refresh lifecycle. |
+| [`clients/claude-desktop-model-visibility.md`](clients/claude-desktop-model-visibility.md) | Per-client selection of the rows the Claude Desktop 3P model list carries. |
+| [`clients/client-support-matrix.md`](clients/client-support-matrix.md) | Generated client support page: registry sources, curated protocol and test claims, drift checks. |
+| [`clients/t3code.md`](clients/t3code.md) | T3 Code settings.json Claude provider-instance ownership, proxy environment, custom models and loopback marker rules. |
 
 ### Tier 6 — Operations and process
 
@@ -146,7 +146,6 @@ Background service, docs, release, and design discipline.
 | Doc | Scope |
 | --- | --- |
 | [`desktop-shell.md`](desktop-shell.md) | Tauri desktop shell, proxy attachment and sidecar lifecycle, tray controls, bootstrap navigation, and desktop companion presence. |
-| [`desktop-recovery.md`](desktop-recovery.md) | Native recovery intent, independently anchored executable and accepted-connection proof, cold-start decisions and installation scope. |
 | [`desktop-terminal-command.md`](desktop-terminal-command.md) | Desktop-owned ocx command on PATH: record and journal, POSIX shim and shell blocks, Windows user Path, private-path ACL policy, and the local Terminal command page. |
 | [`desktop-start-at-login.md`](desktop-start-at-login.md) | macOS tray Start at Login judgment shared with Startup safety, its parity fixture, click rules, and the guarded launch-origin migration. |
 | [`ops/service-and-sidecars.md`](ops/service-and-sidecars.md) | Service install/repair, platform launchers, tray, and sidecar processes. |
@@ -159,6 +158,8 @@ Background service, docs, release, and design discipline.
 | [`design-methodology.md`](design-methodology.md) | Stage ordering for new GUI, CLI, and user-facing surfaces. |
 | [`ops/cross-platform-ci.md`](ops/cross-platform-ci.md) | Test lanes, platform coverage, aggregate gating, and release CI proof. |
 | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) | Test-runner home, case-scoped lifecycle teardown, and Bun test lock generation ownership. |
+| [`desktop-recovery.md`](desktop-recovery.md) | Native recovery intent, independently anchored executable and accepted-connection proof, cold-start decisions and installation scope. |
+| [`ops/source-archives.md`](ops/source-archives.md) | Compatibility manifest hashing for source archives. |
 
 ## Which doc describes which source
 
@@ -186,17 +187,18 @@ A source area can be described by more than one doc, because these docs are orga
 | `desktop/src-tauri/src/recovery_presence.rs` | [`desktop-recovery.md`](desktop-recovery.md) |
 | `desktop/src-tauri/src/resolve.rs` | [`ops/desktop-supervision.md`](ops/desktop-supervision.md) |
 | `desktop/src-tauri/src/runtime_stop.rs` | [`ops/desktop-supervision.md`](ops/desktop-supervision.md) |
-| `desktop/src-tauri/src/startup.rs` | [`desktop-recovery.md`](desktop-recovery.md)<br>[`ops/desktop-supervision.md`](ops/desktop-supervision.md) |
+| `desktop/src-tauri/src/startup.rs` | [`ops/desktop-supervision.md`](ops/desktop-supervision.md)<br>[`desktop-recovery.md`](desktop-recovery.md) |
 | `desktop/src-tauri/src/supervisor.rs` | [`desktop-recovery.md`](desktop-recovery.md) |
 | `desktop/src-tauri/src/tray_login.rs` | [`desktop-start-at-login.md`](desktop-start-at-login.md) |
 | `desktop/ui/cli.html` | [`desktop-terminal-command.md`](desktop-terminal-command.md) |
 | `desktop/ui/cli.js` | [`desktop-terminal-command.md`](desktop-terminal-command.md) |
-| `docs-site/` | [`clients/client-support-matrix.md`](clients/client-support-matrix.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
+| `docs-site/` | [`ops/docs-and-release.md`](ops/docs-and-release.md)<br>[`clients/client-support-matrix.md`](clients/client-support-matrix.md) |
 | `gui/` | [`overview.md`](overview.md)<br>[`transports/native-reasoning-retention.md`](transports/native-reasoning-retention.md)<br>[`gui-and-management-api.md`](gui-and-management-api.md)<br>[`provider-completion-diagnostic.md`](provider-completion-diagnostic.md)<br>[`dashboard-and-usage.md`](dashboard-and-usage.md)<br>[`fallback-policy.md`](fallback-policy.md)<br>[`design-methodology.md`](design-methodology.md)<br>[`companion.md`](companion.md) |
 | `gui/src/account-pause-display.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `gui/src/components/ModelPriceDialog.tsx` | [`pricing.md`](pricing.md) |
 | `gui/src/hooks/useProviderAccountPools.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
-| `scripts/` | [`overview.md`](overview.md)<br>[`clients/client-support-matrix.md`](clients/client-support-matrix.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
+| `scripts/` | [`overview.md`](overview.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md)<br>[`clients/client-support-matrix.md`](clients/client-support-matrix.md) |
+| `scripts/generate-compatibility-version.ts` | [`ops/source-archives.md`](ops/source-archives.md) |
 | `scripts/generate-ocx-skill-surface.ts` | [`cli-management.md`](cli-management.md) |
 | `scripts/test-run-lock-gate.ts` | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) |
 | `scripts/test-run-lock.ts` | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) |
@@ -208,7 +210,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/adapters/base.ts` | [`providers/completed-tool-blocks.md`](providers/completed-tool-blocks.md) |
 | `src/adapters/dsh-account.ts` | [`providers/dsh-account.md`](providers/dsh-account.md) |
 | `src/adapters/openai-chat.ts` | [`providers/completed-tool-blocks.md`](providers/completed-tool-blocks.md)<br>[`providers/mimo-bare-calls.md`](providers/mimo-bare-calls.md) |
-| `src/adapters/openai-chat/` | [`providers/lm-studio-chat.md`](providers/lm-studio-chat.md)<br>[`providers/mimo-bare-calls.md`](providers/mimo-bare-calls.md) |
+| `src/adapters/openai-chat/` | [`providers/mimo-bare-calls.md`](providers/mimo-bare-calls.md)<br>[`providers/lm-studio-chat.md`](providers/lm-studio-chat.md) |
 | `src/adapters/openai-chat/completed-tool-blocks.ts` | [`providers/completed-tool-blocks.md`](providers/completed-tool-blocks.md) |
 | `src/adapters/openai-chat/required-tool-result.ts` | [`providers/chat-required-tool-results.md`](providers/chat-required-tool-results.md) |
 | `src/adapters/openai-chat/serialized-tool-call-content.ts` | [`providers/completed-tool-blocks.md`](providers/completed-tool-blocks.md) |
@@ -221,16 +223,16 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/adapters/workbuddy.ts` | [`providers/workbuddy.md`](providers/workbuddy.md) |
 | `src/advisor/` | [`advisor.md`](advisor.md) |
 | `src/bridge.ts` | [`transports/responses.md`](transports/responses.md) |
-| `src/bridge/` | [`transports/response-citations.md`](transports/response-citations.md)<br>[`transports/responses.md`](transports/responses.md)<br>[`transports/responses-wire-shapes.md`](transports/responses-wire-shapes.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md) |
+| `src/bridge/` | [`transports/responses.md`](transports/responses.md)<br>[`transports/responses-wire-shapes.md`](transports/responses-wire-shapes.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md)<br>[`transports/response-citations.md`](transports/response-citations.md) |
 | `src/bridge/max-output-completion.ts` | [`transports/max-output-completion.md`](transports/max-output-completion.md) |
 | `src/bridge/response-json.ts` | [`transports/max-output-completion.md`](transports/max-output-completion.md) |
 | `src/bridge/sse.ts` | [`transports/response-turn-membership.md`](transports/response-turn-membership.md)<br>[`transports/max-output-completion.md`](transports/max-output-completion.md) |
 | `src/chat/` | [`runtime.md`](runtime.md)<br>[`transports/byte-accounting.md`](transports/byte-accounting.md)<br>[`transports/inventory.md`](transports/inventory.md)<br>[`data-planes/inbound-compat.md`](data-planes/inbound-compat.md)<br>[`providers-and-adapters.md`](providers-and-adapters.md)<br>[`providers/chat-compat.md`](providers/chat-compat.md) |
 | `src/chat/reasoning-details.ts` | [`data-planes/chat-reasoning-details.md`](data-planes/chat-reasoning-details.md) |
 | `src/chatgpt/` | [`clients/chatgpt-desktop.md`](clients/chatgpt-desktop.md) |
-| `src/claude/` | [`runtime.md`](runtime.md)<br>[`data-planes/claude-tool-loading.md`](data-planes/claude-tool-loading.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md)<br>[`clients/claude-desktop.md`](clients/claude-desktop.md)<br>[`clients/claude-desktop-config-reads.md`](clients/claude-desktop-config-reads.md)<br>[`clients/claude-desktop-model-visibility.md`](clients/claude-desktop-model-visibility.md) |
+| `src/claude/` | [`runtime.md`](runtime.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md)<br>[`clients/claude-desktop.md`](clients/claude-desktop.md)<br>[`clients/claude-desktop-config-reads.md`](clients/claude-desktop-config-reads.md)<br>[`data-planes/claude-tool-loading.md`](data-planes/claude-tool-loading.md)<br>[`clients/claude-desktop-model-visibility.md`](clients/claude-desktop-model-visibility.md) |
 | `src/cli.ts` | [`runtime.md`](runtime.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
-| `src/cli/` | [`runtime.md`](runtime.md)<br>[`config.md`](config.md)<br>[`remote-messaging.md`](remote-messaging.md)<br>[`local-messaging.md`](local-messaging.md)<br>[`cli-management.md`](cli-management.md)<br>[`provider-completion-diagnostic.md`](provider-completion-diagnostic.md)<br>[`fallback-policy.md`](fallback-policy.md)<br>[`clients/export-model-names.md`](clients/export-model-names.md)<br>[`clients/integrations.md`](clients/integrations.md)<br>[`clients/codex-desktop.md`](clients/codex-desktop.md)<br>[`clients/chatgpt-desktop.md`](clients/chatgpt-desktop.md)<br>[`clients/claude-desktop.md`](clients/claude-desktop.md)<br>[`clients/hermes.md`](clients/hermes.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
+| `src/cli/` | [`runtime.md`](runtime.md)<br>[`config.md`](config.md)<br>[`remote-messaging.md`](remote-messaging.md)<br>[`local-messaging.md`](local-messaging.md)<br>[`cli-management.md`](cli-management.md)<br>[`provider-completion-diagnostic.md`](provider-completion-diagnostic.md)<br>[`fallback-policy.md`](fallback-policy.md)<br>[`clients/integrations.md`](clients/integrations.md)<br>[`clients/codex-desktop.md`](clients/codex-desktop.md)<br>[`clients/chatgpt-desktop.md`](clients/chatgpt-desktop.md)<br>[`clients/claude-desktop.md`](clients/claude-desktop.md)<br>[`clients/hermes.md`](clients/hermes.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md)<br>[`clients/export-model-names.md`](clients/export-model-names.md) |
 | `src/cli/account-preservation.ts` | [`providers/openai-signed-in-preservation.md`](providers/openai-signed-in-preservation.md) |
 | `src/cli/codex-cli-update.ts` | [`codex-cli-update.md`](codex-cli-update.md) |
 | `src/cli/codex-provider.ts` | [`codex-provider-routing.md`](codex-provider-routing.md) |
@@ -296,19 +298,19 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/companion/` | [`overview.md`](overview.md)<br>[`gui-and-management-api.md`](gui-and-management-api.md)<br>[`companion.md`](companion.md) |
 | `src/compatibility/` | [`runtime.md`](runtime.md)<br>[`adapters/compatibility-contracts.md`](adapters/compatibility-contracts.md) |
 | `src/config.ts` | [`overview.md`](overview.md)<br>[`runtime.md`](runtime.md)<br>[`config.md`](config.md)<br>[`providers/openai-accounts.md`](providers/openai-accounts.md) |
-| `src/config/` | [`runtime.md`](runtime.md)<br>[`config.md`](config.md)<br>[`transports/native-reasoning-retention.md`](transports/native-reasoning-retention.md)<br>[`providers/lm-studio-chat.md`](providers/lm-studio-chat.md)<br>[`fallback-policy.md`](fallback-policy.md) |
+| `src/config/` | [`runtime.md`](runtime.md)<br>[`config.md`](config.md)<br>[`transports/native-reasoning-retention.md`](transports/native-reasoning-retention.md)<br>[`fallback-policy.md`](fallback-policy.md)<br>[`providers/lm-studio-chat.md`](providers/lm-studio-chat.md) |
 | `src/config/account-auto-pause-revisions.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `src/config/live-reconcile.ts` | [`pricing.md`](pricing.md) |
 | `src/config/persisted-mutation.ts` | [`runtime.md`](runtime.md) |
 | `src/config/schema/account-auto-pause.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `src/config/schema/config-schema.ts` | [`transports/max-output-completion.md`](transports/max-output-completion.md)<br>[`clients/omo-export-dialect.md`](clients/omo-export-dialect.md) |
-| `src/config/schema/leaf-validators.ts` | [`transports/timeouts.md`](transports/timeouts.md)<br>[`pricing.md`](pricing.md)<br>[`clients/omo-export-dialect.md`](clients/omo-export-dialect.md) |
+| `src/config/schema/leaf-validators.ts` | [`pricing.md`](pricing.md)<br>[`transports/timeouts.md`](transports/timeouts.md)<br>[`clients/omo-export-dialect.md`](clients/omo-export-dialect.md) |
 | `src/generated/` | [`runtime.md`](runtime.md) |
 | `src/github/` | [`runtime.md`](runtime.md) |
 | `src/grok/` | [`runtime.md`](runtime.md) |
 | `src/images/` | [`runtime.md`](runtime.md)<br>[`transports/inventory.md`](transports/inventory.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md) |
 | `src/index.ts` | [`runtime.md`](runtime.md) |
-| `src/integrations/` | [`clients/export-model-names.md`](clients/export-model-names.md)<br>[`clients/integrations.md`](clients/integrations.md)<br>[`clients/hermes.md`](clients/hermes.md)<br>[`clients/qoder.md`](clients/qoder.md)<br>[`clients/client-support-matrix.md`](clients/client-support-matrix.md)<br>[`clients/t3code.md`](clients/t3code.md) |
+| `src/integrations/` | [`clients/integrations.md`](clients/integrations.md)<br>[`clients/hermes.md`](clients/hermes.md)<br>[`clients/qoder.md`](clients/qoder.md)<br>[`clients/export-model-names.md`](clients/export-model-names.md)<br>[`clients/client-support-matrix.md`](clients/client-support-matrix.md)<br>[`clients/t3code.md`](clients/t3code.md) |
 | `src/lab/` | [`runtime.md`](runtime.md)<br>[`adapters/compatibility-lab.md`](adapters/compatibility-lab.md) |
 | `src/lib/` | [`overview.md`](overview.md)<br>[`runtime.md`](runtime.md)<br>[`transports/byte-accounting.md`](transports/byte-accounting.md)<br>[`transports/responses-wire-shapes.md`](transports/responses-wire-shapes.md)<br>[`transports/responses-failover.md`](transports/responses-failover.md)<br>[`transports/responses-spend.md`](transports/responses-spend.md)<br>[`transports/inventory.md`](transports/inventory.md)<br>[`gui-and-management-api.md`](gui-and-management-api.md)<br>[`dashboard-and-usage.md`](dashboard-and-usage.md)<br>[`clients/integrations.md`](clients/integrations.md)<br>[`ops/service-and-sidecars.md`](ops/service-and-sidecars.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
 | `src/lib/abort.ts` | [`transports/timeouts.md`](transports/timeouts.md) |
@@ -368,7 +370,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/router.ts` | [`runtime.md`](runtime.md) |
 | `src/routing/` | [`catalog.md`](catalog.md)<br>[`fallback-policy.md`](fallback-policy.md) |
 | `src/routing/history/` | [`dashboard-and-usage.md`](dashboard-and-usage.md) |
-| `src/server/` | [`transports/timeouts.md`](transports/timeouts.md)<br>[`providers/generic-account-pool.md`](providers/generic-account-pool.md)<br>[`runtime.md`](runtime.md)<br>[`codex-prompts.md`](codex-prompts.md)<br>[`catalog.md`](catalog.md)<br>[`subagents.md`](subagents.md)<br>[`transports/byte-accounting.md`](transports/byte-accounting.md)<br>[`transports/responses.md`](transports/responses.md)<br>[`transports/native-reasoning-retention.md`](transports/native-reasoning-retention.md)<br>[`transports/responses-wire-shapes.md`](transports/responses-wire-shapes.md)<br>[`transports/responses-failover.md`](transports/responses-failover.md)<br>[`transports/responses-combo-boundaries.md`](transports/responses-combo-boundaries.md)<br>[`transports/policy-fallback.md`](transports/policy-fallback.md)<br>[`transports/streaming-health.md`](transports/streaming-health.md)<br>[`transports/inventory.md`](transports/inventory.md)<br>[`data-planes/images.md`](data-planes/images.md)<br>[`data-planes/inbound-compat.md`](data-planes/inbound-compat.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md)<br>[`providers-and-adapters.md`](providers-and-adapters.md)<br>[`providers/jev-decision.md`](providers/jev-decision.md)<br>[`providers/xai-grok.md`](providers/xai-grok.md)<br>[`adapters/registry.md`](adapters/registry.md)<br>[`gui-and-management-api.md`](gui-and-management-api.md)<br>[`provider-completion-diagnostic.md`](provider-completion-diagnostic.md)<br>[`dashboard-and-usage.md`](dashboard-and-usage.md)<br>[`fallback-policy.md`](fallback-policy.md)<br>[`clients/claude-desktop.md`](clients/claude-desktop.md)<br>[`clients/claude-desktop-model-visibility.md`](clients/claude-desktop-model-visibility.md)<br>[`clients/hermes.md`](clients/hermes.md)<br>[`ops/service-and-sidecars.md`](ops/service-and-sidecars.md) |
+| `src/server/` | [`providers/generic-account-pool.md`](providers/generic-account-pool.md)<br>[`runtime.md`](runtime.md)<br>[`codex-prompts.md`](codex-prompts.md)<br>[`catalog.md`](catalog.md)<br>[`subagents.md`](subagents.md)<br>[`transports/byte-accounting.md`](transports/byte-accounting.md)<br>[`transports/responses.md`](transports/responses.md)<br>[`transports/native-reasoning-retention.md`](transports/native-reasoning-retention.md)<br>[`transports/responses-wire-shapes.md`](transports/responses-wire-shapes.md)<br>[`transports/responses-failover.md`](transports/responses-failover.md)<br>[`transports/responses-combo-boundaries.md`](transports/responses-combo-boundaries.md)<br>[`transports/policy-fallback.md`](transports/policy-fallback.md)<br>[`transports/streaming-health.md`](transports/streaming-health.md)<br>[`transports/inventory.md`](transports/inventory.md)<br>[`data-planes/images.md`](data-planes/images.md)<br>[`data-planes/inbound-compat.md`](data-planes/inbound-compat.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md)<br>[`providers-and-adapters.md`](providers-and-adapters.md)<br>[`providers/jev-decision.md`](providers/jev-decision.md)<br>[`providers/xai-grok.md`](providers/xai-grok.md)<br>[`adapters/registry.md`](adapters/registry.md)<br>[`gui-and-management-api.md`](gui-and-management-api.md)<br>[`provider-completion-diagnostic.md`](provider-completion-diagnostic.md)<br>[`dashboard-and-usage.md`](dashboard-and-usage.md)<br>[`fallback-policy.md`](fallback-policy.md)<br>[`clients/claude-desktop.md`](clients/claude-desktop.md)<br>[`clients/hermes.md`](clients/hermes.md)<br>[`ops/service-and-sidecars.md`](ops/service-and-sidecars.md)<br>[`transports/timeouts.md`](transports/timeouts.md)<br>[`clients/claude-desktop-model-visibility.md`](clients/claude-desktop-model-visibility.md) |
 | `src/server/advisor-admission-scope.ts` | [`advisor.md`](advisor.md) |
 | `src/server/auth-cors.ts` | [`transports/response-turn-membership.md`](transports/response-turn-membership.md)<br>[`providers/lm-studio-chat.md`](providers/lm-studio-chat.md) |
 | `src/server/capture-admission-policy.ts` | [`advisor.md`](advisor.md) |
@@ -419,14 +421,14 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/service/repair.ts` | [`ops/desktop-supervision.md`](ops/desktop-supervision.md) |
 | `src/sidecar/` | [`ops/service-and-sidecars.md`](ops/service-and-sidecars.md) |
 | `src/sidecar/anthropic-binding.ts` | [`providers/anthropic-account-pool.md`](providers/anthropic-account-pool.md) |
-| `src/stall-timeout.ts` | [`transports/timeouts.md`](transports/timeouts.md)<br>[`runtime.md`](runtime.md) |
+| `src/stall-timeout.ts` | [`runtime.md`](runtime.md)<br>[`transports/timeouts.md`](transports/timeouts.md) |
 | `src/storage/` | [`runtime.md`](runtime.md) |
 | `src/tray/` | [`runtime.md`](runtime.md) |
 | `src/types.ts` | [`runtime.md`](runtime.md)<br>[`config.md`](config.md) |
-| `src/types/` | [`providers/generic-account-pool.md`](providers/generic-account-pool.md)<br>[`transports/native-reasoning-retention.md`](transports/native-reasoning-retention.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md)<br>[`providers-and-adapters.md`](providers-and-adapters.md)<br>[`providers/lm-studio-chat.md`](providers/lm-studio-chat.md)<br>[`fallback-policy.md`](fallback-policy.md) |
+| `src/types/` | [`providers/generic-account-pool.md`](providers/generic-account-pool.md)<br>[`transports/native-reasoning-retention.md`](transports/native-reasoning-retention.md)<br>[`providers/anthropic-progress.md`](providers/anthropic-progress.md)<br>[`providers-and-adapters.md`](providers-and-adapters.md)<br>[`fallback-policy.md`](fallback-policy.md)<br>[`providers/lm-studio-chat.md`](providers/lm-studio-chat.md) |
 | `src/types/account-auto-pause.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `src/types/admission-policy.ts` | [`advisor.md`](advisor.md) |
-| `src/types/config.ts` | [`transports/timeouts.md`](transports/timeouts.md)<br>[`config.md`](config.md)<br>[`transports/max-output-completion.md`](transports/max-output-completion.md)<br>[`clients/omo-export-dialect.md`](clients/omo-export-dialect.md) |
+| `src/types/config.ts` | [`config.md`](config.md)<br>[`transports/timeouts.md`](transports/timeouts.md)<br>[`transports/max-output-completion.md`](transports/max-output-completion.md)<br>[`clients/omo-export-dialect.md`](clients/omo-export-dialect.md) |
 | `src/types/provider.ts` | [`pricing.md`](pricing.md) |
 | `src/update/` | [`runtime.md`](runtime.md)<br>[`ops/service-and-sidecars.md`](ops/service-and-sidecars.md) |
 | `src/update/guarded-port-reclaim.ts` | [`ops/update-supervised-recovery.md`](ops/update-supervised-recovery.md) |
