@@ -22,6 +22,11 @@ test("fork controls stay outside a rework's write scope", () => {
   expect([".github/workflows/fork-stack-refresh.yml", "scripts/fork/orchestrator/worker.ts", "package.json", "bun.lock"].every(isForkControl)).toBe(true)
   expect(["src/oauth/dsh.ts", "docs-site/src/content/docs/fr/guides/integrations.md", "src/cli/registry.ts"].some(isForkControl)).toBe(false)
 })
+test("worker verification runs the publication file-size ratchet", () => {
+  // Without this line a cleanly applied patch never reaches the agent, so a file the cap rejects
+  // failed only the sharded publish suite and cost the whole night; see the worker repair comment.
+  expect(readFileSync(join(import.meta.dir, "worker.ts"), "utf8")).toContain(`["bun", "test", "tests/ci-workflows/file-size-ratchet.test.ts"]`)
+})
 test("the merge driver is pinned per runner and refuses an unpinned one", () => {
   for (const [platform, arch] of [["linux", "x64"], ["darwin", "arm64"], ["darwin", "x64"]] as const) {
     expect(mergirafTarget(platform, arch).sha256).toMatch(/^[a-f0-9]{64}$/)

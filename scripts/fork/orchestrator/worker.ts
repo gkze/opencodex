@@ -91,6 +91,12 @@ const verify = Effect.gen(function*() {
   delete process.env.COPILOT_GITHUB_TOKEN
   yield* command(["bun", "install", "--frozen-lockfile", "--linker=hoisted"], cwd)
   yield* command(["bun", "run", "typecheck"], cwd)
+  // The file-size ratchet belongs to the publish suite, so a patch that pushes a near-threshold
+  // file over the cap used to pass every registered test here and fail the sharded suite at
+  // publication, where no stage can repair it: a cleanly applied patch never reaches the agent.
+  // Upstream's own docs grow under these caps, so the check is deterministic and cheap enough to
+  // run for every patch instead of once per composed stack.
+  yield* command(["bun", "test", "tests/ci-workflows/file-size-ratchet.test.ts"], cwd)
   const readmeChanges = yield* git(cwd, "diff", "--name-only", result.base, result.candidate, "--", "README.md", "readme")
   if (readmeChanges) yield* command(["bun", "test", "tests/ci-workflows/docs-readme-translation-parity.test.ts"], cwd)
   for (const file of task.patch.tests) {
