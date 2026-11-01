@@ -24,6 +24,10 @@
     "layout-usage.json"
   ],
   "explicit": {
+    "codex-installation-acl.test.ts": "codex-integration",
+    "codex-installation-id.test.ts": "codex-integration",
+    "codex-installation-wire.test.ts": "codex-integration",
+    "codex-installation-failover.test.ts": "responses",
     "service-desktop-recovery.test.ts": "service",
     "catalog-omit-disabled-native.test.ts": "codex-integration",
     "provider-input-modalities.test.ts": "providers",
@@ -776,6 +780,7 @@
     "cli-export-command.test.ts": "cli",
     "cli-head.test.ts": "cli",
     "cli-headless-parity.test.ts": "cli",
+    "cli-role-suggestion-history.test.ts": "cli",
     "cli-help.test.ts": "cli",
     "cli-help-paths.test.ts": "cli",
     "cli-help-navigation.test.ts": "cli",
@@ -907,6 +912,8 @@
     "messaging-remote-contract.test.ts": "codex-integration",
     "messaging-remote-store.test.ts": "codex-integration",
     "messaging-remote-send.test.ts": "codex-integration",
+    "messaging-mcp-queue.test.ts": "codex-integration",
+    "cli-message-mcp.test.ts": "cli",
     "messaging-local-send.test.ts": "codex-integration",
     "messaging-local-lifecycle.test.ts": "codex-integration",
     "messaging-local-socket.test.ts": "codex-integration",
@@ -1694,6 +1701,7 @@
     "ollama-native-structured-output.test.ts": "providers/ollama",
     "ollama-native-tool-continuations.test.ts": "providers/ollama",
     "ollama-native-v4.test.ts": "providers/ollama",
+    "ollama-native-scaling.test.ts": "providers/ollama",
     "ollama-native.test.ts": "providers/ollama",
     "ollama-show-enrichment-v7.test.ts": "providers/ollama",
     "ollama-show-enrichment.test.ts": "providers/ollama",
@@ -2503,14 +2511,9 @@
     "advisor-scope-transport.test.ts": "advisor",
     "local-credentials.test.ts": "cli",
     "local-credential-generation.test.ts": "config",
-    "codex-installation-acl.test.ts": "codex-integration",
-    "codex-installation-id.test.ts": "codex-integration",
-    "codex-installation-wire.test.ts": "codex-integration",
-    "codex-installation-failover.test.ts": "responses",
-    "cli-role-suggestion-history.test.ts": "cli",
-    "messaging-mcp-queue.test.ts": "codex-integration",
-    "cli-message-mcp.test.ts": "cli",
-    "ollama-native-scaling.test.ts": "providers/ollama",
-    "fx-client.test.ts": "clients"
+    "fx-client.test.ts": "clients",
+    "link-ultrafast-settings.test.ts": "clients",
+    "catalog-ultrafast-cache.test.ts": "codex-integration",
+    "fastwire-ultrafast-regressions.test.ts": "routing"
   }
 }
