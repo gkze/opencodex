@@ -93,6 +93,10 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project-bun
+        # This job runs a Bun test below, so it takes the test-runner pin: the CI role
+        # contract requires it for every job whose steps run tests.
+        with:
+          role: test-runner
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run privacy:scan
