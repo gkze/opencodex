@@ -48,23 +48,6 @@
   ],
   "docs": [
     {
-      "path": "transports/timeouts.md",
-      "tier": 3,
-      "title": "Upstream Timeouts",
-      "scope": "Local header and JSON body deadlines, cancellation and optional OpenCode timeout export.",
-      "documents": [
-        "src/stall-timeout.ts",
-        "src/lib/abort.ts",
-        "src/lib/local-upstream.ts",
-        "src/lib/bounded-body.ts",
-        "src/server/",
-        "src/web-search/header-deadline.ts",
-        "src/clients/config-export.ts",
-        "src/config/schema/leaf-validators.ts",
-        "src/types/config.ts"
-      ]
-    },
-    {
       "path": "quota-snapshots.md",
       "tier": 4,
       "title": "Account Quota Snapshots",
@@ -370,31 +353,6 @@
       ]
     },
     {
-      "path": "transports/response-citations.md",
-      "tier": 3,
-      "title": "Response Citation Projection",
-      "scope": "OpenAI-operated outbound citation repair and generated JSON/SSE annotation titles.",
-      "documents": [
-        "src/adapters/openai-responses/",
-        "src/bridge/"
-      ]
-    },
-    {
-      "path": "transports/max-output-completion.md",
-      "tier": 3,
-      "title": "Opt-in Responses Text Completion",
-      "scope": "Default-off translated Responses text-only token-limit completion and exclusions.",
-      "documents": [
-        "src/bridge/max-output-completion.ts",
-        "src/bridge/sse.ts",
-        "src/bridge/response-json.ts",
-        "src/config/schema/config-schema.ts",
-        "src/types/config.ts",
-        "src/server/responses/adapter-delivery.ts",
-        "src/server/responses/run-turn-execution.ts"
-      ]
-    },
-    {
       "path": "transports/responses.md",
       "tier": 3,
       "title": "Responses Transport",
@@ -531,16 +489,6 @@
         "src/adapters/",
         "src/chat/",
         "src/server/"
-      ]
-    },
-    {
-      "path": "data-planes/claude-tool-loading.md",
-      "tier": 3,
-      "title": "Append-only Claude Tool Loading",
-      "scope": "Physical-adapter tool-loading projection, preserved catalogs, fallback exclusions and opt-in prerequisites.",
-      "documents": [
-        "src/claude/",
-        "src/server/responses/"
       ]
     },
     {
@@ -814,20 +762,6 @@
       ]
     },
     {
-      "path": "providers/lm-studio-chat.md",
-      "tier": 4,
-      "title": "LM Studio Chat instructions",
-      "scope": "Preset-scoped single-leading-system normalization, configuration and editor policy.",
-      "documents": [
-        "src/adapters/openai-chat/",
-        "src/providers/",
-        "src/config/",
-        "src/types/",
-        "src/server/management/",
-        "src/server/auth-cors.ts"
-      ]
-    },
-    {
       "path": "providers/chat-compat.md",
       "tier": 4,
       "title": "Chat Provider Compatibility",
@@ -1001,31 +935,6 @@
       ]
     },
     {
-      "path": "clients/export-model-names.md",
-      "tier": 5,
-      "title": "Client Export Model Names",
-      "scope": "Per-connection naming policy, router-proven aliases and passive export previews.",
-      "documents": [
-        "src/clients/config-export.ts",
-        "src/clients/config-export/",
-        "src/integrations/",
-        "src/cli/",
-        "src/server/management/"
-      ]
-    },
-    {
-      "path": "clients/omo-export-dialect.md",
-      "tier": 5,
-      "title": "omo Client Export Dialect",
-      "scope": "Opt-in Responses dialect for the managed Pi-based omo export and its refresh lifecycle.",
-      "documents": [
-        "src/clients/config-export.ts",
-        "src/types/config.ts",
-        "src/config/schema/leaf-validators.ts",
-        "src/config/schema/config-schema.ts"
-      ]
-    },
-    {
       "path": "clients/integrations.md",
       "tier": 5,
       "title": "Client Integrations",
@@ -1080,16 +989,6 @@
       ]
     },
     {
-      "path": "clients/claude-desktop-model-visibility.md",
-      "tier": 5,
-      "title": "Claude Desktop Model Visibility",
-      "scope": "Per-client selection of the rows the Claude Desktop 3P model list carries.",
-      "documents": [
-        "src/claude/",
-        "src/server/"
-      ]
-    },
-    {
       "path": "clients/hermes.md",
       "tier": 5,
       "title": "Hermes Profiles",
@@ -1111,28 +1010,6 @@
       ]
     },
     {
-      "path": "clients/client-support-matrix.md",
-      "tier": 5,
-      "title": "Client Support Matrix",
-      "scope": "Generated client support page: registry sources, curated protocol and test claims, drift checks.",
-      "documents": [
-        "scripts/",
-        "docs-site/",
-        "src/clients/",
-        "src/integrations/"
-      ]
-    },
-    {
-      "path": "clients/t3code.md",
-      "tier": 5,
-      "title": "T3 Code Client Integration",
-      "scope": "T3 Code settings.json Claude provider-instance ownership, proxy environment, custom models and loopback marker rules.",
-      "documents": [
-        "src/clients/",
-        "src/integrations/"
-      ]
-    },
-    {
       "path": "desktop-shell.md",
       "tier": 6,
       "title": "Desktop shell",
@@ -1140,22 +1017,6 @@
       "documents": [
         "desktop/",
         "src/server/management/companion-routes.ts"
-      ]
-    },
-    {
-      "path": "desktop-recovery.md",
-      "tier": 6,
-      "title": "Desktop recovery evidence",
-      "scope": "Native recovery intent, independently anchored executable and accepted-connection proof, cold-start decisions and installation scope.",
-      "documents": [
-        "desktop/src-tauri/src/recovery.rs",
-        "desktop/src-tauri/src/recovery_activity.rs",
-        "desktop/src-tauri/src/recovery_presence.rs",
-        "desktop/src-tauri/src/startup.rs",
-        "desktop/src-tauri/src/supervisor.rs",
-        "src/service/desktop-recovery.ts",
-        "src/service/desktop-recovery-process.ts",
-        "src/cli/ensure-desktop-cold-start.ts"
       ]
     },
     {
@@ -1396,6 +1257,154 @@
       ]
     },
     {
+      "path": "transports/timeouts.md",
+      "tier": 3,
+      "title": "Upstream Timeouts",
+      "scope": "Local header and JSON body deadlines, cancellation and optional OpenCode timeout export.",
+      "documents": [
+        "src/stall-timeout.ts",
+        "src/lib/abort.ts",
+        "src/lib/local-upstream.ts",
+        "src/lib/bounded-body.ts",
+        "src/server/",
+        "src/web-search/header-deadline.ts",
+        "src/clients/config-export.ts",
+        "src/config/schema/leaf-validators.ts",
+        "src/types/config.ts"
+      ]
+    },
+    {
+      "path": "transports/response-citations.md",
+      "tier": 3,
+      "title": "Response Citation Projection",
+      "scope": "OpenAI-operated outbound citation repair and generated JSON/SSE annotation titles.",
+      "documents": [
+        "src/adapters/openai-responses/",
+        "src/bridge/"
+      ]
+    },
+    {
+      "path": "transports/max-output-completion.md",
+      "tier": 3,
+      "title": "Opt-in Responses Text Completion",
+      "scope": "Default-off translated Responses text-only token-limit completion and exclusions.",
+      "documents": [
+        "src/bridge/max-output-completion.ts",
+        "src/bridge/sse.ts",
+        "src/bridge/response-json.ts",
+        "src/config/schema/config-schema.ts",
+        "src/types/config.ts",
+        "src/server/responses/adapter-delivery.ts",
+        "src/server/responses/run-turn-execution.ts"
+      ]
+    },
+    {
+      "path": "data-planes/claude-tool-loading.md",
+      "tier": 3,
+      "title": "Append-only Claude Tool Loading",
+      "scope": "Physical-adapter tool-loading projection, preserved catalogs, fallback exclusions and opt-in prerequisites.",
+      "documents": [
+        "src/claude/",
+        "src/server/responses/"
+      ]
+    },
+    {
+      "path": "providers/lm-studio-chat.md",
+      "tier": 4,
+      "title": "LM Studio Chat instructions",
+      "scope": "Preset-scoped single-leading-system normalization, configuration and editor policy.",
+      "documents": [
+        "src/adapters/openai-chat/",
+        "src/providers/",
+        "src/config/",
+        "src/types/",
+        "src/server/management/",
+        "src/server/auth-cors.ts"
+      ]
+    },
+    {
+      "path": "clients/export-model-names.md",
+      "tier": 5,
+      "title": "Client Export Model Names",
+      "scope": "Per-connection naming policy, router-proven aliases and passive export previews.",
+      "documents": [
+        "src/clients/config-export.ts",
+        "src/clients/config-export/",
+        "src/integrations/",
+        "src/cli/",
+        "src/server/management/"
+      ]
+    },
+    {
+      "path": "clients/omo-export-dialect.md",
+      "tier": 5,
+      "title": "omo Client Export Dialect",
+      "scope": "Opt-in Responses dialect for the managed Pi-based omo export and its refresh lifecycle.",
+      "documents": [
+        "src/clients/config-export.ts",
+        "src/types/config.ts",
+        "src/config/schema/leaf-validators.ts",
+        "src/config/schema/config-schema.ts"
+      ]
+    },
+    {
+      "path": "clients/claude-desktop-model-visibility.md",
+      "tier": 5,
+      "title": "Claude Desktop Model Visibility",
+      "scope": "Per-client selection of the rows the Claude Desktop 3P model list carries.",
+      "documents": [
+        "src/claude/",
+        "src/server/"
+      ]
+    },
+    {
+      "path": "clients/client-support-matrix.md",
+      "tier": 5,
+      "title": "Client Support Matrix",
+      "scope": "Generated client support page: registry sources, curated protocol and test claims, drift checks.",
+      "documents": [
+        "scripts/",
+        "docs-site/",
+        "src/clients/",
+        "src/integrations/"
+      ]
+    },
+    {
+      "path": "clients/t3code.md",
+      "tier": 5,
+      "title": "T3 Code Client Integration",
+      "scope": "T3 Code settings.json Claude provider-instance ownership, proxy environment, custom models and loopback marker rules.",
+      "documents": [
+        "src/clients/",
+        "src/integrations/"
+      ]
+    },
+    {
+      "path": "desktop-recovery.md",
+      "tier": 6,
+      "title": "Desktop recovery evidence",
+      "scope": "Native recovery intent, independently anchored executable and accepted-connection proof, cold-start decisions and installation scope.",
+      "documents": [
+        "desktop/src-tauri/src/recovery.rs",
+        "desktop/src-tauri/src/recovery_activity.rs",
+        "desktop/src-tauri/src/recovery_presence.rs",
+        "desktop/src-tauri/src/startup.rs",
+        "desktop/src-tauri/src/supervisor.rs",
+        "src/service/desktop-recovery.ts",
+        "src/service/desktop-recovery-process.ts",
+        "src/cli/ensure-desktop-cold-start.ts"
+      ]
+    },
+    {
+      "path": "ops/source-archives.md",
+      "tier": 6,
+      "title": "Source Archive Identity",
+      "scope": "Compatibility manifest hashing for source archives.",
+      "documents": [
+        "scripts/generate-compatibility-version.ts"
+      ]
+    },
+    {
       "path": "providers/codex-installation-identity.md",
       "tier": 3,
       "title": "Codex Installation Identity",
@@ -1426,12 +1435,12 @@
       ]
     },
     {
-      "path": "ops/source-archives.md",
+      "path": "ops/git-installs.md",
       "tier": 6,
-      "title": "Source Archive Identity",
-      "scope": "Compatibility manifest hashing for source archives.",
+      "title": "Git Installation Preparation",
+      "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
       "documents": [
-        "scripts/generate-compatibility-version.ts"
+        "package.json"
       ]
     }
   ],
