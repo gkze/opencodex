@@ -37,7 +37,7 @@
     "coordinatorMinutes": 300,
     "workerMinutes": 60,
     "cleanupMinutes": 10,
-    "pollSeconds": 60,
+    "pollSeconds": 20,
     "agentAttempts": 2,
     "artifactMaxBytes": 20971520,
     "runnerLabels": [
