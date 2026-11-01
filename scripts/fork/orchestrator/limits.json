@@ -38,7 +38,7 @@
     "workerMinutes": 60,
     "cleanupMinutes": 10,
     "pollSeconds": 60,
-    "agentAttempts": 1,
+    "agentAttempts": 2,
     "artifactMaxBytes": 20971520,
     "runnerLabels": [
       "ubuntu-24.04",
@@ -50,6 +50,7 @@
     "runArtifactBytes": 2147483648,
     "retainedRepositoryBytes": 10737418240,
     "publicationArtifactRetentionDays": 3,
-    "publicationArtifactMaxBytes": 209715200
+    "publicationArtifactMaxBytes": 209715200,
+    "adaptationMaxLines": 600
   }
 }
