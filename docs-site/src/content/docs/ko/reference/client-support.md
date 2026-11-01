@@ -46,6 +46,7 @@ opencodex는 AI 코딩 도구와 모델을 잇는 하나의 로컬 게이트웨�
 | Factory Droid | — | JSON | 예 | Chat Completions | test-covered ([테스트](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/droid-client.test.ts)) | — | 로컬 리스너 전용. [가이드](/ko/guides/factory-droid/) |
 | Gentle Shell | — | JSON | 예 | Chat Completions | test-covered ([테스트](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/gentle-shell-client.test.ts)) | — | 로컬 리스너 전용. |
 | T3 Code | — | JSON | 예 | Anthropic Messages | test-covered ([테스트](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/t3code-client.test.ts)) | — | 로컬 리스너 전용. 적용 전에 클라이언트별 검사를 실행하며 거부할 수 있습니다. |
+| fx | — | JSON | 예 | Chat Completions (검토됨) | test-covered ([테스트](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/fx-client.test.ts)) | — | 로컬 리스너 전용. 클라이언트가 이 설정값으로 엔드포인트를 고릅니다(클라이언트 문서 동작 기준으로 리뷰함). |
 
 ## 수신 엔드포인트
 
