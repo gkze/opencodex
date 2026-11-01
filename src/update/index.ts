@@ -1,5 +1,6 @@
 import { guardedRun, guardedSpawn, guardedSpawnSync } from "./mutation-guard.mjs";
 import { probeSpawn, probeSpawnSync } from "./mutation-guard.mjs";
+import { isForkVersion, forkUpdateMessage } from "./fork-policy.mjs";
 import { createSupervisionLatch, inspectDesktopSupervision } from "../service/desktop-supervision.mjs";
 import { manualUpdateFailureGuidance } from "./update-failure-guidance.mjs";
 import { STOP_HISTORY_INCOMPLETE_EXIT_CODE } from "./stop-contract.mjs";
@@ -300,6 +301,7 @@ export function latestVersion(
   owner?: PnpmGlobalOwner,
   probeSpawn: typeof probeSpawnSync = probeSpawnSync,
 ): string | null {
+  if (isForkVersion(currentVersion())) return null;
   const resolvedOwner = installer === "pnpm" ? selectedPnpmOwner(owner) : undefined;
   if (installer === "pnpm" && !resolvedOwner) return null;
   const manager = registrySpawnTarget(installer, ["view", `${PKG}@${tag}`, "version"], resolvedOwner);
@@ -418,6 +420,7 @@ async function resolvedRuntimeOwnership(): Promise<RuntimeOwnershipObservation> 
  * Bun binary.
  */
 export async function runUpdate(): Promise<void> {
+  if (isForkVersion(currentVersion())) { console.log(forkUpdateMessage); return; }
   const ownership = detectInstallOwnership();
   const installer = ownership.installer;
   const current = currentVersion();
