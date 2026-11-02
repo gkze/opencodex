@@ -69,11 +69,11 @@ The wire surfaces a client actually talks to.
 | [`data-planes/claude-tool-loading.md`](data-planes/claude-tool-loading.md) | Physical-adapter tool-loading projection, preserved catalogs, fallback exclusions and opt-in prerequisites. |
 | [`data-planes/chat-reasoning-details.md`](data-planes/chat-reasoning-details.md) | The reasoning_details carrier that lets Chat Completions clients round-trip signed Anthropic thinking across tool steps (#7429). |
 | [`data-planes/protocol-paths.md`](data-planes/protocol-paths.md) | Shared protocol vocabulary, declared feature dispositions, the ingress-by-upstream baseline, plan/trace shapes, and protocol settings. |
+| [`providers/codex-installation-identity.md`](providers/codex-installation-identity.md) | Per-account Pool wire installation identity, private secret, existence gates and fail-closed delivery. |
+| [`providers/codex-request-owned-affinity.md`](providers/codex-request-owned-affinity.md) | Opt-in conversation affinity for a caller's own ChatGPT bearer in Pool mode, honest selection-time affinity labels, and the persistence exclusion contract. |
 | [`fallback-policy.md`](fallback-policy.md) | OCX-11 fallback off: what is a model or provider fallback (and what intra-pool rotation is not), scope precedence, the guarded hop sites, the fallback_refused and home_unreachable contracts, and the ocx.fallback/1 state. |
 | [`remote-workspace.md`](remote-workspace.md) | Opt-in workspace identity, executor grants, runtime adapters, management and dashboard integration. |
 | [`remote-link.md`](remote-link.md) | SSH machine-link building blocks: OpenSSH argument policy, ssh_config candidates, tunnel lifecycle reducer, the private link store, and standalone pairing-grant delivery. |
-| [`providers/codex-installation-identity.md`](providers/codex-installation-identity.md) | Per-account Pool wire installation identity, private secret, existence gates and fail-closed delivery. |
-| [`providers/codex-request-owned-affinity.md`](providers/codex-request-owned-affinity.md) | Opt-in conversation affinity for a caller's own ChatGPT bearer in Pool mode, honest selection-time affinity labels, and the persistence exclusion contract. |
 
 ### Tier 4 — Providers and adapters
 
@@ -100,6 +100,7 @@ Per-vendor contracts and the adapter authority that constructs them.
 | [`providers/openai-tiers.md`](providers/openai-tiers.md) | Pool/Direct account modes, API-key separation, and the public provider and quota contract. |
 | [`providers/pool-credit-renewal.md`](providers/pool-credit-renewal.md) | Independent credit-evidence renewal for opted-in exhausted Codex pool accounts. |
 | [`providers/openai-accounts.md`](providers/openai-accounts.md) | Migration and restore, wire identity, store concurrency, pool ordering and exclusions, quota observations, and account-bound retention. |
+| [`providers/codex-round-robin-placement.md`](providers/codex-round-robin-placement.md) | Round-robin new-conversation placement preferring accounts under their effective auto-switch threshold, with all-over fallback and bound, failover and lineage boundaries. |
 | [`providers/openai-signed-in-preservation.md`](providers/openai-signed-in-preservation.md) | Opt-in effective priority bands that spend other pool accounts before the signed-in identity, its identity observation and management API. |
 | [`providers/cursor.md`](providers/cursor.md) | Cursor native exec, parameterized models, checkpoints, and active-context usage. |
 | [`providers/google.md`](providers/google.md) | Gemini thought-text, response parts, thought-signature replay, and adjacency repair. |
@@ -113,7 +114,6 @@ Per-vendor contracts and the adapter authority that constructs them.
 | [`adapters/registry.md`](adapters/registry.md) | The single adapter construction authority and contract inheritance. |
 | [`adapters/compatibility-contracts.md`](adapters/compatibility-contracts.md) | Versioned provider compatibility claims and fixture-evidence boundaries. |
 | [`adapters/compatibility-lab.md`](adapters/compatibility-lab.md) | Optional Lab evidence, automation, and its core-runtime isolation boundary. |
-| [`providers/codex-round-robin-placement.md`](providers/codex-round-robin-placement.md) | Round-robin new-conversation placement preferring accounts under their effective auto-switch threshold, with all-over fallback and bound, failover and lineage boundaries. |
 
 ### Tier 5 — Surfaces and clients
 
@@ -164,6 +164,7 @@ Background service, docs, release, and design discipline.
 | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) | Test-runner home, case-scoped lifecycle teardown, and Bun test lock generation ownership. |
 | [`ops/source-archives.md`](ops/source-archives.md) | Compatibility manifest hashing for source archives. |
 | [`ops/git-installs.md`](ops/git-installs.md) | Trusted Git installation lifecycle and source archive prerequisite. |
+| [`ops/fork-release.md`](ops/fork-release.md) | Fork candidate verification, publication, update isolation and retention. |
 
 ## Which doc describes which source
 
@@ -203,6 +204,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `gui/src/hooks/useProviderAccountPools.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `package.json` | [`ops/git-installs.md`](ops/git-installs.md) |
 | `scripts/` | [`overview.md`](overview.md)<br>[`clients/client-support-matrix.md`](clients/client-support-matrix.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
+| `scripts/fork/` | [`ops/fork-release.md`](ops/fork-release.md) |
 | `scripts/generate-compatibility-version.ts` | [`ops/source-archives.md`](ops/source-archives.md) |
 | `scripts/generate-ocx-skill-surface.ts` | [`cli-management.md`](cli-management.md) |
 | `scripts/test-run-lock-gate.ts` | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) |
