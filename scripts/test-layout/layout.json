@@ -984,9 +984,11 @@
     "codex-pool-plan-exclusion.test.ts": "codex-integration",
     "codex-pool-refresh-backoff.test.ts": "codex-integration",
     "codex-pool-request-owned-main.test.ts": "codex-integration",
+    "codex-request-owned-affinity.test.ts": "codex-integration",
     "codex-pool-rotation.test.ts": "codex-integration",
     "codex-auth-release.test.ts": "codex-integration",
     "codex-priority-failback.test.ts": "codex-integration",
+    "codex-round-robin-headroom.test.ts": "codex-integration",
     "codex-idle-window.test.ts": "codex-integration",
     "codex-prompt-adopt.test.ts": "codex-integration",
     "codex-prompt-base-variants.test.ts": "codex-integration",
@@ -2511,8 +2513,9 @@
     "advisor-scope-transport.test.ts": "advisor",
     "local-credentials.test.ts": "cli",
     "local-credential-generation.test.ts": "config",
-    "codex-request-owned-affinity.test.ts": "codex-integration",
-    "codex-round-robin-headroom.test.ts": "codex-integration",
-    "fx-client.test.ts": "clients"
+    "fx-client.test.ts": "clients",
+    "link-ultrafast-settings.test.ts": "clients",
+    "catalog-ultrafast-cache.test.ts": "codex-integration",
+    "fastwire-ultrafast-regressions.test.ts": "routing"
   }
 }
