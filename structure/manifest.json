@@ -755,36 +755,6 @@
       ]
     },
     {
-      "path": "providers/codex-installation-identity.md",
-      "tier": 3,
-      "title": "Codex Installation Identity",
-      "scope": "Per-account Pool wire installation identity, private secret, existence gates and fail-closed delivery.",
-      "documents": [
-        "src/codex/installation-id.ts",
-        "src/codex/auth-context.ts",
-        "src/codex/auth-context-provider.ts",
-        "src/codex/forward-transport-headers.ts",
-        "src/adapters/openai-responses/transport.ts",
-        "src/adapters/openai-responses/passthrough.ts",
-        "src/server/ws-bridge.ts",
-        "src/server/responses/codex-ws-request.ts",
-        "src/server/responses/codex-ws-pool.ts",
-        "src/server/responses/compact.ts",
-        "src/server/responses/passthrough-build-error.ts",
-        "src/server/context-history.ts",
-        "src/server/search.ts",
-        "src/server/images.ts",
-        "src/server/live.ts",
-        "src/server/audio-live.ts",
-        "src/server/audio-dictation.ts",
-        "src/server/index/serve-options.ts",
-        "src/server/index/websocket-handler.ts",
-        "src/server/index/live-sideband.ts",
-        "src/server/claude-messages.ts",
-        "src/codex/affinity-debug.ts"
-      ]
-    },
-    {
       "path": "providers/openai-accounts.md",
       "tier": 4,
       "title": "OpenAI Account Identity And Pool Operations",
@@ -1426,6 +1396,45 @@
       ]
     },
     {
+      "path": "providers/codex-installation-identity.md",
+      "tier": 3,
+      "title": "Codex Installation Identity",
+      "scope": "Per-account Pool wire installation identity, private secret, existence gates and fail-closed delivery.",
+      "documents": [
+        "src/codex/installation-id.ts",
+        "src/codex/auth-context.ts",
+        "src/codex/auth-context-provider.ts",
+        "src/codex/forward-transport-headers.ts",
+        "src/adapters/openai-responses/transport.ts",
+        "src/adapters/openai-responses/passthrough.ts",
+        "src/server/ws-bridge.ts",
+        "src/server/responses/codex-ws-request.ts",
+        "src/server/responses/codex-ws-pool.ts",
+        "src/server/responses/compact.ts",
+        "src/server/responses/passthrough-build-error.ts",
+        "src/server/context-history.ts",
+        "src/server/search.ts",
+        "src/server/images.ts",
+        "src/server/live.ts",
+        "src/server/audio-live.ts",
+        "src/server/audio-dictation.ts",
+        "src/server/index/serve-options.ts",
+        "src/server/index/websocket-handler.ts",
+        "src/server/index/live-sideband.ts",
+        "src/server/claude-messages.ts",
+        "src/codex/affinity-debug.ts"
+      ]
+    },
+    {
+      "path": "ops/source-archives.md",
+      "tier": 6,
+      "title": "Source Archive Identity",
+      "scope": "Compatibility manifest hashing for source archives.",
+      "documents": [
+        "scripts/generate-compatibility-version.ts"
+      ]
+    },
+    {
       "path": "providers/codex-request-owned-affinity.md",
       "tier": 3,
       "title": "Codex Request-Owned Affinity",
@@ -1446,12 +1455,12 @@
       ]
     },
     {
-      "path": "ops/source-archives.md",
+      "path": "ops/git-installs.md",
       "tier": 6,
-      "title": "Source Archive Identity",
-      "scope": "Compatibility manifest hashing for source archives.",
+      "title": "Git Installation Preparation",
+      "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
       "documents": [
-        "scripts/generate-compatibility-version.ts"
+        "package.json"
       ]
     }
   ],
