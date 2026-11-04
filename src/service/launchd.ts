@@ -11,7 +11,7 @@ import { BUN_RUNTIME_PATH_ENV, BUN_RUNTIME_SOURCE_ENV, durableBunRuntime, type D
 import { serviceApiTokenFilePath } from "../lib/service-secrets";
 import { recordOwnedConfigPath } from "../lib/config-ownership";
 import { writeServiceApiTokenFile, assertLiveServiceManagerAllowed } from "./guards";
-import { resolveServiceListenPort, buildServiceShellCommand, buildServiceLauncherShellCommand, resolvedProxyEnv, pinnedServiceHomeShellAssignments, serviceApiTokenFileUnder } from "./definition";
+import { resolveServiceListenPort, buildServiceShellCommand, resolvedProxyEnv, pinnedServiceHomeShellAssignments, serviceApiTokenFileUnder } from "./definition";
 import { SERVICE_MANAGED_ENV, LABEL, cliEntry, filterTransientServicePath, logPath, serviceStatePath, currentCodexSqliteHomeAbsolute, currentCodexHome, currentOpenCodexHome, type ServiceInstallState, writeServiceInstallState, readServiceInstallState } from "./state";
 import { writeServiceDefinitionFile } from "./windows-ops";
 import { readTextOrNull } from "./windows-taskxml";
@@ -160,9 +160,7 @@ function installedLaunchdHomes(state: ServiceInstallState | null, readPlist: () 
 /**
  * The complete exec line {@link buildPlist} bakes, for the runtime a single install already
  * resolved. Shared so `installLaunchd` can verify the live job against the exact string it
- * just wrote instead of re-deriving it from install state that has not been written yet
- * (a fresh install has no state, so `expectedLaunchdCommand` falls back to the package
- * pair — identical here, but only by accident of the fresh state).
+ * just wrote. Install state never overrides this trusted package selection.
  *
  * The EnvironmentVariables dict is supplied first, but `/bin/sh -lc` runs a login shell
  * after launchd injects it. A profile export could otherwise overwrite the pinned homes,
@@ -182,16 +180,14 @@ function launchdServiceCommand(
 }
 
 /**
- * The exec line the installed launchd plist is expected to carry, derived from the recorded
- * install state rather than rediscovered: a launcher install runs the launcher, a legacy or
- * stateless install runs the Bun + CLI pair. `start` and `status` compare the live job
- * against this, so both must follow the launcher or a healthy launcher-backed job reads as
- * "an OLDER plist" (#3464). PATH is deliberately NOT re-walked here.
+ * Match the trusted package pair that buildPlist bakes, including standalone binaries.
+ * Legacy launcher state is accepted for API compatibility but cannot select the command.
+ * Start, status and guarded manager binding must all use this same expectation.
  *
- * The pinned homes follow the same rule. A status run from a shell that exports another
- * CODEX_HOME must still recognise a job loaded from the plist on disk, so the homes come from
- * that plist, then from the recorded install state, and from the current environment only
- * when neither records them. A fresh install bakes its own line through
+ * The pinned homes are the one thing install state still informs. A status run from a shell
+ * that exports another CODEX_HOME must still recognise a job loaded from the plist on disk, so
+ * the homes come from that plist, then from the recorded install state, and from the current
+ * environment only when neither records them. A fresh install bakes its own line through
  * {@link launchdServiceCommand} and does not come through here.
  */
 export function expectedLaunchdCommand(
@@ -207,7 +203,6 @@ export function expectedLaunchdCommand(
   const homes = deps.homes ?? installedLaunchdHomes(state, deps.readPlist ?? (() => readFileSync(plistPath(), "utf8")));
   const pinned = pinnedServiceHomeShellAssignments(homes.codexHome, homes.opencodexHome);
   const tokenFile = serviceApiTokenFileUnder(homes.opencodexHome);
-  if (state?.launcherPath) return `${pinned} ${buildServiceLauncherShellCommand(state.launcherPath, port, tokenFile)}`;
   const entry = deps.entry ?? cliEntry();
   return `${pinned} ${buildServiceShellCommand(entry.bun, entry.cli, port, tokenFile)}`;
 }
@@ -554,10 +549,7 @@ export function installLaunchd(deps: {
   // Keep launchd bound to the package paths selected by this trusted invocation. A PATH
   // launcher can be replaced later and would inherit the service token and proxy
   // environment.
-  // The command THIS install bakes, not the one install state remembers: on a fresh
-  // install there is no state yet, and after a lost state file `expectedLaunchdCommand`
-  // falls back to the Bun + CLI pair, which happens to be the same answer only by accident
-  // of the empty state.
+  // Verify the exact command this trusted invocation bakes.
   // The homes are resolved once so the probe and the plist pin the same directories.
   const homes = currentLaunchdPinnedHomes();
   const expectedCommand = launchdServiceCommand(undefined, undefined, homes);
@@ -609,8 +601,7 @@ export function installLaunchd(deps: {
     // The plist is not rewritten and launchd is not touched; only the owner-only mode
     // is re-asserted, for a definition an older version may have left at 0644.
     try { chmodSync(p, 0o600); } catch { /* best-effort */ }
-    // Install state is refreshed because it is what `expectedLaunchdCommand` reads, and
-    // a repair that leaves it stale re-creates the false "OLDER plist" report.
+    // Refresh provenance, including removal of any legacy launcher record.
     writeServiceInstallState("scheduler");
     console.log("ℹ️  service is already loaded from the current plist; nothing to do.");
     // The ONLY `reloaded: false` exit: the process launchd was running when this command
