@@ -26,6 +26,8 @@ import {
   clineConfigPath,
   clineSettingsDir,
   droidConfigPath,
+  fxConfigPath,
+  fxSettingsDir,
   droidHomeDir,
   EXPORT_CLIENTS,
   asideAccountDir,
@@ -526,6 +528,18 @@ export const INTEGRATION_CLIENTS: Record<IntegrationClientId, IntegrationClientS
     // The state directory, not `~/.t3`: the server creates `userdata` on its first start,
     // while `~/.t3` alone can be left behind by the installer's `bin`.
     detectDir: (env = process.env, home = homedir()) => join(t3codeHomeDir(env, home), "userdata"),
+  },
+  fx: {
+    id: "fx",
+    configPath: (env = process.env, home = homedir()) => fxConfigPath(env, home),
+    // The profile directory itself: fx creates `~/.fx` on first run, and the
+    // sessions, recordings and themes it keeps there are the install signal.
+    detectDir: (env = process.env, home = homedir()) => fxSettingsDir(env, home),
+    /*
+     * No `sourcePreservingYaml` (JSON), no `writerLock` (fx holds no lock of its
+     * own and a single writer is the ordinary case) and no `currentStore`: fx
+     * reads custom connections straight from `settings.json` at startup.
+     */
   },
 };
 
