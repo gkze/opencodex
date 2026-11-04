@@ -48,14 +48,15 @@ export function applyConfiguredUltraFast(
   preserveOperatorUltraFastTiers(entry, wasManaged || configured ? undefined : previous, retainOperatorTier);
   delete entry[MANAGED_ULTRAFAST];
   if (!configured) return;
-  entry.service_tiers = [...(Array.isArray(entry.service_tiers) ? entry.service_tiers : []), {
+  // A derived Ultra Fast row from the capability axis may already exist; publish exactly one.
+  const withoutUltraFast = (list: unknown): unknown[] => (Array.isArray(list) ? list : [])
+    .filter(item => (typeof item === "string" ? item : (item as { id?: unknown } | null)?.id) !== "ultrafast");
+  entry.service_tiers = [...withoutUltraFast(entry.service_tiers), {
     id: "ultrafast",
     name: "Ultra Fast",
     description: "Higher speed and usage; provider access required",
   }];
-  entry.additional_speed_tiers = [
-    ...(Array.isArray(entry.additional_speed_tiers) ? entry.additional_speed_tiers : []), "ultrafast",
-  ];
+  entry.additional_speed_tiers = [...withoutUltraFast(entry.additional_speed_tiers), "ultrafast"];
   // Advertising a selectable capability does not opt the user into its increased usage.
   entry[MANAGED_ULTRAFAST] = entry.slug;
 }
