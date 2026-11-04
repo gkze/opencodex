@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join, dirname } from 'node:path';
@@ -26,8 +26,19 @@ try {
   assert.ok(version.includes(manifest.version), version);
   const update = execFileSync(process.execPath, [launcher, 'update'], { env, encoding: 'utf8', timeout: 60_000 });
   assert.ok(update.includes('https://github.com/gkze/opencodex/releases'), update);
-  const directUpdate = execFileSync(runtime, [join(root, 'node_modules', '@gkze', 'opencodex', 'src', 'cli', 'index.ts'), 'update', '--json'], { env, encoding: 'utf8', timeout: 60_000 });
-  assert.ok(directUpdate.includes('https://github.com/gkze/opencodex/releases'), directUpdate);
+  // The machine-readable update path is `update (--plan | --yes) --json`. A fork build must plan
+  // nothing from the upstream registry and refuse to apply, pointing at the fork release channel.
+  const cli = join(root, 'node_modules', '@gkze', 'opencodex', 'src', 'cli', 'index.ts');
+  const plan = JSON.parse(execFileSync(runtime, [cli, 'update', '--plan', '--json'], { env, encoding: 'utf8', timeout: 60_000 }));
+  assert.equal(plan.canApply, false, JSON.stringify(plan));
+  assert.equal(plan.reason, 'fork-build', JSON.stringify(plan));
+  assert.equal(plan.targetVersion, null, JSON.stringify(plan));
+  assert.equal(plan.releaseNotesUrl, 'https://github.com/gkze/opencodex/releases', JSON.stringify(plan));
+  const apply = spawnSync(runtime, [cli, 'update', '--yes', '--json'], { env, encoding: 'utf8', timeout: 60_000 });
+  assert.equal(apply.status, 10, `${apply.stdout}${apply.stderr}`);
+  const applied = JSON.parse(apply.stdout);
+  assert.equal(applied.applied, false, apply.stdout);
+  assert.equal(applied.error, 'fork-build', apply.stdout);
   console.log(`Verified installed fork ${manifest.version} and upstream-update refusal`);
 } finally {
   rmSync(root, { recursive: true, force: true });
