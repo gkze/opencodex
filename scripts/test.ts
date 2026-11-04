@@ -381,6 +381,8 @@ export function resolveBunTestArgs(
 // Paths relative to tests/. An entry moves with its file (scripts/test-layout/move.ts rewrites
 // it); the lane label, the ignore glob, and the timeout table all key on the basename.
 export const SERIAL_FULL_SUITE_FILES = [
+  // Real CLI children use the effective-user lifecycle lock shared across test homes.
+  "claude-integration/claude-desktop-remote-hub.test.ts",
   "codex-integration/codex-shim.test.ts",
   "providers/cursor/cursor-native-exec-shell.test.ts",
   "codex-integration/issue-452-empty-503.test.ts",

@@ -41,6 +41,8 @@
         "gui/tests/fr-localization.test.ts",
         "gui/tests/integrations-api.test.ts",
         "gui/tests/locale-parity.test.ts",
+        "tests/ci-workflows/client-support-matrix.test.ts",
+        "tests/ci-workflows/client-support-runtime.test.ts",
         "tests/clients/fx-client.test.ts",
         "tests/clients/integrations-state.test.ts",
         "tests/config/client-config-export-new-clients.test.ts",
