@@ -7,7 +7,7 @@ import { decode, Registry, Input, Result, order, type Result as PatchResult } fr
 import { workflowRuntime } from "./runtime.ts"
 import { git, command } from "./process.ts"
 import { dispatch, wait, Repository, request } from "./github.ts"
-import { dispatchWithRetry } from "./retry.ts"
+import { dispatchWithRetry, retryTransient } from "./retry.ts"
 import { lastAccepted } from "./held.ts"
 import { limits, capacity, canStart } from "./limits.ts"
 import { freshWorktree, freshDirectory } from "./recovery.ts"
@@ -125,14 +125,16 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         ? yield* step(`accept-${patch.id}`, accept(dispatched.success))
         : yield* step(`hold-${patch.id}`, hold(String(dispatched.failure)).pipe(Effect.map(result => JSON.stringify(result))))
       const result = decode(Result, JSON.parse(encoded))
-      if (input.patches.some(p => p.requires.includes(result.id))) yield* step(`expose-${result.id}`, Effect.gen(function*() {
+      // The body re-reads the ref before pushing, so a retry after a 5xx that GitHub applied anyway
+      // finds the candidate already there instead of failing the lease.
+      if (input.patches.some(p => p.requires.includes(result.id))) yield* step(`expose-${result.id}`, retryTransient(Effect.gen(function*() {
         const ref = `refs/heads/maintenance/${run}/${result.id}`
         const current = (yield* git(root, "ls-remote", "origin", ref)).split("\t")[0]
         if (current === result.candidate) return result.candidate
         if (current) return yield* Effect.fail("Dependency staging ref unexpectedly advanced")
         yield* git(root, "push", `--force-with-lease=${ref}:`, "origin", `${result.candidate}:${ref}`)
         return result.candidate
-      }).pipe(writer.withPermits(1)))
+      }), failure => console.error(`Retrying staging push for ${result.id} after: ${failure}`)).pipe(writer.withPermits(1)))
       return result
   }))
   return yield* step("assemble", Effect.gen(function*() {
