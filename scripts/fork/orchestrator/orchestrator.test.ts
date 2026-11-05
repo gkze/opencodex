@@ -220,3 +220,46 @@ test("held revisions resolve to the newest accepted commit for exactly that patc
     }))
   } finally {rmSync(root, {recursive:true,force:true})}
 })
+
+// Verbatim from Fork stack refresh 41818655493, which failed the whole night on this one push.
+const pushServerError = "git -c core.hooksPath=/dev/null -c commit.gpgsign=false push --force-with-lease=refs/heads/maintenance/41818655493-1/source-archive-builds: origin 22794b1a753ec88e96481b48a4777c4d957bbb8a:refs/heads/maintenance/41818655493-1/source-archive-builds exited 1 in /home/runner/work/opencodex/opencodex: remote: Internal Server Error\nTo https://github.com/gkze/opencodex\n ! [remote rejected]     22794b1a753ec88e96481b48a4777c4d957bbb8a -> maintenance/41818655493-1/source-archive-builds (Internal Server Error)\nerror: failed to push some refs to 'https://github.com/gkze/opencodex'"
+
+test("transient git failures are GitHub-side only", async () => {
+  const { isTransientGitFailure } = await import("./retry.ts")
+  for (const failure of [pushServerError, "error: RPC failed; HTTP 502 curl 22 The requested URL returned error: 502",
+    "fatal: unable to access 'https://github.com/gkze/opencodex/': The requested URL returned error: 503", "fatal: early EOF"])
+    expect(isTransientGitFailure(failure)).toBe(true)
+  for (const failure of ["Dependency staging ref unexpectedly advanced",
+    " ! [rejected]        abc -> maintenance/1-1/x (stale info)",
+    "remote: Permission to gkze/opencodex.git denied to github-actions[bot].\nfatal: unable to access 'https://github.com/gkze/opencodex/': The requested URL returned error: 403",
+    "git push origin 22794b1a5000:refs/heads/x exited 1 in /tmp/500: error: src refspec does not match any"])
+    expect(isTransientGitFailure(failure)).toBe(false)
+})
+
+test("a transient push failure is retried and a push GitHub applied anyway is not repeated", async () => {
+  const { retryTransient } = await import("./retry.ts")
+  let remote: string | null = null, pushes = 0
+  const expose = Effect.gen(function*() {
+    if (remote === "candidate") return "candidate"
+    pushes++
+    remote = "candidate" // GitHub applies the update, then reports a 500
+    if (pushes === 1) return yield* Effect.fail(pushServerError)
+    return "candidate"
+  })
+  const retried: string[] = []
+  expect(await Effect.runPromise(retryTransient(expose, failure => retried.push(failure), () => 0))).toBe("candidate")
+  expect(pushes).toBe(1)
+  expect(retried).toEqual([pushServerError])
+})
+
+test("transient retry stops on a non-transient failure and after its bound", async () => {
+  const { retryTransient, remoteAttempts } = await import("./retry.ts")
+  let calls = 0
+  const advanced = Effect.suspend(() => { calls++; return Effect.fail("Dependency staging ref unexpectedly advanced") })
+  expect(await Effect.runPromise(retryTransient(advanced, () => {}, () => 0).pipe(Effect.flip))).toBe("Dependency staging ref unexpectedly advanced")
+  expect(calls).toBe(1)
+  calls = 0
+  const down = Effect.suspend(() => { calls++; return Effect.fail(pushServerError) })
+  expect(await Effect.runPromise(retryTransient(down, () => {}, () => 0).pipe(Effect.flip))).toBe(pushServerError)
+  expect(calls).toBe(remoteAttempts)
+})
