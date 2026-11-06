@@ -129,7 +129,6 @@ The dashboard, the management API, and third-party client config ownership.
 | [`gui-and-management-api.md`](gui-and-management-api.md) | Dashboard serving, authentication boundaries, /api/* ownership, and startup safety. |
 | [`provider-completion-diagnostic.md`](provider-completion-diagnostic.md) | Explicit single-model completion test: consent, applicability gate, send-time authority fingerprint, bounded streaming and metadata comparison. |
 | [`dashboard-and-usage.md`](dashboard-and-usage.md) | Dashboard page contracts, usage accounting and request metrics, and per-surface management settings. |
-| [`usage-client-attribution.md`](usage-client-attribution.md) | Privacy-bounded client labels carried from request ingress into usage records. |
 | [`quota-pool.md`](quota-pool.md) | The passive GET /api/quota-pool read GOAT consumes (ocx.quota-pool/1): sources, window mapping, absent-not-zero, and the install identity behind homeId and accountRef. |
 | [`pricing.md`](pricing.md) | User price policies, prompt-length rate selection, persistence and estimate cache invalidation. |
 | [`clients/export-model-names.md`](clients/export-model-names.md) | Per-connection naming policy, router-proven aliases and passive export previews. |
@@ -146,6 +145,7 @@ The dashboard, the management API, and third-party client config ownership.
 | [`clients/t3code.md`](clients/t3code.md) | T3 Code settings.json Claude provider-instance ownership, proxy environment, custom models and loopback marker rules. |
 | [`companion.md`](companion.md) | Shared timeline filtering, usage/quotas, native and web tray title, and WidgetKit display contracts. |
 | [`codex-account-controls.md`](codex-account-controls.md) | Account selection order, custom usage thresholds, and stable account-card editing. |
+| [`usage-client-attribution.md`](usage-client-attribution.md) | Privacy-bounded client labels carried from request ingress into usage records. |
 
 ### Tier 6 — Operations and process
 
@@ -167,6 +167,7 @@ Background service, docs, release, and design discipline.
 | [`design-methodology.md`](design-methodology.md) | Stage ordering for new GUI, CLI, and user-facing surfaces. |
 | [`ops/cross-platform-ci.md`](ops/cross-platform-ci.md) | Test lanes, platform coverage, aggregate gating, and release CI proof. |
 | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) | Test-runner home, case-scoped lifecycle teardown, and Bun test lock generation ownership. |
+| [`ops/source-archives.md`](ops/source-archives.md) | Compatibility manifest hashing for source archives. |
 
 ## Which doc describes which source
 
@@ -205,6 +206,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `gui/src/components/ModelPriceDialog.tsx` | [`pricing.md`](pricing.md) |
 | `gui/src/hooks/useProviderAccountPools.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `scripts/` | [`overview.md`](overview.md)<br>[`clients/client-support-matrix.md`](clients/client-support-matrix.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
+| `scripts/generate-compatibility-version.ts` | [`ops/source-archives.md`](ops/source-archives.md) |
 | `scripts/generate-ocx-skill-surface.ts` | [`cli-management.md`](cli-management.md) |
 | `scripts/test-run-lock-gate.ts` | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) |
 | `scripts/test-run-lock.ts` | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) |
