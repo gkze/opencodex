@@ -46,6 +46,7 @@ opencodex 是一個本機閘道，連接你的 AI 程式開發工具與模型。
 | Factory Droid | — | JSON | 是 | Chat Completions | test-covered ([測試](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/droid-client.test.ts)) | — | 僅限本機監聽。 [指南](/zh-tw/guides/factory-droid/) |
 | Gentle Shell | — | JSON | 是 | Chat Completions | test-covered ([測試](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/gentle-shell-client.test.ts)) | — | 僅限本機監聽。 |
 | T3 Code | — | JSON | 是 | Anthropic Messages | test-covered ([測試](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/t3code-client.test.ts)) | — | 僅限本機監聽。套用前先執行該用戶端專屬的檢查，可能拒絕。 |
+| fx | — | JSON | 是 | Chat Completions (已審查) | test-covered ([測試](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/fx-client.test.ts)) | — | 僅限本機監聽。用戶端依此設定選擇端點（已依用戶端的文件行為審查）。 |
 
 ## 入站端點
 
