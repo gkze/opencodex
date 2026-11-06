@@ -34,6 +34,8 @@ const controls = [
   "scripts/fork",
 ]
 const branch = "refs/heads/gkze/patches"
+// The nightly watcher (recover.mjs) matches this title to start a fresh refresh.
+const advancedTitle = "Fork advanced during publication"
 const [command, directory] = process.argv.slice(2)
 
 if (command === "prepare") {
@@ -128,15 +130,31 @@ if (command === "prepare") {
       const matches = stack.results.filter(result => result.id === patch.id)
       assert.equal(matches.length, 1)
       const result = matches[0]
-      assert.equal(result.source, sha(patch.source))
+      // A model's rework of a sensitive patch is only ever proposed for review, never promoted.
+      assert.ok(!(patch.sensitive && result.adapted), "Sensitive patch cannot carry an adaptation")
+      if (result.hold) {
+        assert.equal(result.adapted, false, "Held patch cannot carry an adaptation")
+        const accepted = git("log", "-1", "--format=%H", `--grep=^Patch-Id: ${patch.id}$`, old)
+        assert.equal(sha(result.source), accepted, "Held patch must use its last accepted revision")
+      } else {
+        assert.equal(result.source, sha(patch.source))
+      }
       git("fetch", bundle, sha(result.candidate))
       git("merge-base", "--is-ancestor", upstream, result.candidate)
-      updates.push({ref: `refs/heads/${patch.branch}`, old: patch.source, candidate: result.candidate})
+      // Keep a held patch's pending source for the next refresh instead of replacing it.
+      updates.push({ref: `refs/heads/${patch.branch}`, old: patch.source, candidate: result.hold ? patch.source : result.candidate})
     }
   }
   const observed = updates.map(update => ({...update, current: git("ls-remote", "origin", update.ref).split("\t")[0]}))
   if (!observed.every(update => update.current === update.candidate)) {
-    assert.ok(observed.every(update => update.current === update.old), "A maintained ref advanced or promotion is partially applied")
+    const moved = observed.filter(update => update.current !== update.old && update.current !== update.candidate)
+    if (moved.length) {
+      // Someone pushed to the fork branch or a patch branch during this run. Refusing keeps that
+      // work. The nightly watcher reads this annotation and starts a fresh refresh to include it.
+      console.log(`::error title=${advancedTitle}::${moved.map(update => update.ref).join(" ")} moved while this nightly ran`)
+      process.exit(1)
+    }
+    assert.ok(observed.every(update => update.current === update.old), "Promotion is partially applied")
     git("push", "--atomic", ...updates.map(update => `--force-with-lease=${update.ref}:${update.old}`), "origin",
       ...[...new Set(updates.flatMap(update => [`${update.old}:refs/tags/fork-backup-${update.old}`, `${update.candidate}:${update.ref}`]))])
   }

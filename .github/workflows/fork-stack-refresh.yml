@@ -43,6 +43,10 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Install the structural merge driver
+        run: |
+          bin=$(bun scripts/fork/orchestrator/merge-driver.ts install "$RUNNER_TEMP/mergiraf")
+          echo "MERGIRAF_BIN=$bin" >> "$GITHUB_ENV"
       - name: Refresh captured stack
         env:
           GH_TOKEN: ${{ github.token }}
