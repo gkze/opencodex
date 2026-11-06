@@ -16,7 +16,8 @@ export const safeFile = (root: string, path: string, allowed: ReadonlySet<string
 export interface RepairReport { readonly writes: number; readonly files: readonly string[] }
 /** The SDK owns the model loop; only bounded file tools are exposed, never shell or network tools. */
 export const repair = (cwd: string, patch: Patch, problem: string, instructions: string, readable: string[], writable: string[]): Effect.Effect<RepairReport, string> => Effect.scoped(Effect.gen(function*() {
-  if (patch.sensitive) return yield* Effect.fail("Sensitive patch adaptation requires explicit review")
+  // A sensitive patch is reworked too, but its rework never ships unreviewed: the coordinator
+  // pushes it to review/<id> and holds the patch, and accept.ts rejects any adapted sensitive result.
   // A repair that writes nothing is a distinct outcome from one that writes the wrong thing: the
   // caller has to be able to tell them apart, so every successful write is recorded here.
   const writes: string[] = []

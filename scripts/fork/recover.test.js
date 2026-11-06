@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { decide, maxAttempts, unacquired } from './retry-unacquired.mjs';
+import { decide, maxAttempts, unacquired, advanced } from './recover.mjs';
 
 // Verbatim annotations from Publish fork nightly 41920075969 and 42017446473.
 const notAcquired = 'The job was not acquired by Runner of type hosted even after multiple attempts';
@@ -40,12 +40,24 @@ test('retries are bounded', () => {
   assert.equal(decide({ jobs: [desktop], annotations, attempt: maxAttempts }).action, 'give-up');
 });
 
-test('the watcher reacts only to failed publish runs of the maintained branch and can re-run them', () => {
-  const workflow = readFileSync(new URL('../../.github/workflows/fork-nightly-retry.yml', import.meta.url), 'utf8');
-  assert.match(workflow, /workflows: \[Publish fork nightly\]/);
+test('a promotion refused because a maintained ref moved starts a fresh refresh', () => {
+  const promote = { id: 8, name: 'publish', conclusion: 'failure' };
+  const moved = 'Fork advanced during publication: refs/heads/gkze/patches moved while this nightly ran';
+  assert.equal(advanced(moved), true);
+  assert.equal(decide({ jobs: [promote], annotations: new Map([[8, [moved, 'Process completed with exit code 1.']]]), attempt: 1 }).action, 'refresh');
+  // The title the watcher matches is the one promotion writes.
+  const nightly = readFileSync(new URL('./nightly.mjs', import.meta.url), 'utf8');
+  assert.match(nightly, /const advancedTitle = "Fork advanced during publication"/);
+  assert.match(nightly, /::error title=\$\{advancedTitle\}::/);
+});
+
+test('the watcher recovers only failed publish runs of the maintained branch, and reports both workflows', () => {
+  const workflow = readFileSync(new URL('../../.github/workflows/fork-nightly-watch.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /workflows: \[Fork stack refresh, Publish fork nightly\]/);
   assert.match(workflow, /github\.repository == 'gkze\/opencodex'/);
-  assert.match(workflow, /github\.event\.workflow_run\.conclusion == 'failure'/);
+  assert.match(workflow, /github\.event\.workflow_run\.name == 'Publish fork nightly' &&\n\s+github\.event\.workflow_run\.conclusion == 'failure'/);
   assert.match(workflow, /github\.event\.workflow_run\.head_branch == 'gkze\/patches'/);
   assert.match(workflow, /actions: write/);
+  assert.match(workflow, /issues: write/);
   assert.doesNotMatch(workflow, /contents: write|secrets\./);
 });
