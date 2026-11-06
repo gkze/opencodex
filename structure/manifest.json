@@ -145,16 +145,6 @@
       ]
     },
     {
-      "path": "config-ownership.md",
-      "tier": 4,
-      "title": "Config Ownership Manifest",
-      "scope": "Owner marker, uninstall manifest, its cross-process lock, and the uninstall tombstone.",
-      "documents": [
-        "src/lib/config-ownership.ts",
-        "src/lib/config-ownership-removal.ts"
-      ]
-    },
-    {
       "path": "config.md",
       "tier": 2,
       "title": "Config Surface",
@@ -554,60 +544,6 @@
       ]
     },
     {
-      "path": "data-planes/ollama-inbound.md",
-      "tier": 3,
-      "title": "Ollama-Compatible Inbound",
-      "scope": "Ollama-shaped version/tags/show/chat/generate routes translated onto Chat Completions, their admission, native error shape and final request-log ownership.",
-      "documents": [
-        "src/server/ollama-inbound.ts",
-        "src/server/ollama-native-paths.ts",
-        "src/server/ollama-route-policy.ts",
-        "src/server/native-final-log.ts",
-        "src/server/admitted-http-turn.ts",
-        "src/server/index/ollama-routes.ts",
-        "src/protocols/codecs/ollama.ts"
-      ]
-    },
-    {
-      "path": "data-planes/error-detail.md",
-      "tier": 3,
-      "title": "Proxy-Owned Error Detail",
-      "scope": "Closed error codes, upstream condition classification, numeric quota reset, closed failure detail, service tier and model identity bounds on request-log rows; response metadata header normalization and the client Retry-After format. Chat client error envelopes, literal tables, proxy-authored message provenance, collector verdicts and internal evidence channels; fixed undeclared-tool refusals, producer-owned incomplete-event origins and constructor-bounded destination labels, branded original client selectors, bounded combo exclusions and fixed retry-evidence diagnostics. Original model labels on synthetic terminal envelopes and compact/Messages ingress handoffs. Messages error envelopes, construction-registered fixed local-refusal guidance, sliced outcome comparisons and baseline client recovery outcomes across special codes and catch returns, non-2xx passthrough envelopes and unchanged 2xx passthrough bodies and original collector evidence and error-event identity, overflow/native-stream golden parity and normalized Anthropic response headers with full-fraction reset dates and success media types.",
-      "documents": [
-        "src/usage/error-detail.ts",
-        "src/lib/upstream-condition.ts",
-        "src/lib/client-retry-after.ts",
-        "src/lib/failure-detail.ts",
-        "src/lib/response-service-tier.ts",
-        "src/lib/model-identity.ts",
-        "src/server/safe-response-headers.ts",
-        "src/server/request-log-failure-detail.ts",
-        "src/lib/client-error-body.ts",
-        "src/lib/error-destination.ts",
-        "src/combos/resolve.ts",
-        "src/lib/upstream-retry.ts",
-        "src/server/admission-model-scope.ts",
-        "src/server/responses/input-admission.ts",
-        "src/oauth/generic-account-failover.ts",
-        "src/chat/failure-verdict.ts",
-        "src/lib/messages-error-body.ts",
-        "src/claude/failure-verdict.ts",
-        "src/server/anthropic-rate-limit-headers.ts",
-        "src/server/messages-response-headers.ts",
-        "src/server/index/startup-warnings.ts",
-        "src/server/claude-messages.ts",
-        "src/server/messages-native.ts",
-        "src/claude/outbound.ts",
-        "src/protocols/encoders/messages.ts",
-        "src/protocols/encoders/adapter-events.ts",
-        "src/lib/messages-sse-error-presentation.ts",
-        "src/server/messages-sse-error-filter.ts",
-        "src/server/messages-native-tool-guard.ts",
-        "src/server/messages-shared.ts",
-        "src/server/sse-payload-rewrite.ts"
-      ]
-    },
-    {
       "path": "data-planes/chat-reasoning-details.md",
       "tier": 3,
       "title": "Anthropic Thinking Signatures on the Chat Wire",
@@ -810,17 +746,6 @@
       ]
     },
     {
-      "path": "providers/codex-pool-affinity.md",
-      "tier": 4,
-      "title": "Durable Codex Pool Affinity",
-      "scope": "Restart persistence of Codex pool pins and conversation-state issuers: store, fences, single-writer lease, fail-closed recovery.",
-      "documents": [
-        "src/codex/routing/thread-affinity-store.ts",
-        "src/codex/routing/thread-affinity.ts",
-        "src/lib/config-ownership.ts"
-      ]
-    },
-    {
       "path": "providers/pool-credit-renewal.md",
       "tier": 4,
       "title": "Pool credit renewal",
@@ -860,17 +785,6 @@
       ]
     },
     {
-      "path": "providers/codex-request-owned-affinity.md",
-      "tier": 3,
-      "title": "Codex Request-Owned Affinity",
-      "scope": "Opt-in conversation affinity for a caller's own ChatGPT bearer in Pool mode, honest selection-time affinity labels, and the persistence exclusion contract.",
-      "documents": [
-        "src/codex/request-owned-affinity.ts",
-        "src/codex/request-owned-main-pin.ts",
-        "src/codex/auth-context.ts"
-      ]
-    },
-    {
       "path": "providers/openai-accounts.md",
       "tier": 4,
       "title": "OpenAI Account Identity And Pool Operations",
@@ -878,15 +792,6 @@
       "documents": [
         "src/codex/",
         "src/config.ts"
-      ]
-    },
-    {
-      "path": "providers/codex-round-robin-placement.md",
-      "tier": 4,
-      "title": "Codex Round-Robin Placement",
-      "scope": "Round-robin new-conversation placement preferring accounts under their effective auto-switch threshold, with all-over fallback and bound, failover and lineage boundaries.",
-      "documents": [
-        "src/codex/routing/selection.ts"
       ]
     },
     {
@@ -1525,6 +1430,110 @@
       ]
     },
     {
+      "path": "config-ownership.md",
+      "tier": 4,
+      "title": "Config Ownership Manifest",
+      "scope": "Owner marker, uninstall manifest, its cross-process lock, and the uninstall tombstone.",
+      "documents": [
+        "src/lib/config-ownership.ts",
+        "src/lib/config-ownership-removal.ts"
+      ]
+    },
+    {
+      "path": "data-planes/ollama-inbound.md",
+      "tier": 3,
+      "title": "Ollama-Compatible Inbound",
+      "scope": "Ollama-shaped version/tags/show/chat/generate routes translated onto Chat Completions, their admission, native error shape and final request-log ownership.",
+      "documents": [
+        "src/server/ollama-inbound.ts",
+        "src/server/ollama-native-paths.ts",
+        "src/server/ollama-route-policy.ts",
+        "src/server/native-final-log.ts",
+        "src/server/admitted-http-turn.ts",
+        "src/server/index/ollama-routes.ts",
+        "src/protocols/codecs/ollama.ts"
+      ]
+    },
+    {
+      "path": "data-planes/error-detail.md",
+      "tier": 3,
+      "title": "Proxy-Owned Error Detail",
+      "scope": "Closed error codes, upstream condition classification, numeric quota reset, closed failure detail, service tier and model identity bounds on request-log rows; response metadata header normalization and the client Retry-After format. Chat client error envelopes, literal tables, proxy-authored message provenance, collector verdicts and internal evidence channels; fixed undeclared-tool refusals, producer-owned incomplete-event origins and constructor-bounded destination labels, branded original client selectors, bounded combo exclusions and fixed retry-evidence diagnostics. Original model labels on synthetic terminal envelopes and compact/Messages ingress handoffs. Messages error envelopes, construction-registered fixed local-refusal guidance, sliced outcome comparisons and baseline client recovery outcomes across special codes and catch returns, non-2xx passthrough envelopes and unchanged 2xx passthrough bodies and original collector evidence and error-event identity, overflow/native-stream golden parity and normalized Anthropic response headers with full-fraction reset dates and success media types.",
+      "documents": [
+        "src/usage/error-detail.ts",
+        "src/lib/upstream-condition.ts",
+        "src/lib/client-retry-after.ts",
+        "src/lib/failure-detail.ts",
+        "src/lib/response-service-tier.ts",
+        "src/lib/model-identity.ts",
+        "src/server/safe-response-headers.ts",
+        "src/server/request-log-failure-detail.ts",
+        "src/lib/client-error-body.ts",
+        "src/lib/error-destination.ts",
+        "src/combos/resolve.ts",
+        "src/lib/upstream-retry.ts",
+        "src/server/admission-model-scope.ts",
+        "src/server/responses/input-admission.ts",
+        "src/oauth/generic-account-failover.ts",
+        "src/chat/failure-verdict.ts",
+        "src/lib/messages-error-body.ts",
+        "src/claude/failure-verdict.ts",
+        "src/server/anthropic-rate-limit-headers.ts",
+        "src/server/messages-response-headers.ts",
+        "src/server/index/startup-warnings.ts",
+        "src/server/claude-messages.ts",
+        "src/server/messages-native.ts",
+        "src/claude/outbound.ts",
+        "src/protocols/encoders/messages.ts",
+        "src/protocols/encoders/adapter-events.ts",
+        "src/lib/messages-sse-error-presentation.ts",
+        "src/server/messages-sse-error-filter.ts",
+        "src/server/messages-native-tool-guard.ts",
+        "src/server/messages-shared.ts",
+        "src/server/sse-payload-rewrite.ts"
+      ]
+    },
+    {
+      "path": "providers/codex-pool-affinity.md",
+      "tier": 4,
+      "title": "Durable Codex Pool Affinity",
+      "scope": "Restart persistence of Codex pool pins and conversation-state issuers: store, fences, single-writer lease, fail-closed recovery.",
+      "documents": [
+        "src/codex/routing/thread-affinity-store.ts",
+        "src/codex/routing/thread-affinity.ts",
+        "src/lib/config-ownership.ts"
+      ]
+    },
+    {
+      "path": "providers/codex-request-owned-affinity.md",
+      "tier": 3,
+      "title": "Codex Request-Owned Affinity",
+      "scope": "Opt-in conversation affinity for a caller's own ChatGPT bearer in Pool mode, honest selection-time affinity labels, and the persistence exclusion contract.",
+      "documents": [
+        "src/codex/request-owned-affinity.ts",
+        "src/codex/request-owned-main-pin.ts",
+        "src/codex/auth-context.ts"
+      ]
+    },
+    {
+      "path": "providers/codex-round-robin-placement.md",
+      "tier": 4,
+      "title": "Codex Round-Robin Placement",
+      "scope": "Round-robin new-conversation placement preferring accounts under their effective auto-switch threshold, with all-over fallback and bound, failover and lineage boundaries.",
+      "documents": [
+        "src/codex/routing/selection.ts"
+      ]
+    },
+    {
+      "path": "ops/source-archives.md",
+      "tier": 6,
+      "title": "Source Archive Identity",
+      "scope": "Compatibility manifest hashing for source archives.",
+      "documents": [
+        "scripts/generate-compatibility-version.ts"
+      ]
+    },
+    {
       "path": "usage-client-attribution.md",
       "tier": 5,
       "title": "Usage Client Attribution",
@@ -1544,12 +1553,12 @@
       ]
     },
     {
-      "path": "ops/source-archives.md",
+      "path": "ops/git-installs.md",
       "tier": 6,
-      "title": "Source Archive Identity",
-      "scope": "Compatibility manifest hashing for source archives.",
+      "title": "Git Installation Preparation",
+      "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
       "documents": [
-        "scripts/generate-compatibility-version.ts"
+        "package.json"
       ]
     }
   ],
