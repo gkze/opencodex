@@ -1617,5 +1617,5 @@
   "messages-sse-baseline-contract.test.ts": "claude-integration",
   "messages-sse-control-fields.test.ts": "claude-integration",
   "messages-sse-continuation.test.ts": "claude-integration",
-  "sse-payload-rewrite-continuation.test.ts": "responses"
+  "sse-payload-rewrite-continuation.test.ts": "responses","fork-updates.test.ts": "update","fork-nightly.test.ts": "ci-workflows"
 }
