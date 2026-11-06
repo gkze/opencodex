@@ -1773,6 +1773,7 @@
     "compaction-continuation-note.test.ts": "responses",
     "compaction-continuation-wire.test.ts": "responses",
     "external-task-input-repair.test.ts": "responses",
+    "responses-repeated-tool-outputs.test.ts": "responses",
     "openai-responses-summary-none.test.ts": "responses",
     "responses-forward-output-cap.test.ts": "responses",
     "opencode-cli.test.ts": "providers",
@@ -2550,7 +2551,9 @@
     "advisor-scope-transport.test.ts": "advisor",
     "local-credentials.test.ts": "cli",
     "local-credential-generation.test.ts": "config",
-    "responses-repeated-tool-outputs.test.ts": "responses",
-    "fx-client.test.ts": "clients"
+    "fx-client.test.ts": "clients",
+    "link-ultrafast-settings.test.ts": "clients",
+    "catalog-ultrafast-cache.test.ts": "codex-integration",
+    "fastwire-ultrafast-regressions.test.ts": "routing"
   }
 }
