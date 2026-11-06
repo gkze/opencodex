@@ -46,6 +46,7 @@ opencodex is one local gateway for your AI coding tools and models. Some tools i
 | Factory Droid | — | JSON | Yes | Chat Completions | test-covered ([test](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/droid-client.test.ts)) | — | Local listener only. [guide](/guides/factory-droid/) |
 | Gentle Shell | — | JSON | Yes | Chat Completions | test-covered ([test](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/gentle-shell-client.test.ts)) | — | Local listener only. |
 | T3 Code | — | JSON | Yes | Anthropic Messages | test-covered ([test](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/t3code-client.test.ts)) | — | Local listener only. Apply runs a client-specific check first and can refuse. |
+| fx | — | JSON | Yes | Chat Completions (curated) | test-covered ([test](https://github.com/lidge-jun/opencodex/blob/main/tests/clients/fx-client.test.ts)) | — | Local listener only. The client picks the endpoint from this setting (reviewed against the client's documented behavior). |
 
 ## Inbound endpoints
 
