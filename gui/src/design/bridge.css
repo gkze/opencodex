@@ -466,26 +466,10 @@ a:hover { text-decoration-color: var(--ocx-highlight); }
   -webkit-backdrop-filter: none;
 }
 
-/* ---- scrollbars: a slim pill that shows itself when you reach for it -------
-   No track. The thumb is faint at rest inside a hovered scroller, firms up
-   under the pointer, and takes the sky highlight while it is dragged. */
-@supports selector(::-webkit-scrollbar) {
-  *::-webkit-scrollbar { width: 10px; height: 10px; background: transparent; }
-  *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
-  *::-webkit-scrollbar-thumb {
-    min-height: 40px;
-    border: 3px solid transparent;
-    border-radius: 999px;
-    background: transparent;
-    background-clip: padding-box;
-  }
-  *:hover::-webkit-scrollbar-thumb { background-color: light-dark(rgb(9 9 11 / 0.16), rgb(255 255 255 / 0.14)); }
-  *::-webkit-scrollbar-thumb:hover { border-width: 2px; background-color: light-dark(rgb(9 9 11 / 0.32), rgb(255 255 255 / 0.3)); }
-  *::-webkit-scrollbar-thumb:active { border-width: 2px; background-color: var(--ocx-highlight); }
-}
-@supports not selector(::-webkit-scrollbar) {
-  * { scrollbar-width: thin; scrollbar-color: light-dark(rgb(9 9 11 / 0.22), rgb(255 255 255 / 0.2)) transparent; }
-}
+/* ---- scrollbars: native ------------------------------------------------------
+   No global ::-webkit-scrollbar or scrollbar-width rules. Custom painting stops
+   macOS from hiding idle scrollbars and from honoring the Show scroll bars
+   preference (see design-system/foundations.md, "Scrollbars"). */
 
 /* ---- sidebar foot orbs: bare icons, a soft plate only on hover -------------
    Theme, star, update and terminal sit in text rows, so at rest they are icons
