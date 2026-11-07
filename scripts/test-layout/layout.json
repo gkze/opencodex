@@ -922,6 +922,7 @@
     "messaging-remote-store.test.ts": "codex-integration",
     "messaging-remote-send.test.ts": "codex-integration",
     "messaging-mcp-queue.test.ts": "codex-integration",
+    "messaging-mcp-replies.test.ts": "codex-integration",
     "cli-message-mcp.test.ts": "cli",
     "messaging-local-send.test.ts": "codex-integration",
     "messaging-local-lifecycle.test.ts": "codex-integration",
@@ -1476,6 +1477,7 @@
     "kiro-structured-output.test.ts": "providers/kiro",
     "kiro-structured-output-strict.test.ts": "providers/kiro",
     "kiro-stream.test.ts": "providers/kiro",
+    "kiro-tool-byte-accounting.test.ts": "providers/kiro",
     "kiro-transport-parity.test.ts": "providers/kiro",
     "kiro-usage-quota.test.ts": "providers/kiro",
     "kiro-usage-restart.test.ts": "providers/kiro",
@@ -1909,6 +1911,7 @@
     "rate-limit-reset-credits.test.ts": "gui",
     "rate-limit-retry.test.ts": "providers",
     "mistral-recovery.test.ts": "providers",
+    "mistral-reasoning-efforts.test.ts": "providers",
     "reasoning-effort-summary-default.test.ts": "responses",
     "reasoning-effort.test.ts": "codex-integration",
     "reasoning-envelope.test.ts": "responses",
@@ -2554,9 +2557,9 @@
     "advisor-scope-transport.test.ts": "advisor",
     "local-credentials.test.ts": "cli",
     "local-credential-generation.test.ts": "config",
-    "messaging-mcp-replies.test.ts": "codex-integration",
-    "kiro-tool-byte-accounting.test.ts": "providers/kiro",
-    "mistral-reasoning-efforts.test.ts": "providers",
-    "fx-client.test.ts": "clients"
+    "fx-client.test.ts": "clients",
+    "link-ultrafast-settings.test.ts": "clients",
+    "catalog-ultrafast-cache.test.ts": "codex-integration",
+    "fastwire-ultrafast-regressions.test.ts": "routing"
   }
 }
