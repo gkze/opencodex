@@ -955,6 +955,16 @@
       ]
     },
     {
+      "path": "providers/mistral-chat.md",
+      "tier": 4,
+      "title": "Canonical Mistral Chat Wire Policy",
+      "scope": "Canonical Mistral request-field projection, native effort clamping and typed-content normalization.",
+      "documents": [
+        "src/adapters/openai-chat/destination-policy.ts",
+        "src/adapters/openai-chat/native-content.ts"
+      ]
+    },
+    {
       "path": "providers/chat-compat.md",
       "tier": 4,
       "title": "Chat Provider Compatibility",
@@ -1080,6 +1090,25 @@
         "src/routing/history/",
         "src/server/",
         "src/usage/"
+      ]
+    },
+    {
+      "path": "usage-client-attribution.md",
+      "tier": 5,
+      "title": "Usage Client Attribution",
+      "scope": "Privacy-bounded client labels carried from request ingress into usage records.",
+      "documents": [
+        "src/usage/client.ts",
+        "src/usage/source-filter.ts",
+        "src/usage/summary.ts",
+        "src/server/request-log.ts",
+        "src/server/index/",
+        "src/server/management/logs-usage-routes.ts",
+        "src/server/management/usage-aggregate-cache.ts",
+        "src/server/hub-usage.ts",
+        "src/client/link-management-relay.ts",
+        "src/remote/hub-usage.ts",
+        "src/client/hub-client.ts"
       ]
     },
     {
@@ -1526,25 +1555,6 @@
       ]
     },
     {
-      "path": "usage-client-attribution.md",
-      "tier": 5,
-      "title": "Usage Client Attribution",
-      "scope": "Privacy-bounded client labels carried from request ingress into usage records.",
-      "documents": [
-        "src/usage/client.ts",
-        "src/usage/source-filter.ts",
-        "src/usage/summary.ts",
-        "src/server/request-log.ts",
-        "src/server/index/",
-        "src/server/management/logs-usage-routes.ts",
-        "src/server/management/usage-aggregate-cache.ts",
-        "src/server/hub-usage.ts",
-        "src/client/link-management-relay.ts",
-        "src/remote/hub-usage.ts",
-        "src/client/hub-client.ts"
-      ]
-    },
-    {
       "path": "ops/source-archives.md",
       "tier": 6,
       "title": "Source Archive Identity",
@@ -1554,22 +1564,21 @@
       ]
     },
     {
-      "path": "providers/mistral-chat.md",
-      "tier": 4,
-      "title": "Canonical Mistral Chat Wire Policy",
-      "scope": "Canonical Mistral request-field projection, native effort clamping and typed-content normalization.",
-      "documents": [
-        "src/adapters/openai-chat/destination-policy.ts",
-        "src/adapters/openai-chat/native-content.ts"
-      ]
-    },
-    {
       "path": "ops/git-installs.md",
       "tier": 6,
       "title": "Git Installation Preparation",
       "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
       "documents": [
         "package.json"
+      ]
+    },
+    {
+      "path": "ops/fork-release.md",
+      "tier": 6,
+      "title": "Personal Fork Release",
+      "scope": "Fork candidate verification, publication, update isolation and retention.",
+      "documents": [
+        "scripts/fork/"
       ]
     }
   ],
