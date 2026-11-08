@@ -45,6 +45,8 @@ v2는 위 v1 토큰을 `src/design/bridge.css`에서 아래 `--ocx-*` 토큰으�
 외부 CDN 폰트를 사용하지 않는다. 프록시 관리 화면은 오프라인에서도 열려야 하고, 폰트
 다운로드 실패가 레이아웃 이동이나 한글 누락으로 이어지면 안 되기 때문이다.
 
+Ordinary dashboard text uses the platform's default font smoothing to avoid unnecessarily thin glyphs on 1× displays. Font family, size and weight tokens remain its typography controls. The tray popup and desktop bootstrap have separate styles that explicitly select antialiased smoothing; this dashboard rule does not change those surfaces.
+
 ### Type scale
 
 | 역할 | 클래스 | 토큰 | 크기 | 대표 용도 |
@@ -209,3 +211,7 @@ v1 토큰 `--radius-xs`, `--radius-sm`, `--radius-lg`는 Tailwind의 `rounded-xs
 ### 레이아웃
 
 본문 열은 최대 1120px, 좌우 40px 여백. 페이지 머리는 제목(20px) + 한 줄 설명 + 오른쪽 동작.
+
+## Scrollbars
+
+Scroll containers use native browser scrollbars so macOS can hide them when idle and honor the user’s Show scroll bars preference. Do not apply global `::-webkit-scrollbar` painting rules. The quota strip intentionally hides its horizontal scrollbar because it provides paging buttons.
