@@ -111,7 +111,6 @@ Per-vendor contracts and the adapter authority that constructs them.
 | [`providers/kiro.md`](providers/kiro.md) | Kiro parallel-tool hints, Responses text controls, structured-output emulation, and reasoning round-trip. |
 | [`providers/xai-grok.md`](providers/xai-grok.md) | Grok Build contract parity and hardening. |
 | [`providers/lm-studio-chat.md`](providers/lm-studio-chat.md) | Preset-scoped single-leading-system normalization, configuration and editor policy. |
-| [`providers/mistral-chat.md`](providers/mistral-chat.md) | Canonical Mistral request-field projection, native effort clamping and typed-content normalization. |
 | [`providers/chat-compat.md`](providers/chat-compat.md) | Cross-vendor Chat Completions behavior: reasoning, tool results, structured output, parallel tools. |
 | [`providers/completed-tool-blocks.md`](providers/completed-tool-blocks.md) | Explicit response-only block completion, ordered safe-call delivery and terminal ownership. |
 | [`providers/mimo-bare-calls.md`](providers/mimo-bare-calls.md) | Standalone MiMo bare-block recovery into declared freeform calls, separate from identified-wrapper reconciliation. |
@@ -119,6 +118,7 @@ Per-vendor contracts and the adapter authority that constructs them.
 | [`adapters/registry.md`](adapters/registry.md) | The single adapter construction authority and contract inheritance. |
 | [`adapters/compatibility-contracts.md`](adapters/compatibility-contracts.md) | Versioned provider compatibility claims and fixture-evidence boundaries. |
 | [`adapters/compatibility-lab.md`](adapters/compatibility-lab.md) | Optional Lab evidence, automation, and its core-runtime isolation boundary. |
+| [`providers/mistral-chat.md`](providers/mistral-chat.md) | Canonical Mistral request-field projection, native effort clamping and typed-content normalization. |
 
 ### Tier 5 — Surfaces and clients
 
@@ -370,6 +370,7 @@ A source area can be described by more than one doc, because these docs are orga
 | `src/oauth/account-auto-pause-policy.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `src/oauth/account-auto-pause.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `src/oauth/api-key-pool-preserve.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
+| `src/oauth/dsh-browser.ts` | [`providers/dsh-account.md`](providers/dsh-account.md) |
 | `src/oauth/dsh.ts` | [`providers/dsh-account.md`](providers/dsh-account.md) |
 | `src/oauth/generic-account-failover.ts` | [`data-planes/error-detail.md`](data-planes/error-detail.md) |
 | `src/oauth/login-cli.ts` | [`providers/meta-muse.md`](providers/meta-muse.md) |
