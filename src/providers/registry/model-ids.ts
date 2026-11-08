@@ -22,7 +22,10 @@ import type { ProviderRegistryEntry } from "./types";
 type RegistryFieldModelIdRole =
   | { readonly kind: "none" }
   | { readonly kind: "record-keys" }
-  | { readonly kind: "nested-record-keys"; readonly key: "modelSupportsServiceTier" };
+  | {
+      readonly kind: "nested-record-keys";
+      readonly keys: readonly "modelSupportsServiceTier"[];
+    };
 
 const NONE = { kind: "none" } as const;
 const RECORD_KEYS = { kind: "record-keys" } as const;
@@ -30,9 +33,13 @@ const RECORD_KEYS = { kind: "record-keys" } as const;
  * Key-auth declares its own service-tier support under a nested map.
  *
  * Reading its keys is identity evidence only. It does not activate the key-auth service tier,
- * which stays the business of the service-tier resolver.
+ * which stays the business of the service-tier resolver. The nested Ultra Fast map is left out
+ * for the reason given at `modelSupportsUltraFast` below.
  */
-const KEY_AUTH_SERVICE_TIER = { kind: "nested-record-keys", key: "modelSupportsServiceTier" } as const;
+const KEY_AUTH_SERVICE_TIER = {
+  kind: "nested-record-keys",
+  keys: ["modelSupportsServiceTier"],
+} as const;
 
 /**
  * Not a configuration surface. Exported so the parity suite can compare this classification
@@ -83,6 +90,11 @@ export const REGISTRY_FIELD_MODEL_ID_ROLES = {
   supportsOpenAiWebSearchToolFields: NONE,
   supportsResponsesCustomTools: NONE,
   modelSupportsServiceTier: RECORD_KEYS,
+  supportsUltraFast: NONE,
+  // Ultra Fast maps name the few rows that carry a premium tier, not the provider's roster. On a
+  // live-catalog provider (OpenAI) counting them as known ids made `ocx models` and the router
+  // report a two-model OpenAI list that the config never declared.
+  modelSupportsUltraFast: NONE,
   keyAuthServiceTier: KEY_AUTH_SERVICE_TIER,
   fastTierDescription: NONE,
   fastOptIn: NONE,
@@ -173,9 +185,11 @@ export function registryModelIdKeys(entry: ProviderRegistryEntry): readonly stri
     // The nested role belongs to keyAuthServiceTier alone, so its owner is read by name.
     // ProviderRegistryEntry is an interface and carries no implicit index signature, so a
     // by-name read is what keeps this loop typed instead of asserted through unknown.
-    const nested = entry.keyAuthServiceTier?.[role.key];
-    if (typeof nested !== "object" || nested === null) continue;
-    for (const key of Object.keys(nested)) add(key);
+    for (const nestedKey of role.keys) {
+      const nested = entry.keyAuthServiceTier?.[nestedKey];
+      if (typeof nested !== "object" || nested === null) continue;
+      for (const key of Object.keys(nested)) add(key);
+    }
   }
   return Object.freeze(ids);
 }
