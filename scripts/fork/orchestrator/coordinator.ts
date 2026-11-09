@@ -16,7 +16,7 @@ import { replay, commitPatch } from "./replay.ts"
 import { schedule } from "./scheduler.ts"
 import { dependencyBase } from "./dependencies.ts"
 import { preflight, measureOutputs } from "./resources.ts"
-import { isForkControl, applyControls } from "./controls.ts"
+import { isForkControl, carryControlCommits } from "./controls.ts"
 import { settle, reviewBranch, annotation } from "./settle.ts"
 import { assertMergeDriver, configureMergeDriver } from "./merge-driver.ts"
 import registryJson from "./registry.json"
@@ -189,19 +189,15 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
       yield* commitPatch(cwd, result.candidate, patch.id)
       mapped.push({id: patch.id, commit: yield* git(cwd, "rev-parse", "HEAD")})
     }
-    // Fork-owned controls live on the branch, not in the patch branches. Carry them into the
-    // integration tree so accept sees them identical to the previous tip, as it requires.
-    if (yield* applyControls(cwd, input.old, input.upstream)) {
-      const last = mapped[mapped.length - 1]
-      if (!last) return yield* Effect.fail("Cannot carry fork controls without an assembled commit")
-      yield* git(cwd, "commit", "--amend", "--no-edit")
-      last.commit = yield* git(cwd, "rev-parse", "HEAD")
-    }
+    // Fork-owned controls live on the branch, not in the patch branches. They follow the patches as
+    // their own commits; folding them into the last patch would make that patch's commit carry the
+    // whole control tree.
+    const controls = yield* carryControlCommits(cwd, input.old, input.upstream)
     const candidate = yield* git(cwd, "rev-parse", "HEAD")
     yield* git(cwd, "update-ref", "refs/heads/nightly-candidate", candidate)
     yield* git(cwd, "bundle", "create", join(directory, "candidate.bundle"), "refs/heads/nightly-candidate", ...results.map(r => r.candidate), `^${input.upstream}`)
     yield* Effect.promise(() => Bun.write(join(directory, "input.json"), JSON.stringify(input)))
-    yield* Effect.promise(() => Bun.write(join(directory, "stack.json"), JSON.stringify({input, results, dropped, mapped, candidate}, null, 2)))
+    yield* Effect.promise(() => Bun.write(join(directory, "stack.json"), JSON.stringify({input, results, dropped, mapped, controls, candidate}, null, 2)))
     yield* measureOutputs(directory)
     yield* git(root, "worktree", "remove", "--force", cwd)
     return candidate
