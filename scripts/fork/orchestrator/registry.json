@@ -76,16 +76,6 @@
       "runner": "ubuntu-24.04"
     },
     {
-      "id": "audio-readiness-budget",
-      "branch": "codex/patch/audio-readiness-budget",
-      "requires": [],
-      "sensitive": false,
-      "tests": [
-        "tests/cli/cli-access-audio-live.test.ts"
-      ],
-      "runner": "ubuntu-24.04"
-    },
-    {
       "id": "launchd-command-consistency",
       "branch": "codex/launchd-baked-command",
       "requires": [],
@@ -128,6 +118,17 @@
         "gui/tests/app-titlebar.test.tsx"
       ],
       "runner": "macos-15"
+    },
+    {
+      "id": "dashboard-native-rendering",
+      "branch": "codex/patch/dashboard-native-rendering",
+      "requires": [],
+      "sensitive": false,
+      "droppable": true,
+      "tests": [
+        "gui/tests/native-scrollbars.test.ts"
+      ],
+      "runner": "ubuntu-24.04"
     },
     {
       "id": "fork-release-channel",
