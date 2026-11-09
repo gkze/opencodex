@@ -40,7 +40,9 @@ export const Settled = Schema.Union([Result, Dropped])
 export type Settled = typeof Settled.Type
 export const isDropped = (settled: Settled): settled is Dropped => "dropped" in settled
 // `dropped` is optional so a stack written before patches could be dropped still decodes.
-export const Stack = Schema.Struct({input: Input, results: Schema.Array(Result), dropped: Schema.optional(Schema.Array(Dropped)), mapped: Schema.Array(Schema.Struct({id: Id, commit: Sha})), candidate: Sha})
+// `controls` lists the fork's own control commits replayed after the patches, by source commit
+// on the previous tip and resulting commit in the candidate.
+export const Stack = Schema.Struct({input: Input, results: Schema.Array(Result), dropped: Schema.optional(Schema.Array(Dropped)), mapped: Schema.Array(Schema.Struct({id: Id, commit: Sha})), controls: Schema.optional(Schema.Array(Schema.Struct({source: Sha, commit: Sha}))), candidate: Sha})
 
 /** Why a stack does not account for every registered patch exactly once, or null when it does.
  * A patch ships (a result with a mapped commit) or is dropped; only an opted-in patch may be
