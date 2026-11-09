@@ -36,6 +36,39 @@ const atomicJson = (file, value) => {
 };
 const digest = file => createHash('sha256').update(readFileSync(file)).digest('hex');
 
+// `tauri build` downloads its packaging tools (linuxdeploy and AppRun for the AppImage, WiX on
+// Windows) from GitHub releases while bundling. A 5xx there says nothing about the source, and a
+// retry reuses the warm cargo target, so only bundling repeats. Anything else fails at once.
+export const transientBundlerFailure = output => /failed to bundle project `http status: 5\d\d`/.test(output);
+export const bundleAttempts = 3;
+const outputTail = 64 * 1024;
+
+/** Runs a command with streamed output, keeping a bounded tail for classifying a failure. */
+export const streamed = (command, args, options = {}) => new Promise(settle => {
+  const child = spawn(command, args, { cwd: root, ...options, stdio: ['inherit', 'pipe', 'pipe'] });
+  let tail = '';
+  const forward = sink => chunk => { sink.write(chunk); tail = (tail + chunk).slice(-outputTail); };
+  child.stdout.on('data', forward(process.stdout));
+  child.stderr.on('data', forward(process.stderr));
+  const timer = setTimeout(() => child.kill('SIGKILL'), options.timeout ?? 40 * 60_000);
+  child.once('error', error => { clearTimeout(timer); settle({ ok: false, tail, error }); });
+  child.once('close', (code, signal) => {
+    clearTimeout(timer);
+    settle(code === 0 ? { ok: true, tail } : { ok: false, tail, error: new Error(`Command failed: ${command} ${args.join(' ')} (${signal ?? `exit ${code}`})`) });
+  });
+});
+
+/** runOnce resolves {ok, tail, error}; only a transient bundler download failure is retried. */
+export async function retryTransientBundle(runOnce, { attempts = bundleAttempts, delayMs = attempt => 30_000 * 2 ** attempt } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    const { ok, tail, error } = await runOnce();
+    if (ok) return;
+    if (attempt === attempts - 1 || !transientBundlerFailure(tail)) throw error;
+    console.error(`Bundler download failed transiently; retrying (attempt ${attempt + 2} of ${attempts}).`);
+    await delay(delayMs(attempt));
+  }
+}
+
 // Exercise the exact extracted executable with no real user config or keychain
 // operations. The keyring probe loads the addon only. HTTP smoke checks both the
 // runtime identity and packaged GUI (including its first JS asset).
@@ -149,14 +182,14 @@ async function desktop(target, version, out, scratch) {
       run('codesign', ['--force', '--sign', '-', addon]);
     }
   }
-  const build = (bundles, targetDir) => run('bun', ['x', '--no-install', 'tauri', 'build', '--ci', '--target', target, '--bundles', bundles], {
+  const build = (bundles, targetDir) => retryTransientBundle(() => streamed('bun', ['x', '--no-install', 'tauri', 'build', '--ci', '--target', target, '--bundles', bundles], {
     cwd: desktopRoot, env: { ...process.env, CARGO_TARGET_DIR: targetDir },
-  });
+  }));
   let bundleRoot;
   let smoke;
   if (mac || windows) {
     const targetDir = join(scratch, 'cargo');
-    build(mac ? 'app,dmg' : 'msi', targetDir);
+    await build(mac ? 'app,dmg' : 'msi', targetDir);
     bundleRoot = join(targetDir, target, 'release/bundle');
     if (mac) {
       const app = join(bundleRoot, 'macos/OpenCodex.app');
@@ -183,7 +216,7 @@ async function desktop(target, version, out, scratch) {
     bundleRoot = join(scratch, 'linux-bundles');
     for (const format of ['appimage', 'deb']) {
       const targetDir = join(scratch, `cargo-${format}`);
-      build(format, targetDir);
+      await build(format, targetDir);
       cpSync(join(targetDir, target, 'release/bundle', format), join(bundleRoot, format), { recursive: true });
     }
     run('bash', ['desktop/scripts/verify-linux-sidecar.sh', join(bundleRoot, 'appimage')]);
