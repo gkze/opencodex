@@ -1,7 +1,7 @@
 import { Effect } from "effect"
 import { join, resolve } from "node:path"
 import { appendFileSync } from "node:fs"
-import { decode, Stack, Registry } from "./model.ts"
+import { decode, Stack, Registry, coverageFailure } from "./model.ts"
 import { git } from "./process.ts"
 import registryJson from "./registry.json"
 import { lastAccepted } from "./held.ts"
@@ -18,8 +18,8 @@ await Effect.runPromise(Effect.gen(function*() {
     const actual = (yield* git(root, "ls-remote", "origin", `refs/heads/${patch.branch}`)).split("\t")[0]
     if (actual !== patch.source) return yield* Effect.fail(`Patch advanced: ${patch.id}`)
   }
-  const ids = registry.patches.map(p => p.id).sort().join("\n")
-  if (stack.results.map(p => p.id).sort().join("\n") !== ids || stack.mapped.map(p => p.id).sort().join("\n") !== ids) return yield* Effect.fail("Incomplete or duplicate patch mapping")
+  const coverage = coverageFailure(registry.patches, stack.results.map(p => p.id), stack.mapped.map(p => p.id), (stack.dropped ?? []).map(p => p.id))
+  if (coverage) return yield* Effect.fail(coverage)
   yield* git(root, "fetch", "https://github.com/lidge-jun/opencodex.git", "dev")
   yield* git(root, "merge-base", "--is-ancestor", stack.input.upstream, "FETCH_HEAD")
   yield* git(root, "bundle", "verify", join(directory, "candidate.bundle"))

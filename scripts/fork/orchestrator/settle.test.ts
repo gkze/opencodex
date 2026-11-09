@@ -6,6 +6,7 @@ import { Effect } from "effect"
 import { settle, reviewBranch, annotation } from "./settle.ts"
 import { applyControls, carriedControls } from "./controls.ts"
 import { git } from "./process.ts"
+import { coverageFailure } from "./model.ts"
 
 test("a sensitive rework is proposed for review, never accepted", () => {
   expect(settle(true, "deepseek-browser-auth", {kind: "verified", adapted: true})).toEqual({action: "propose", reason: "sensitive patch needs review; the proposed rework is on review/deepseek-browser-auth"})
@@ -53,4 +54,17 @@ test("patch workers and stack assembly take the same controls from the fork tip"
       expect(yield* git(root, "status", "--porcelain", "--", ".", ":(exclude).github", ":(exclude)scripts/fork")).toBe("")
     }))
   } finally { rmSync(root, {recursive: true, force: true}) }
+})
+
+const p = (id: string, requires: string[] = [], droppable?: boolean) => ({id, requires, droppable, branch: `codex/patch/${id}`, sensitive: false, runner: "ubuntu-24.04" as const, tests: []})
+
+test("a stack accounts for every patch once, and drops only opted-in patches with their dependents", () => {
+  const patches = [p("base", [], true), p("child", ["base"], true), p("release")]
+  expect(coverageFailure(patches, ["base", "child", "release"], ["base", "child", "release"], [])).toBeNull()
+  expect(coverageFailure(patches, ["release"], ["release"], ["base", "child"])).toBeNull()
+  expect(coverageFailure(patches, ["base", "child"], ["base", "child"], ["release"])).toBe("Patch release is not droppable")
+  expect(coverageFailure(patches, ["child", "release"], ["child", "release"], ["base"])).toBe("Patch child ships without its dropped dependency base")
+  expect(coverageFailure(patches, ["release", "base"], ["release", "base"], ["base", "child"])).toBe("Duplicate or shipped-and-dropped patch")
+  expect(coverageFailure(patches, ["release"], ["release"], ["child"])).toBe("Incomplete or duplicate patch mapping")
+  expect(coverageFailure(patches, ["release", "base", "child"], ["release"], [])).toBe("Incomplete or duplicate patch mapping")
 })
