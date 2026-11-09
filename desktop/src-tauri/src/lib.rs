@@ -57,7 +57,9 @@ mod runtime_stop;
 mod sidecar;
 mod startup;
 mod supervisor;
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+// Wry no longer positions the lights (the AppKit observer does), so nothing here is called at
+// runtime; the module keeps its tested placement table.
+#[allow(dead_code)]
 mod traffic_lights;
 mod tray;
 mod tray_availability;
@@ -414,11 +416,7 @@ pub fn run() {
             let builder = builder
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .hidden_title(true)
-                .min_inner_size(360.0, 320.0)
-                .traffic_light_position(tauri::Position::Logical(tauri::LogicalPosition::new(
-                    traffic_lights::X,
-                    traffic_lights::y_for(traffic_lights::macos_major()),
-                )));
+                .min_inner_size(360.0, 320.0);
             let window = builder.build()?;
             window::configure(&window);
             if startup::LaunchOrigin::detect() == startup::LaunchOrigin::User {
