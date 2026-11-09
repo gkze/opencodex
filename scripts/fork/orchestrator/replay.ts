@@ -16,7 +16,7 @@ export const replay = (cwd: string, source: string, trustedRoot: string) => Effe
     if (!(yield* git(cwd, "diff", "--name-only", parent, source, "--", path))) continue
     const values = yield* Effect.forEach([parent, before, source], ref => git(cwd, "show", `${ref}:${path}`))
     const value = yield* Effect.try({ try: () => merge(...values.map(v => JSON.parse(v)) as [unknown, unknown, unknown]), catch: String })
-    yield* Effect.promise(() => Bun.write(join(cwd, path), (path === "tests/fixtures/test-layout-expected.json" ? renderMetadata(values[1], value) : JSON.stringify(value, null, 2) + "\n")))
+    yield* Effect.promise(() => Bun.write(join(cwd, path), renderMetadata(values[1], value)))
     yield* git(cwd, "add", path)
   }
   // Use the captured control revision's generator, never agent-proposed executable code.
