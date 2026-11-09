@@ -1,7 +1,9 @@
+import { Effect } from "effect"
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
+import { retryTransient } from "./retry.ts"
 
 /**
  * Structural merge driver for the replay path. Upstream rewrites that only touch the inside of a
@@ -28,13 +30,33 @@ export const mergirafTarget = (platform: NodeJS.Platform = process.platform, arc
   return target
 }
 
+/** Test seams: the fetch to call and the wait between transient retries. */
+export type FetchOptions = {
+  readonly fetch?: typeof fetch
+  readonly delayMillis?: (attempt: number) => number
+}
+
+/**
+ * A 5xx from the release host says nothing about the pin, so it is retried like GitHub pushes and
+ * artifact downloads. A size or digest mismatch fails at once. Retry notices go to stderr: the
+ * workflows capture stdout as the binary path.
+ */
+export const fetchPinnedArchive = (target: Pinned, options: FetchOptions = {}): Promise<Uint8Array> => Effect.runPromise(retryTransient(
+  Effect.tryPromise({ try: async signal => {
+    const response = await (options.fetch ?? fetch)(`${release}/${target.file}`, { signal })
+    if (!response.ok) throw new Error(`Mergiraf download failed: HTTP ${response.status}`)
+    const archive = new Uint8Array(await response.arrayBuffer())
+    if (archive.byteLength !== target.bytes) throw new Error(`Mergiraf archive is ${archive.byteLength} bytes, expected ${target.bytes}`)
+    if (digest(archive) !== target.sha256) throw new Error("Mergiraf archive digest does not match the pin")
+    return archive
+  }, catch: String }),
+  failure => console.error(`Retrying Mergiraf download after: ${failure}`),
+  options.delayMillis,
+))
+
 /** Downloads, verifies and unpacks the pinned driver; returns the binary path. */
-export const installMergeDriver = async (directory: string, target: Pinned = mergirafTarget()): Promise<string> => {
-  const response = await fetch(`${release}/${target.file}`)
-  if (!response.ok) throw new Error(`Mergiraf download failed: HTTP ${response.status}`)
-  const archive = new Uint8Array(await response.arrayBuffer())
-  if (archive.byteLength !== target.bytes) throw new Error(`Mergiraf archive is ${archive.byteLength} bytes, expected ${target.bytes}`)
-  if (digest(archive) !== target.sha256) throw new Error("Mergiraf archive digest does not match the pin")
+export const installMergeDriver = async (directory: string, target: Pinned = mergirafTarget(), options: FetchOptions = {}): Promise<string> => {
+  const archive = await fetchPinnedArchive(target, options)
   mkdirSync(directory, { recursive: true })
   const tar = join(directory, target.file)
   writeFileSync(tar, archive)
