@@ -27,10 +27,13 @@ describe("operator ultrafast survives the build and merge boundary", () => {
   const tier = { id: "ultrafast", name: "Ultra Fast", description: "operator supplied" };
   const slug = "gateway/task-model";
   const previous = (): RawEntry => ({ slug, service_tiers: [tier], additional_speed_tiers: ["ultrafast"] });
-  const build = (provider = "gateway", id = "task-model", supportsServiceTier = true) =>
+  const build = (provider = "gateway", id = "task-model", supportsServiceTier = true, supportsUltraFast = false) =>
     buildCatalogEntriesFromObservedState({
       template: { slug: "gpt-5.5", service_tiers: [{ id: "priority", name: "Fast" }] },
-      gptSlugs: [], goModels: [{ provider, id, supportsServiceTier }], wsEnabled: false,
+      gptSlugs: [], goModels: [{
+        provider, id, supportsServiceTier,
+        ...(supportsUltraFast ? { supportsUltraFast: true } : {}),
+      }], wsEnabled: false,
       multiAgentMode: "default", multiAgentV2Enabled: false, exactComboSlugs: new Set(),
       accountSelectors: [], suppressedBareNativeSlugs: new Set(), disabledNativeAccountSlugs: new Set(),
     });
@@ -89,6 +92,22 @@ describe("operator ultrafast survives the build and merge boundary", () => {
     const result = row(merge([], inherited, { baselineCatalogModels: [previous()] }));
     expect(result.additional_speed_tiers).toBeUndefined();
     expect(result.service_tiers).toBeUndefined();
+  });
+
+  test("a derived Ultra Fast row survives the retention flag; a carried-over one still obeys it", () => {
+    // The two origins the flag has to tell apart. A freshly gathered row carries only what the
+    // provider/model evidence produced, so the tier is published even with the opt-in off —
+    // otherwise turning the opt-in off would erase evidence the catalog is entitled to publish.
+    const derived = row(merge([], build("gateway", "task-model", true, true), { ultraFastTier: false }));
+    expect(derived.additional_speed_tiers).toEqual(["fast", "ultrafast"]);
+    expect(derived.service_tiers).toEqual([
+      expect.objectContaining({ id: "priority" }),
+      expect.objectContaining({ id: "ultrafast" }),
+    ]);
+    // Nothing was gathered here, so the row comes from disk: that declaration is the operator's
+    // and the opt-in still decides whether regeneration keeps it.
+    const extra = { degradedProviderNames: new Set(["gateway"]), ultraFastTier: false };
+    expect(row(merge([previous()], [], extra)).additional_speed_tiers).toBeUndefined();
   });
 
   test("a provider without Fast receives only its own declared Ultra Fast", () => {

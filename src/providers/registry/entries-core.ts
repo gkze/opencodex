@@ -151,6 +151,20 @@ function anthropicOAuthEntry(id: AnthropicInstanceId, label: string): ProviderRe
   });
 }
 
+/**
+ * Native rows the live Codex roster advertises the Ultra Fast tier on.
+ *
+ * Evidence: the `/models` roster served to client 0.162.0 (probed 2026-10-13) returns
+ * `service_tiers: [{priority…}, {ultrafast…}]` and `additional_speed_tiers: ["fast","ultrafast"]`
+ * for exactly these two ids; every other row advertises Fast alone. Listed per model rather than
+ * as a provider-wide flag because the tier is per model — a provider-wide declaration would offer
+ * Ultra Fast on rows upstream does not carry it on. Refresh with the roster, not by guessing.
+ */
+const OPENAI_ULTRA_FAST_MODELS: Readonly<Record<string, boolean>> = Object.freeze({
+  "gpt-6-astra": true,
+  "gpt-6.1-sol": true,
+});
+
 export const PROVIDER_REGISTRY_CORE: readonly ProviderRegistryEntry[] = [
   {
     id: "openai",
@@ -160,6 +174,15 @@ export const PROVIDER_REGISTRY_CORE: readonly ProviderRegistryEntry[] = [
     authKind: "forward",
     codexAccountMode: "pool",
     supportsServiceTier: true,
+    // Canonical Fast plus the Ultra Fast spelling this backend accepts. Declaring the spelling is
+    // what makes Ultra Fast a tier the proxy can SET here instead of only forwarding when the
+    // caller happens to send one; the per-model map below decides which rows may be set.
+    fastWire: {
+      kind: "service-tier",
+      canonicalToWire: { priority: "priority", ultrafast: "ultrafast" },
+      foreignCallerTiers: "verbatim",
+    },
+    modelSupportsUltraFast: OPENAI_ULTRA_FAST_MODELS,
     featured: true,
     note: "Codex login account pool (default) or Direct main-account mode via codexAccountMode",
   },
