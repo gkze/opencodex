@@ -7,7 +7,10 @@ const metadata = ["structure/manifest.json", "scripts/test-layout/layout.json", 
 export const replay = (cwd: string, source: string, trustedRoot: string) => Effect.gen(function*() {
   const parent = yield* git(cwd, "rev-parse", `${source}^`)
   const before = yield* git(cwd, "rev-parse", "HEAD")
-  const attempt = yield* git(cwd, "cherry-pick", "--no-commit", source).pipe(Effect.result)
+  // diff3 puts the base the patch was written against inside each hunk. Without it a repair sees
+  // two versions and has to guess which differences are the patch's; it is also set here so the
+  // runner's default and a maintainer's local configuration produce the same hunks.
+  const attempt = yield* git(cwd, "-c", "merge.conflictStyle=diff3", "cherry-pick", "--no-commit", source).pipe(Effect.result)
   // Generated metadata is reconciled from its authority even if Git's text merge succeeds.
   for (const path of metadata) {
     if (!(yield* git(cwd, "diff", "--name-only", parent, source, "--", path))) continue
@@ -21,8 +24,8 @@ export const replay = (cwd: string, source: string, trustedRoot: string) => Effe
   yield* git(cwd, "add", "structure/INDEX.md")
   yield* reconcileReadme(cwd, parent, before, source)
   const conflicts = yield* git(cwd, "diff", "--name-only", "--diff-filter=U")
-  if (conflicts) return { ok: false as const, reason: `Conflicts: ${conflicts}` }
-  if (attempt._tag === "Failure" && !(yield* git(cwd, "diff", "--cached", "--name-only"))) return { ok: false as const, reason: "Replay failed without staged changes" }
+  if (conflicts) return { ok: false as const, reason: `Conflicts: ${conflicts.split("\n").join(", ")}`, conflicts: conflicts.split("\n") }
+  if (attempt._tag === "Failure" && !(yield* git(cwd, "diff", "--cached", "--name-only"))) return { ok: false as const, reason: "Replay failed without staged changes", conflicts: [] }
   return { ok: true as const, reason: "" }
 })
 
