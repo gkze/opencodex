@@ -763,6 +763,7 @@
   "compaction-progress.test.ts": "responses", "companion-settings.test.ts": "server",
   "compatibility-manifest.test.ts": "codex-integration", "compatibility-provider-equivalence.test.ts": "routing",
   "compatibility-version.test.ts": "ci-workflows", "config-account-thresholds.test.ts": "config",
+  "git-install-prepare.test.ts": "ci-workflows",
   "config-blocked-model-redirects.test.ts": "config", "config-catalog-auto-refresh.test.ts": "config",
   "config-removed-opencode-free.test.ts": "config",
   "atomic-write-exclusive.test.ts": "config",
