@@ -35,3 +35,14 @@ test('the recorded state changes with what needs attention, not with run links',
   assert.notEqual(stateOf(one), stateOf(compose({ ...base, failure: null, held: [{ ...held, review }] })));
   assert.equal(stateOf('no marker'), null);
 });
+
+test('a dropped patch is reported apart from held ones, and only changes the state when present', () => {
+  const dropped = { id: 'launchd-command-consistency', branch: 'codex/launchd-baked-command', head, reason: 'worker did not finish: conflicts; held revision does not replay: Conflicts: structure/ops/service-and-sidecars.md' };
+  const body = compose({ ...base, failure: null, held: [], dropped: [dropped] });
+  assert.match(body, /## Dropped patches/);
+  assert.match(body, /`launchd-command-consistency`: `codex\/launchd-baked-command` is at aaaaaaaaaaaa\. Last refresh: worker did not finish/);
+  assert.doesNotMatch(body, /## Held patches/);
+  // An issue opened before drops existed keeps its state, so it is not re-announced.
+  assert.equal(stateOf(compose({ ...base, failure: null, held: [held] })), stateOf(compose({ ...base, failure: null, held: [held], dropped: [] })));
+  assert.notEqual(stateOf(compose({ ...base, failure: null, held: [held] })), stateOf(compose({ ...base, failure: null, held: [held], dropped: [dropped] })));
+});
