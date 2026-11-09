@@ -30,7 +30,8 @@ const RECORD_KEYS = { kind: "record-keys" } as const;
  * Key-auth declares its own service-tier support under a nested map.
  *
  * Reading its keys is identity evidence only. It does not activate the key-auth service tier,
- * which stays the business of the service-tier resolver.
+ * which stays the business of the service-tier resolver. The nested Ultra Fast map is left out
+ * for the reason given at `modelSupportsUltraFast` below.
  */
 const KEY_AUTH_SERVICE_TIER = { kind: "nested-record-keys", key: "modelSupportsServiceTier" } as const;
 
@@ -83,6 +84,11 @@ export const REGISTRY_FIELD_MODEL_ID_ROLES = {
   supportsOpenAiWebSearchToolFields: NONE,
   supportsResponsesCustomTools: NONE,
   modelSupportsServiceTier: RECORD_KEYS,
+  supportsUltraFast: NONE,
+  // Ultra Fast maps name the few rows that carry a premium tier, not the provider's roster. On a
+  // live-catalog provider (OpenAI) counting them as known ids made `ocx models` and the router
+  // report a two-model OpenAI list that the config never declared.
+  modelSupportsUltraFast: NONE,
   keyAuthServiceTier: KEY_AUTH_SERVICE_TIER,
   fastTierDescription: NONE,
   fastOptIn: NONE,
