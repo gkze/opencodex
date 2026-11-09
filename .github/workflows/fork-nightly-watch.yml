@@ -1,0 +1,67 @@
+name: Watch fork nightly
+# Recover what a person does not need to see, and report the rest in one tracking issue.
+# recover: re-run publish jobs GitHub never started, and start a fresh refresh when promotion was
+#   refused because a maintained ref moved during the run. Real failures are left alone.
+# attention: open, update or close the "Fork nightly needs attention" issue.
+on:
+  workflow_run:
+    workflows: [Fork stack refresh, Publish fork nightly]
+    types: [completed]
+permissions: {}
+concurrency:
+  # Not fork-maintenance: this job waits on the publish run, which holds that group on re-run.
+  group: fork-nightly-watch-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: >-
+      github.repository == 'gkze/opencodex' &&
+      github.event.workflow_run.name == 'Publish fork nightly' &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'gkze/patches'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+      - run: node --test scripts/fork/recover.test.js
+      - name: Re-run jobs GitHub never started, or refresh after a moved ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node scripts/fork/recover.mjs
+  attention:
+    needs: recover
+    # A successful refresh is reported by the publish it starts.
+    if: >-
+      always() &&
+      github.repository == 'gkze/opencodex' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'gkze/patches' &&
+      github.event.workflow_run.conclusion != 'skipped' &&
+      (github.event.workflow_run.name == 'Publish fork nightly' || github.event.workflow_run.conclusion != 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          # Held patches are read from the Patch-Id trailers on the fork branch history.
+          fetch-depth: 0
+          persist-credentials: false
+      - run: node --test scripts/fork/attention.test.js
+      - name: Update the attention issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node scripts/fork/attention.mjs
