@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { assetTargets, assetContract, expectedAssetNames } from './asset-contract.mjs';
-import { manualInstallConfig } from './build-assets.mjs';
+import { bundleAttempts, manualInstallConfig, retryTransientBundle, streamed, transientBundlerFailure } from './build-assets.mjs';
 
 const version = '2.84.0-gkze.nightly.123456.1';
 const source = 'a'.repeat(40);
@@ -174,4 +174,38 @@ test('completion recording preserves notes, reads back its write and is idempote
   assert.deepEqual(expiredNightlies([release], release.tag_name), []);
   assert.throws(() => recordNightlyPublication(7, nightly(7).tag_name,
     () => ({ ...nightly(7), body: 'write ignored' })), /did not persist/);
+});
+
+// Verbatim from Publish fork nightly 42474677105 (linux desktop): linuxdeploy's GitHub release returned 504.
+const bundler504 = "Downloading https://github.com/tauri-apps/binary-releases/releases/download/linuxdeploy/linuxdeploy-x86_64.AppImage\nfailed to bundle project `http status: 504`\n       Error failed to bundle project `http status: 504`";
+test('only a bundler download 5xx counts as transient', () => {
+  assert.equal(transientBundlerFailure(bundler504), true);
+  assert.equal(transientBundlerFailure('failed to bundle project `http status: 404`'), false);
+  assert.equal(transientBundlerFailure('error[E0308]: mismatched types'), false);
+  // A test or log line that merely mentions a 504 is not the bundler's own failure.
+  assert.equal(transientBundlerFailure('upstream returned HTTP 504'), false);
+});
+test('a transient bundler failure is retried a bounded number of times; anything else fails at once', async () => {
+  const attempts = (...results) => {
+    const calls = [];
+    return { calls, runOnce: async () => { calls.push(1); return results[Math.min(calls.length - 1, results.length - 1)]; } };
+  };
+  const failed = (tail, message) => ({ ok: false, tail, error: new Error(message) });
+  const recovered = attempts(failed(bundler504, 'first'), { ok: true, tail: '' });
+  await retryTransientBundle(recovered.runOnce, { delayMs: () => 0 });
+  assert.equal(recovered.calls.length, 2);
+  const persistent = attempts(failed(bundler504, 'still 504'));
+  await assert.rejects(retryTransientBundle(persistent.runOnce, { delayMs: () => 0 }), /still 504/);
+  assert.equal(persistent.calls.length, bundleAttempts);
+  const real = attempts(failed('error[E0308]: mismatched types', 'compile'));
+  await assert.rejects(retryTransientBundle(real.runOnce, { delayMs: () => 0 }), /compile/);
+  assert.equal(real.calls.length, 1);
+});
+test('streamed output keeps the failure line the classifier reads, across chunks and streams', async () => {
+  const script = "process.stdout.write('bundling\\n'); process.stderr.write('failed to bundle project `http'); setTimeout(() => { process.stderr.write(' status: 504`\\n'); process.exit(1); }, 20);";
+  const result = await streamed(process.execPath, ['-e', script]);
+  assert.equal(result.ok, false);
+  assert.equal(transientBundlerFailure(result.tail), true);
+  assert.match(result.error.message, /exit 1/);
+  assert.deepEqual(await streamed(process.execPath, ['-e', '']), { ok: true, tail: '' });
 });
