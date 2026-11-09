@@ -18,7 +18,9 @@
         "source-archive-builds"
       ],
       "sensitive": true,
-      "tests": [],
+      "tests": [
+        "tests/ci-workflows/git-install-prepare.test.ts"
+      ],
       "runner": "ubuntu-24.04"
     },
     {
@@ -28,7 +30,8 @@
       "sensitive": false,
       "droppable": true,
       "tests": [
-        "tests/routing/router-combo-failover-classification.test.ts"
+        "tests/routing/router-combo-failover-classification.test.ts",
+        "tests/lib/failure-attribution.test.ts"
       ],
       "runner": "ubuntu-24.04"
     },
@@ -103,7 +106,8 @@
         "tests/config/config-load-degrade.test.ts",
         "tests/routing/fastwire-policy.test.ts",
         "tests/routing/fastwire-ultrafast-regressions.test.ts",
-        "tests/routing/fastwire-ultrafast-tier.test.ts"
+        "tests/routing/fastwire-ultrafast-tier.test.ts",
+        "gui/tests/claude-code-fast-mode.test.tsx"
       ],
       "runner": "ubuntu-24.04"
     },
