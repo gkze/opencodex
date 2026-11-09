@@ -3,7 +3,7 @@ import * as Workflow from "effect/workflow/Workflow"
 import * as Activity from "effect/workflow/Activity"
 import { mkdirSync } from "node:fs"
 import { resolve, join } from "node:path"
-import { decode, Registry, Input, Result, order, type Result as PatchResult } from "./model.ts"
+import { decode, Registry, Input, Result, Settled, isDropped, order, type Dropped } from "./model.ts"
 import { workflowRuntime } from "./runtime.ts"
 import { git, command } from "./process.ts"
 import { dispatch, wait, Repository, request } from "./github.ts"
@@ -54,10 +54,20 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
   process.env.GIT_AUTHOR_DATE = timestamp
   process.env.GIT_COMMITTER_DATE = timestamp
   const writer = yield* Semaphore.make(1)
-  const results = yield* schedule(registry.patches, capacity(0, 0), limits.policy.macosJobs, (definition, parents: readonly PatchResult[]) => Effect.gen(function*() {
+  const settled = yield* schedule(registry.patches, capacity(0, 0), limits.policy.macosJobs, (definition, parents: readonly Settled[]) => Effect.gen(function*() {
       const patch = input.patches.find(p => p.id === definition.id)!
       if (!limits.policy.runnerLabels.includes(patch.runner)) return yield* Effect.fail("Runner outside allowlist")
-      const dependencies = parents.map(r => r.candidate)
+      // Leave an opted-in patch out of tonight's stack; any other patch that cannot ship fails the
+      // refresh, because the stack would be missing something the nightly depends on.
+      const leaveOut = (reason: string): Effect.Effect<Dropped, string> => patch.droppable
+        ? Effect.sync((): Dropped => {
+          console.log(annotation("warning", `Dropped ${patch.id}`, reason))
+          return {id: patch.id, dropped: true, reason}
+        })
+        : Effect.fail(reason)
+      const missing = parents.find(isDropped)
+      if (missing) return yield* leaveOut(`requires ${missing.id}, which is left out tonight: ${missing.reason}`)
+      const dependencies = parents.filter((r): r is Result => !isDropped(r)).map(r => r.candidate)
       // Distinct step names keep a recorded activity failure from being replayed on retry.
       const worker = (n: number) => Effect.gen(function*() {
         const tag = n === 0 ? "" : `-retry${n}`
@@ -72,16 +82,24 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
       const dispatched = yield* dispatchWithRetry(worker, failure => console.error(`Retrying ${patch.id} after: ${failure}`)).pipe(Effect.result)
       // A patch that cannot be replayed tonight ships the revision the last accepted stack
       // published, so one blocked patch costs that patch a night instead of the whole refresh.
+      // A patch neither revision of which replays is returned as `unreplayable` rather than failed,
+      // so the caller can apply the drop policy to it. Any other failure is the machinery's own.
       const hold = (reason: string) => Effect.gen(function*() {
         const source = yield* lastAccepted(root, input.old, patch.id)
-        if (!source) return yield* Effect.fail(`${reason}; no accepted revision of ${patch.id} to hold`)
+        if (!source) return {unreplayable: `${reason}; no accepted revision of ${patch.id} to hold`}
         const cwd = join(directory, `${patch.id}-hold`)
         yield* freshWorktree(root, directory, cwd, input.upstream)
         const base = yield* dependencyBase(cwd, input.upstream, dependencies)
         const replayed = yield* replay(cwd, source, root)
-        if (!replayed.ok) return yield* Effect.fail(`${reason}; held revision does not replay: ${replayed.reason}`)
+        if (!replayed.ok) {
+          yield* git(root, "worktree", "remove", "--force", cwd)
+          return {unreplayable: `${reason}; held revision does not replay: ${replayed.reason}`}
+        }
         yield* git(cwd, "add", "--all")
-        if (yield* git(cwd, "diff", "--name-only", "--diff-filter=U")) return yield* Effect.fail(`${reason}; held revision leaves unresolved conflicts`)
+        if (yield* git(cwd, "diff", "--name-only", "--diff-filter=U")) {
+          yield* git(root, "worktree", "remove", "--force", cwd)
+          return {unreplayable: `${reason}; held revision leaves unresolved conflicts`}
+        }
         yield* commitPatch(cwd, source, patch.id)
         const candidate = yield* git(cwd, "rev-parse", "HEAD")
         yield* git(root, "worktree", "remove", "--force", cwd)
@@ -140,8 +158,12 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
         }), failure => console.error(`Retrying review cleanup for ${patch.id} after: ${failure}`)).pipe(writer.withPermits(1)))
       }
       const encoded = settlement.action === "accept" && accepted?._tag === "Success" ? accepted.success
-        : yield* step(`hold-${patch.id}`, hold(settlement.action === "accept" ? "unreachable" : settlement.reason).pipe(Effect.map(result => JSON.stringify(result))))
-      const result = decode(Result, JSON.parse(encoded))
+        : yield* step(`hold-${patch.id}`, hold(settlement.action === "accept" ? "unreachable" : settlement.reason).pipe(
+          Effect.flatMap((held): Effect.Effect<Settled, string> => held.unreplayable === undefined ? Effect.succeed(held) : leaveOut(held.unreplayable)),
+          Effect.map(result => JSON.stringify(result))))
+      const outcome = decode(Settled, JSON.parse(encoded))
+      if (isDropped(outcome)) return outcome
+      const result = outcome
       // The body re-reads the ref before pushing, so a retry after a 5xx that GitHub applied anyway
       // finds the candidate already there instead of failing the lease.
       if (input.patches.some(p => p.requires.includes(result.id))) yield* step(`expose-${result.id}`, retryTransient(Effect.gen(function*() {
@@ -154,12 +176,14 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
       }), failure => console.error(`Retrying staging push for ${result.id} after: ${failure}`)).pipe(writer.withPermits(1)))
       return result
   }))
+  const results = settled.filter((s): s is Result => !isDropped(s)), dropped = settled.filter(isDropped)
   return yield* step("assemble", Effect.gen(function*() {
     const cwd = join(directory, "integration")
     yield* freshWorktree(root, directory, cwd, input.upstream)
     const mapped: Array<{id: string, commit: string}> = []
     for (const patch of order(input.patches)) {
-      const result = results.find(r => r.id === patch.id)!
+      const result = results.find(r => r.id === patch.id)
+      if (!result) continue
       const merged = yield* replay(cwd, result.candidate, root)
       if (!merged.ok) return yield* Effect.fail(`Integration ${patch.id}: ${merged.reason}`)
       yield* commitPatch(cwd, result.candidate, patch.id)
@@ -177,7 +201,7 @@ const registered = Refresh.toLayer(({run}) => Effect.gen(function*() {
     yield* git(cwd, "update-ref", "refs/heads/nightly-candidate", candidate)
     yield* git(cwd, "bundle", "create", join(directory, "candidate.bundle"), "refs/heads/nightly-candidate", ...results.map(r => r.candidate), `^${input.upstream}`)
     yield* Effect.promise(() => Bun.write(join(directory, "input.json"), JSON.stringify(input)))
-    yield* Effect.promise(() => Bun.write(join(directory, "stack.json"), JSON.stringify({input, results, mapped, candidate}, null, 2)))
+    yield* Effect.promise(() => Bun.write(join(directory, "stack.json"), JSON.stringify({input, results, dropped, mapped, candidate}, null, 2)))
     yield* measureOutputs(directory)
     yield* git(root, "worktree", "remove", "--force", cwd)
     return candidate
