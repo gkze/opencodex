@@ -119,7 +119,9 @@ if (command === "prepare") {
     assert.equal(stack.candidate, candidate)
     assert.equal(stack.input.old, old)
     assert.equal(stack.input.upstream, upstream)
-    assert.equal(stack.results.length, stack.input.patches.length)
+    // Each patch either ships or was left out; accept.ts checked the full drop policy.
+    const dropped = stack.dropped ?? []
+    assert.equal(stack.results.length + dropped.length, stack.input.patches.length)
     const bundle = path.join(path.dirname(process.env.FORK_STACK_MANIFEST), "candidate.bundle")
     git("bundle", "verify", bundle)
     const identities = new Set()
@@ -127,6 +129,13 @@ if (command === "prepare") {
       assert.match(patch.branch, /^codex\/[a-z0-9/-]+$/)
       assert.ok(!identities.has(patch.branch), "Duplicate branch")
       identities.add(patch.branch)
+      if (dropped.some(entry => entry.id === patch.id)) {
+        assert.ok(patch.droppable === true, `Patch ${patch.id} is not droppable`)
+        assert.ok(!stack.results.some(result => result.id === patch.id), `Patch ${patch.id} is both shipped and dropped`)
+        // The branch keeps its pending source; the entry only guards it against moving mid-run.
+        updates.push({ref: `refs/heads/${patch.branch}`, old: patch.source, candidate: patch.source})
+        continue
+      }
       const matches = stack.results.filter(result => result.id === patch.id)
       assert.equal(matches.length, 1)
       const result = matches[0]
