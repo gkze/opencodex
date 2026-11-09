@@ -56,3 +56,14 @@ jobs:
           path: ${{ runner.temp }}/result/*
           if-no-files-found: error
           retention-days: 1
+      # The repair agent's tool calls and replies, kept especially when the worker fails: that is
+      # when a person needs them. It never holds file contents or credentials. A separate name keeps
+      # it out of the coordinator's exact-name result download.
+      - name: Keep the repair transcript
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ inputs.attempt }}-transcript
+          path: ${{ runner.temp }}/transcript/*
+          if-no-files-found: ignore
+          retention-days: 3
