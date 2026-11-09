@@ -5,6 +5,7 @@ import { decode, Stack, Registry, coverageFailure } from "./model.ts"
 import { git } from "./process.ts"
 import registryJson from "./registry.json"
 import { lastAccepted } from "./held.ts"
+import { carriedRoots, controlCommits } from "./controls.ts"
 const directory = resolve(process.argv[2]), root = process.cwd()
 const stack = decode(Stack, await Bun.file(join(directory, "stack.json")).json())
 const registry = decode(Registry, registryJson)
@@ -28,8 +29,19 @@ await Effect.runPromise(Effect.gen(function*() {
   yield* git(root, "merge-base", "--is-ancestor", stack.input.upstream, stack.candidate)
   if (yield* git(root, "rev-list", "--merges", `${stack.input.upstream}..${stack.candidate}`)) return yield* Effect.fail("Nonlinear integration")
   const commits = (yield* git(root, "rev-list", `${stack.input.upstream}..${stack.candidate}`)).split("\n").sort().join("\n")
-  if (commits !== stack.mapped.map(p => p.commit).sort().join("\n")) return yield* Effect.fail("Unmapped integration commits")
-  const controls = [".github", "scripts/fork"]
+  const carried = stack.controls ?? []
+  if (commits !== [...stack.mapped.map(p => p.commit), ...carried.map(c => c.commit)].sort().join("\n")) return yield* Effect.fail("Unmapped integration commits")
+  // Each carried control commit replays one of the previous tip's control commits, in order, and
+  // stays inside the control roots. A commit upstream made redundant may be absent.
+  const sources = yield* controlCommits(root, stack.input.old, stack.input.upstream)
+  let next = 0
+  for (const control of carried) {
+    next = sources.indexOf(control.source, next) + 1
+    if (next === 0) return yield* Effect.fail(`Control commit ${control.source.slice(0, 12)} is not a control commit of the previous tip, or is out of order`)
+    const outside = (yield* git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", control.commit)).split("\n").filter(path => path && !carriedRoots.some(r => path.startsWith(`${r}/`)))
+    if (outside.length) return yield* Effect.fail(`Carried control commit ${control.commit.slice(0, 12)} changes ${outside[0]}`)
+  }
+  const controls = carriedRoots
   const base = yield* git(root, "merge-base", stack.input.old, stack.input.upstream)
   for (const path of (yield* git(root, "diff", "--name-only", stack.input.old, stack.candidate, "--", ...controls)).split("\n").filter(Boolean)) {
     if ((yield* git(root, "diff", "--name-only", base, stack.input.old, "--", path)) || (yield* git(root, "diff", "--name-only", stack.input.upstream, stack.candidate, "--", path))) return yield* Effect.fail(`Control conflict: ${path}`)
