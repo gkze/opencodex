@@ -176,7 +176,7 @@ describe("dsh-account adapter buildRequest", () => {
     };
 
     await expect(invalidAdapter.buildRequest(parsed, incoming)).rejects.toThrow(
-      "DeepSeek Harness account token missing — import your account in Providers > DeepSeek Account (DSH)",
+      "DeepSeek Harness account token missing — sign in through Providers > DeepSeek Account (DSH)",
     );
   });
 });
@@ -188,7 +188,7 @@ describe("dsh-account formatErrorBody", () => {
   test("formats 401 with explicit ACCOUNT_TOKEN_INVALID explanation", () => {
     const formatted = adapter.formatErrorBody?.(401, headers, "Unauthorized");
     expect(formatted).toContain("ACCOUNT_TOKEN_INVALID");
-    expect(formatted).toContain("DeepSeek Harness Desktop");
+    expect(formatted).toContain("ocx login dsh-account");
   });
 
   test("forwards other statuses to base error formatting", () => {
