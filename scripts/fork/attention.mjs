@@ -1,8 +1,9 @@
 // Keep one issue, "Fork nightly needs attention", in step with what the nightly cannot fix alone.
 //
 // The watcher calls this after each finished refresh or publish (and after its own recovery).
-// The issue opens when a run failed for a reason recovery cannot fix, or when a patch branch has a
-// revision the published stack does not include (a held patch). It closes when neither is true.
+// The issue opens when a run failed for a reason recovery cannot fix, when a patch branch has a
+// revision the published stack does not include (a held patch), or when the published stack leaves
+// a registered patch out entirely (a dropped patch). It closes when none of those is true.
 // Everything is read again from GitHub and git each time, so a missed event costs nothing.
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
@@ -18,10 +19,11 @@ export const notesFor = annotations => {
 
 /** The body for the current problems, or null when there are none.
  * failure: null | {workflow, url, jobs: [{name, notes: string[]}]}
- * held: [{id, branch, head, shipped, review: null | sha, reason: null | string}] */
-export function compose({ owner, repository, refresh, failure, held }) {
-  if (!failure && !held.length) return null;
-  const state = JSON.stringify({ failure: failure && failure.jobs.map(job => job.name), held: held.map(patch => [patch.id, patch.head, patch.review]) });
+ * held: [{id, branch, head, shipped, review: null | sha, reason: null | string}]
+ * dropped: [{id, branch, head, reason: null | string}] */
+export function compose({ owner, repository, refresh, failure, held, dropped = [] }) {
+  if (!failure && !held.length && !dropped.length) return null;
+  const state = JSON.stringify({ failure: failure && failure.jobs.map(job => job.name), held: held.map(patch => [patch.id, patch.head, patch.review]), ...(dropped.length ? { dropped: dropped.map(patch => [patch.id, patch.head]) } : {}) });
   const lines = [
     `@${owner}, the fork nightly needs a person. The nightly keeps this issue up to date and closes it when the nightly is healthy again.`,
     '',
@@ -44,6 +46,14 @@ export function compose({ owner, repository, refresh, failure, held }) {
           `  git push --force-with-lease=refs/heads/${patch.branch}:${patch.head} origin ${patch.review}:refs/heads/${patch.branch}`,
           '  ```');
       } else lines.push(`  Rebase it onto upstream \`dev\` as one squashed commit, or see [the refresh log](${refresh}).`);
+    }
+    lines.push('');
+  }
+  if (dropped.length) {
+    lines.push('## Dropped patches', '', 'The published stack does not include these patches at all: neither the branch revision nor the last accepted one replays onto upstream.', '');
+    for (const patch of dropped) {
+      lines.push(`- \`${patch.id}\`: \`${patch.branch}\` is at ${patch.head.slice(0, 12)}.${patch.reason ? ` Last refresh: ${patch.reason}` : ''}`,
+        `  Rebase it onto upstream \`dev\` as one squashed commit, or see [the refresh log](${refresh}).`);
     }
     lines.push('');
   }
@@ -88,8 +98,8 @@ async function main() {
   const reasons = new Map();
   if (refresh) for (const job of await jobsOf(refresh.id, refresh.run_attempt)) {
     for (const note of await annotationsOf(job)) {
-      const held = note.match(/^Held ([a-z][a-z0-9-]*): (.*)$/s);
-      if (held) reasons.set(held[1], held[2]);
+      const noted = note.match(/^(?:Held|Dropped) ([a-z][a-z0-9-]*): (.*)$/s);
+      if (noted) reasons.set(noted[1], noted[2]);
     }
   }
 
@@ -97,16 +107,18 @@ async function main() {
   const tip = git('rev-parse', 'refs/remotes/origin/gkze/patches');
   const registry = JSON.parse(git('show', `${tip}:scripts/fork/orchestrator/registry.json`));
   const remote = new Map(git('ls-remote', 'origin', 'refs/heads/codex/*', 'refs/heads/review/*').split('\n').filter(Boolean).map(line => line.split('\t').reverse()));
-  const held = [];
+  const held = [], dropped = [];
   for (const patch of registry.patches) {
     const head = remote.get(`refs/heads/${patch.branch}`);
     const message = git('log', '-1', '--format=%B', `--grep=^Patch-Id: ${patch.id}$`, tip);
     const shipped = message.match(/^Patch-Source: ([0-9a-f]{40})$/m)?.[1];
+    // A registered patch with no commit in the published stack was left out of it.
+    if (head && !message) { dropped.push({ id: patch.id, branch: patch.branch, head, reason: reasons.get(patch.id) ?? null }); continue; }
     if (!head || !shipped || head === shipped) continue;
     held.push({ id: patch.id, branch: patch.branch, head, shipped, review: remote.get(`refs/heads/review/${patch.id}`) ?? null, reason: reasons.get(patch.id) ?? null });
   }
 
-  const body = compose({ owner: GITHUB_REPOSITORY_OWNER, repository: GITHUB_REPOSITORY, refresh: refresh?.html_url ?? run.html_url, failure, held });
+  const body = compose({ owner: GITHUB_REPOSITORY_OWNER, repository: GITHUB_REPOSITORY, refresh: refresh?.html_url ?? run.html_url, failure, held, dropped });
   // Newest first. Upstream's issue-quality workflow can close a bot-authored issue as "not
   // planned" when someone comments. That issue is reopened rather than replaced.
   const ours = (await api('issues?state=all&sort=created&direction=desc&per_page=100')).filter(issue => !issue.pull_request && issue.title === title && issue.user.login === 'github-actions[bot]');
