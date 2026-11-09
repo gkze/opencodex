@@ -1,3 +1,4 @@
+import type { FastModeDemand } from "../../types/fast-mode";
 import { applyChatDestinationPolicy, mistralNativeChatEffort } from "./destination-policy";
 import { protectGlmSummaryBudget } from "./summary-budget";
 import { openAIChatTransport, stripBracketedModelSuffix } from "./wire";
@@ -64,7 +65,7 @@ export function buildOpenAIChatPassthroughRequest(
   modelId: string,
   stream: boolean,
   fastPolicy: ResolvedFastPolicy = fastPolicyForModel(provider, modelId, undefined, "chat"),
-  fastMode?: boolean,
+  fastMode?: FastModeDemand,
   providerName?: string,
   replayScope?: OcxReasoningReplayScopeRef,
   maxSerializedBytes = TRANSLATOR_MAX_TURN_BYTES,

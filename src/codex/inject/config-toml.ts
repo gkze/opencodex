@@ -1,4 +1,5 @@
 // Holds INV-TOML-01 from structure/overview.md; keep the id here if this file is split or renamed.
+import type { FastModeDemand } from "../../types/fast-mode";
 import { existsSync, readFileSync } from "node:fs";
 import { contextCompatibleBaseLine } from "../context-compat";
 import { resolveEffectiveProjectModelProvider } from "../project-config-warnings";
@@ -554,6 +555,15 @@ export function normalizeServiceTier(content: string): string {
     if (line.structural) line.text = line.text.replace(/^(\s*service_tier\s*=\s*)["']priority["']\s*$/, '$1"fast"');
   }
   return bom + sourceText(lines);
+}
+
+/**
+ * Codex's `[features] fast_mode` is a boolean toggle, so an Ultra Fast demand still writes `true`:
+ * the flag says "the fast lane is on", while WHICH tier is sent is the proxy's decision, not this
+ * key's. `false` and `undefined` keep their existing meanings.
+ */
+export function fastModeFeatureFlag(fastMode: FastModeDemand | undefined): boolean | undefined {
+  return fastMode === undefined ? undefined : fastMode !== false;
 }
 
 export function ensureFastModeFeature(content: string, fastMode?: boolean): string {
