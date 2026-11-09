@@ -6,13 +6,16 @@ import { git, command, commandResult } from "./process.ts"
 import { replay, commitPatch } from "./replay.ts"
 import { dependencyBase } from "./dependencies.ts"
 import { limits } from "./limits.ts"
-import { repair } from "./agent.ts"
+import { repair, type TranscriptEntry } from "./agent.ts"
 import { isForkControl, applyControls, carriedRoots } from "./controls.ts"
 import { assertMergeDriver, configureMergeDriver } from "./merge-driver.ts"
 const Task = Schema.Struct({ attempt: Schema.String, control: Sha, upstream: Sha, patch: CapturedPatch, dependencies: Schema.Array(Sha) })
 const task = decode(Task, JSON.parse(process.env.PATCH_TASK ?? "null"))
 const trusted = process.cwd(), cwd = resolve("../candidate"), output = resolve(process.env.RUNNER_TEMP ?? "..", "result")
-mkdirSync(output, {recursive: true})
+// Uploaded whether or not the worker succeeds, apart from `output`, which the coordinator
+// downloads and decodes as a result.
+const transcripts = resolve(process.env.RUNNER_TEMP ?? "..", "transcript")
+mkdirSync(output, {recursive: true}); mkdirSync(transcripts, {recursive: true})
 const prepare = Effect.gen(function*() {
   if ((yield* git(trusted, "rev-parse", "HEAD")) !== task.control) return yield* Effect.fail("Control checkout mismatch")
   yield* command(["git", "clone", "--no-hardlinks", "--no-checkout", trusted, cwd], trusted)
@@ -48,9 +51,11 @@ const prepare = Effect.gen(function*() {
   // `adaptationMaxLines` keeps a repair from becoming a rewrite.
   const writable = readable.filter(path => !isForkControl(path))
   const instructions = yield* Effect.promise(() => Bun.file(join(trusted, "scripts/fork/orchestrator/engineering-discipline.md")).text())
-  let applied = yield* replay(cwd, task.patch.source, trusted)
+  const first = yield* replay(cwd, task.patch.source, trusted)
+  let applied: {ok: boolean, reason: string} = first
+  let conflicted: readonly string[] = first.ok ? [] : first.conflicts
   let adapted = false
-  let failure = applied.ok ? "" : applied.reason
+  let failure = first.reason
   for (let attempt = 1; !applied.ok && attempt <= limits.policy.agentAttempts; attempt++) {
     if (attempt > 1) {
       // A half-repaired tree must not compound: replaying the patch recreates the same conflicts.
@@ -58,13 +63,18 @@ const prepare = Effect.gen(function*() {
       yield* command(["git", "clean", "-fd"], cwd)
       const again = yield* replay(cwd, task.patch.source, trusted)
       if (again.ok) { applied = again; break }
-      failure = again.reason
+      // The fresh replay only restates the conflicts. What the last attempt got wrong is the part
+      // the next one can learn from, so it is carried forward instead of overwritten.
+      failure = `${again.reason}\nThe previous repair attempt did not succeed: ${failure}`
+      conflicted = again.conflicts
     }
-    const report = yield* repair(cwd, task.patch, failure, instructions, readable, writable)
+    const transcript: TranscriptEntry[] = []
+    const report = yield* repair(cwd, task.patch, failure, instructions, readable, writable, conflicted, transcript).pipe(
+      Effect.ensuring(Effect.promise(() => Bun.write(join(transcripts, `repair-${attempt}.json`), JSON.stringify({attempt: task.attempt, patch: task.patch.id, repair: attempt, transcript}, null, 2)))))
     adapted = true
     // A silent no-op used to surface as "left conflict markers", which reads like a failed merge
     // rather than an agent that never touched the file. Keep the two findings distinct.
-    console.error(`Repair attempt ${attempt} wrote ${report.writes} file(s)${report.files.length ? `: ${report.files.join(", ")}` : ""}`)
+    console.error(`Repair attempt ${attempt} wrote ${report.writes} file(s)${report.files.length ? `: ${report.files.join(", ")}` : ""}; ${report.remaining} conflict hunk(s) remain`)
     if (report.writes === 0) { failure = "Repair produced no edits"; applied = {ok: false as const, reason: failure}; continue }
     yield* git(cwd, "add", "--all")
     const conflicts = yield* git(cwd, "diff", "--name-only", "--diff-filter=U")
