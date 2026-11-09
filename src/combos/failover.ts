@@ -1,5 +1,5 @@
 import { parseResetCooldownMs } from "../codex/routing";
-import { classifyError, isCyberPolicyCode } from "../lib/errors";
+import { classifyError, isCyberPolicyCode, isProviderAccountSuspension } from "../lib/errors";
 import { isNonReplayableUpstreamCode } from "../lib/upstream-retry";
 import { isAnthropicBillingFailure } from "../providers/anthropic-billing-refusal";
 import { isKiroAccountProfileRefusal } from "../adapters/kiro-refusal";
@@ -667,9 +667,10 @@ export function comboFailureCooldownScope(
     || isResponseFormatCapabilityRefusal(status, message, options?.code)
   ) return "none";
   if (isProviderScopedQuotaCap(status, message, options?.code)) return "provider";
-  // A rejected or unpaid credential is provider-wide evidence: every target that routes
-  // through the same provider row carries the same key and will fail identically.
+  // A rejected, unpaid, or suspended credential is provider-wide evidence: every target that
+  // routes through the same provider row carries the same key and will fail identically.
   if (status === 401 || status === 402 || status === 403) return "provider";
+  if (isProviderAccountSuspension(status, message)) return "provider";
   if (PROVIDER_SCOPED_FAILURE_CODES.has(code)) return "provider";
   return "target";
 }
@@ -897,7 +898,9 @@ export function comboFailureDecision(
   // structured code: the body can quote prompt or parameter text back (#7625).
   if (error.code === "insufficient_quota" && (status === 400 || status === 422)) return "stop";
   // 402 (payment required) and 425 (too early) are provider-state signals, not verdicts about
-  // the request: another combo target can still serve it.
+  // the request: another combo target can still serve it. A provider's account suspension (a
+  // 412 with its own wording) hops through `insufficient_quota` below; a bare 412 stays a
+  // precondition verdict.
   if ([401, 402, 403, 404, 408, 425, 429].includes(status) || status >= 500) return "hop";
   if ([
     "permission_denied",
