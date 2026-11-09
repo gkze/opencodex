@@ -26,6 +26,7 @@
       "branch": "codex/patch/suspended-account-failover",
       "requires": [],
       "sensitive": false,
+      "droppable": true,
       "tests": [
         "tests/routing/router-combo-failover-classification.test.ts"
       ],
@@ -36,6 +37,7 @@
       "branch": "codex/patch/fx-client-export",
       "requires": [],
       "sensitive": false,
+      "droppable": true,
       "tests": [
         "gui/tests/client-config-panel.test.tsx",
         "gui/tests/fr-localization.test.ts",
@@ -56,6 +58,7 @@
       "branch": "codex/patch/provider-alias-labels",
       "requires": [],
       "sensitive": false,
+      "droppable": true,
       "tests": [
         "tests/providers/provider-model-aliases.test.ts"
       ],
@@ -66,6 +69,7 @@
       "branch": "codex/patch/cerebras-qwen-template",
       "requires": [],
       "sensitive": false,
+      "droppable": true,
       "tests": [
         "tests/adapters/openai/openai-chat-qwen38-leading-system.test.ts"
       ],
@@ -86,6 +90,7 @@
       "branch": "codex/launchd-baked-command",
       "requires": [],
       "sensitive": true,
+      "droppable": true,
       "tests": [
         "tests/service/launchd-repair.test.ts",
         "tests/service/service.test.ts"
@@ -97,6 +102,7 @@
       "branch": "codex/patch/provider-tier-contracts",
       "requires": [],
       "sensitive": false,
+      "droppable": true,
       "tests": [
         "tests/claude-integration/claude-management-api.test.ts",
         "tests/clients/link-ultrafast-settings.test.ts",
@@ -116,6 +122,7 @@
       "branch": "codex/patch/desktop-native-appearance",
       "requires": [],
       "sensitive": false,
+      "droppable": true,
       "tests": [
         "app/Sources/WindowControlsTests/main.swift",
         "gui/tests/app-titlebar.test.tsx"
@@ -139,6 +146,7 @@
       "branch": "codex/patch/deepseek-browser-auth",
       "requires": [],
       "sensitive": true,
+      "droppable": true,
       "tests": [
         "tests/adapters/dsh-account-adapter.test.ts",
         "tests/oauth/dsh-browser.test.ts",
