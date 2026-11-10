@@ -426,6 +426,22 @@ export function isUpstreamResetReplayRefusedMessage(text: string): boolean {
   );
 }
 
+/**
+ * A provider's own report that the ACCOUNT is suspended (Fireworks, 2026-09-24: HTTP 412 with a
+ * null code and "Account <id> is suspended, possibly due to reaching the monthly spending limit
+ * or failure to pay past invoices."). This is account state, so another combo target can serve
+ * the request.
+ *
+ * Both halves are required. A bare 412 is an ordinary precondition failure and keeps its generic
+ * handling, and the wording alone proves nothing on any other status: a 400/422 body can echo
+ * prompt text back (#7625).
+ */
+const ACCOUNT_SUSPENDED_PATTERN = /\baccount\s+\S{1,128}\s+is suspended\b/i;
+
+export function isProviderAccountSuspension(status: number | undefined, message: string): boolean {
+  return status === 412 && message.length <= 16_384 && ACCOUNT_SUSPENDED_PATTERN.test(message);
+}
+
 export function classifyError(status: number, type: string, message: string): OcxErrorPayload {
   const text = message.toLowerCase();
   if (type === SPEND_LEDGER_STORAGE_UNAVAILABLE_CODE) {
@@ -505,7 +521,8 @@ export function classifyError(status: number, type: string, message: string): Oc
     text.includes("account quota exceeded") ||
     text.includes("monthly quota exceeded") ||
     text.includes("weekly quota exceeded") ||
-    text.includes("daily quota exceeded")
+    text.includes("daily quota exceeded") ||
+    isProviderAccountSuspension(status, message)
   ) {
     return { message, type: "insufficient_quota", code: "insufficient_quota" };
   }
