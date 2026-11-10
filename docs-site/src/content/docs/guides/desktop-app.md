@@ -229,6 +229,10 @@ its Install button is disabled while diagnostics are stale. On Linux without a t
 Normal desktop updates replace the bundled CLI with the fixed startup probe. No local
 patch needs to be preserved across an update.
 
+## Appearance
+
+The dashboard’s Light, Dark, and System theme selections also apply to the native desktop window controls. System clears the app override and follows the operating system’s appearance.
+
 ## Zoom
 
 On macOS and Linux, Cmd (macOS) or Ctrl (Linux) with `+`, `-` and `0`, or Ctrl with the mouse wheel,
