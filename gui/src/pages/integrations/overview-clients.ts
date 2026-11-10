@@ -165,6 +165,7 @@ const FILE_LABEL_KEY: Record<FileIntegrationClientId, TKey> = {
   "workbuddy": "integrations.tab.workbuddy",
   "workbuddy-ai": "integrations.tab.workbuddyAi",
   t3code: "integrations.tab.t3code",
+  fx: "integrations.tab.fx",
 };
 
 /** A file client's block is in the file for both `current` and `stale`. */
