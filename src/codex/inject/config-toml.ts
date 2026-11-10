@@ -556,6 +556,7 @@ export function normalizeServiceTier(content: string): string {
   return bom + sourceText(lines);
 }
 
+
 export function ensureFastModeFeature(content: string, fastMode?: boolean): string {
   // Tri-state fast mode (see OcxConfig.fastMode): true forces `fast_mode = true`,
   // false forces `fast_mode = false`, and undefined leaves the user's config
