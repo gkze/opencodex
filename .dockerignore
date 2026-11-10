@@ -23,6 +23,8 @@
 scripts/**
 !scripts/model-metadata.source.json
 !scripts/generate-compatibility-version.ts
+# The root `prepare` hook runs during `bun install`; it is a no-op in the image build.
+!scripts/git-install-prepare.ts
 
 !docker/
 !docker/**

@@ -58,6 +58,24 @@ npm install -g --allow-scripts=bun @bitkyc08/opencodex@preview
 ocx update --tag preview
 ```
 
+## Bu çatalı Git'ten kurma
+
+Bu çatal, sürüm yayımlamadan Bun ile Git kurulumlarını destekler. Bun ve Git kuruluyken
+`<commit>` değerini çalıştırmak istediğiniz commit'in tam SHA'sı ile değiştirin:
+
+```bash
+bun add --global --trust 'git+https://github.com/gkze/opencodex.git#<commit>'
+```
+
+Paket bir Git bağımlılığı olarak kurulduğunda `prepare` kancası kontrol panelini derler ve paket
+meta verilerini üretir; bir kaynak çalışma kopyasında kanca hiçbir şey yapmaz. `--trust`, bu
+bağımlılığın derleme betiklerine açıkça izin verir; yalnızca güvendiğiniz kaynakları kullanın.
+Proxy, TypeScript'i doğrudan Bun ile çalıştırır. Derleme hataları kurulumu başarısız kılar.
+Paketini değiştirmeden önce mevcut hizmeti durdurun, ardından yeniden başlatıp `ocx ready --json`
+çıktısını kontrol edin. Aynı sürümün eski kurulumlarından kaçınmak için Git kaynağını eklemeden önce
+eski genel paketi `bun remove --global @bitkyc08/opencodex` ile kaldırın. Çatal güncellemeleri
+için sabitlenmiş Git komutunu kullanın; `ocx update` yukarı akış sürümlerini izler.
+
 ## Kaynaktan çalıştırma
 
 opencodex'in kendisi üzerinde geliştirmeler yapmak için:
