@@ -90,6 +90,24 @@ npm install -g --allow-scripts=bun @bitkyc08/opencodex@preview
 ocx update --tag preview
 ```
 
+## Git에서 이 포크 설치
+
+이 포크는 릴리스를 게시하지 않고도 Bun Git 설치를 지원합니다. Bun과 Git을 설치한 상태에서
+`<commit>`을 실행하려는 커밋의 전체 SHA로 바꾸세요.
+
+```bash
+bun add --global --trust 'git+https://github.com/gkze/opencodex.git#<commit>'
+```
+
+패키지가 Git 의존성으로 설치되면 `prepare` 훅이 대시보드를 빌드하고 패키지 메타데이터를
+생성합니다. 소스 체크아웃에서는 훅이 아무것도 하지 않습니다. `--trust`는 이 의존성의 빌드
+스크립트를 명시적으로 허용하므로 신뢰하는 소스에만 사용하세요. 프록시는 Bun으로 TypeScript를
+직접 실행합니다. 빌드가 실패하면 설치도 실패합니다. 패키지를 교체하기 전에 기존 서비스를
+중지한 다음 다시 시작하고 `ocx ready --json`을 확인하세요. 같은 버전의 오래된 설치가 남지 않도록
+Git 소스를 추가하기 전에 `bun remove --global @bitkyc08/opencodex`로 이전 전역 패키지를
+제거하세요. 포크 업데이트에는 고정된 Git 명령을 사용하세요. `ocx update`는 업스트림 릴리스를
+따릅니다.
+
 ## 소스에서 실행
 
 opencodex 자체를 직접 수정하며 작업하려면:
