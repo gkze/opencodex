@@ -850,6 +850,8 @@ starts then follow the launcher; macOS repair writes the new package and home pa
 definition.
 On macOS, install and repair refuse a home or proxy environment value that contains a control
 character an XML plist cannot hold (for example U+0001); the error names the variable to fix.
+macOS start and status checks expect that package pair even when older install metadata still
+records a launcher path; an old launcher-based job needs repair before it is recognized as current.
 An already-running proxy is not replaced by an external upgrade: when the installed CLI is newer
 than the running proxy, run `ocx service restart` so the new build serves. On macOS, `repair` is not
 enough there: the definition did not change, and a repair that changes nothing reloads nothing.
