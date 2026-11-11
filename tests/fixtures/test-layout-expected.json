@@ -1666,5 +1666,5 @@
   "link-child-ops-engine.test.ts": "clients",
   "link-child-ops-runners.test.ts": "clients",
   "link-child-update-launcher.test.ts": "clients",
-  "cli-link-child-ops.test.ts": "cli"
+  "cli-link-child-ops.test.ts": "cli","dsh-browser.test.ts": "oauth"
 }
