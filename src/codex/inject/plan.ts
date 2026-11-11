@@ -9,6 +9,7 @@
  * post-transition bytes is what keeps the committed file from re-enabling the
  * flag the reconcile just turned off.
  */
+import { fastModeFeatureFlag } from "../../types/fast-mode";
 import { existsSync, readFileSync } from "node:fs";
 import { websocketsEnabled } from "../../config";
 import {
@@ -209,7 +210,7 @@ export function deriveCodexInjectionPlan(
   // A root `model_context_window` is never written by OpenCodex, so it is the user's choice and
   // survives injection (#7425). Codex applies it to every model ahead of the catalog's windows.
   content = normalizeServiceTier(content);
-  content = ensureFastModeFeature(content, config?.fastMode);
+  content = ensureFastModeFeature(content, fastModeFeatureFlag(config?.fastMode));
   // Codex's own web-search switch follows the sidecar's master switch. While the sidecar is off,
   // the client must not keep offering a native `web_search` tool that an MCP search server is
   // meant to replace. The journal carries both halves of an earlier pass — the value we wrote,
@@ -345,7 +346,7 @@ export function deriveCodexInjectionPlan(
       routingTarget,
       catalogPath,
       websocketsForRoutingTarget(config, routingTarget),
-      config?.fastMode,
+      fastModeFeatureFlag(config?.fastMode),
       config?.codexProviderDisplayName,
     ),
   );

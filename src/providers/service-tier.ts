@@ -10,6 +10,7 @@ import {
 } from "./registry";
 import {
   cloneFastWire,
+  decideTier,
   resolveFastPolicy,
   resolveProviderAuthTransport,
   type FastPolicyAuthority,
@@ -30,6 +31,8 @@ type ServiceTierCapabilityProvider = Pick<
   | "adapter"
   | "supportsServiceTier"
   | "modelSupportsServiceTier"
+  | "supportsUltraFast"
+  | "modelSupportsUltraFast"
   | "modelAdapters"
   | "baseUrl"
   | "authMode"
@@ -86,6 +89,10 @@ function buildFastPolicyAuthority(
     && registryModelServiceTierCapabilityApplies(registry, capabilityProvider)
     ? registry.modelSupportsServiceTier
     : undefined;
+  const registryModelUltraFastCapabilities = registry
+    && registryModelServiceTierCapabilityApplies(registry, capabilityProvider)
+    ? registry.modelSupportsUltraFast
+    : undefined;
   const fastSwitchOff = providerFastSwitchOff(providerName, {
     fastEnabled: capabilityProvider.fastEnabled ?? provider.fastEnabled,
   });
@@ -94,6 +101,11 @@ function buildFastPolicyAuthority(
     : capabilityProvider.supportsServiceTier
       ?? keyAuthDefaults?.supportsServiceTier
       ?? registry?.supportsServiceTier;
+  // Ultra Fast follows the same authority chain one tier up. `fastEnabled: false` denies the whole
+  // fast lane, so it closes Ultra Fast as well; the wire spelling is a separate gate in decideTier.
+  const providerUltraFastCapability = fastSwitchOff
+    ? false
+    : capabilityProvider.supportsUltraFast ?? registry?.supportsUltraFast;
   const authority: FastPolicyAuthority = Object.freeze({
     providerAdapter: provider.adapter,
     providerAuthMode: provider.authMode ?? registry?.authKind ?? "key",
@@ -108,10 +120,18 @@ function buildFastPolicyAuthority(
     authTransport,
     capability: Object.freeze({
       ...(providerCapability !== undefined ? { provider: providerCapability } : {}),
+      ...(providerUltraFastCapability !== undefined
+        ? { providerUltraFast: providerUltraFastCapability }
+        : {}),
       models: Object.freeze({
         ...(registryModelCapabilities ?? {}),
         ...(keyAuthDefaults?.modelSupportsServiceTier ?? {}),
         ...(capabilityProvider.modelSupportsServiceTier ?? {}),
+      }),
+      modelsUltraFast: Object.freeze({
+        ...(registryModelUltraFastCapabilities ?? {}),
+        ...(keyAuthDefaults?.modelSupportsUltraFast ?? {}),
+        ...(capabilityProvider.modelSupportsUltraFast ?? {}),
       }),
       ...(provider.chatServiceTier !== undefined
         ? { chatServiceTier: provider.chatServiceTier }
@@ -268,6 +288,20 @@ export function serviceTierSupportForModel(
 ): boolean | undefined {
   const policy = fastPolicyForModel(provider, modelId, providerName, inbound);
   return serviceTierSupportFromPolicy(policy);
+}
+
+/**
+ * Whether a resolved provider/model policy can be SET to Ultra Fast; every catalog surface that
+ * publishes the tier (`model-hints`, `routed-gather`) calls this on its `fastPolicyForModel`
+ * result. Settable means the route DECLARES the capability (`true`, not merely unclassified,
+ * exactly like canonical Fast injection) and the resolved wire publishes a spelling for it, which
+ * is `decideTier`'s own `set` verdict. Capability without a spelling has nothing to send, and a
+ * spelling without capability is not evidence.
+ */
+export function ultraFastSettableFromPolicy(
+  policy: ResolvedFastPolicy,
+): boolean {
+  return decideTier(policy, "ultrafast", undefined).kind === "set";
 }
 
 /** Compatibility projection shared by catalog, routing, and request logging. */

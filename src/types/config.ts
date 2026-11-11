@@ -1,3 +1,4 @@
+import type { FastModeDemand } from "./fast-mode";
 import type { OcxProviderConfig } from "./provider";
 import type { CodexAccount } from "./accounts";
 import type { AnthropicAccountPoolConfig, OcxAccountPoolRotationStrategy } from "./anthropic-account-pool";
@@ -792,12 +793,8 @@ export interface OcxConfig {
    * would silently hide every future model behind a switch nobody knew to flip.
    */
   grokExcludedModels?: string[];
-  /**
-   * When true, OpenAI-routed requests include `service_tier: "priority"` (fast inference).
-   * When false, service_tier is stripped so requests use default speed.
-   * Undefined = passthrough (don't modify what the client sends).
-   */
-  fastMode?: boolean;
+  /** Fast-lane demand for OpenAI-routed requests; see `FastModeDemand`. */
+  fastMode?: FastModeDemand;
   /**
    * Windows/macOS SSE passthrough stream shape (#314 mitigation).
    * On Windows, "auto" (default) selects eager relay only on a runtime proven
