@@ -1,3 +1,4 @@
+import type { FastModeDemand } from "../../../src/types/fast-mode";
 import type { AnthropicPoolOptions, SidecarOverride } from "./claude-manual-env";
 
 export interface MapRow {
@@ -52,7 +53,8 @@ export interface ClaudeCodeState {
   detectionScope?: string;
   autoConnectSupported: boolean;
   systemEnv: boolean;
-  fastMode: boolean | null;
+  /** `null` is unset (passthrough); otherwise the proxy's fast-lane demand, Ultra Fast included. */
+  fastMode: FastModeDemand | null;
   /** Legacy config override (no GUI control anymore) — still disables auto-context when hand-set. */
   maxContextTokens: number | null;
   autoContext: boolean;
@@ -113,4 +115,20 @@ export function formatCompactWindow(value: number, locale = "en"): string {
  */
 export function normalizeContextAccounting(value: unknown): "1m" | "200k" {
   return value === "200k" ? "200k" : "1m";
+}
+
+/** The Fast Mode picker's options; each maps one-to-one onto a stored `fastMode` value. */
+export type FastModeChoice = "auto" | "on" | "ultrafast" | "off";
+
+export function fastModeChoice(fastMode: FastModeDemand | null): FastModeChoice {
+  if (fastMode === null) return "auto";
+  if (fastMode === "ultrafast") return "ultrafast";
+  return fastMode ? "on" : "off";
+}
+
+export function fastModeFromChoice(choice: string): FastModeDemand | null {
+  if (choice === "ultrafast") return "ultrafast";
+  if (choice === "on") return true;
+  if (choice === "off") return false;
+  return null;
 }
