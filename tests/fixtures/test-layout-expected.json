@@ -1665,5 +1665,5 @@
   "link-child-ops-engine.test.ts": "clients",
   "link-child-ops-runners.test.ts": "clients",
   "link-child-update-launcher.test.ts": "clients",
-  "cli-link-child-ops.test.ts": "cli","git-install-prepare.test.ts": "ci-workflows","fx-client.test.ts": "clients","link-ultrafast-settings.test.ts": "clients","catalog-ultrafast-cache.test.ts": "codex-integration","fastwire-ultrafast-regressions.test.ts": "routing"
+  "cli-link-child-ops.test.ts": "cli","git-install-prepare.test.ts": "ci-workflows","fx-client.test.ts": "clients","link-ultrafast-settings.test.ts": "clients","catalog-ultrafast-cache.test.ts": "codex-integration","fastwire-ultrafast-regressions.test.ts": "routing","fork-updates.test.ts": "update","fork-nightly.test.ts": "ci-workflows"
 }
