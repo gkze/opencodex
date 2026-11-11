@@ -49,7 +49,7 @@ import { ThemeSwitch, type ThemeMode } from "./components/theme-switch";
 import { ProxyControls } from "./components/ui-v2/proxy-controls";
 import { BrandMark } from "./components/ui-v2/brand-mark";
 import { MainTopStrip, SidebarTopStrip } from "./components/app-titlebar";
-import { watchMacTitlebarMetrics, windowChromeHandlers } from "./lib/window-chrome";
+import { syncWindowTheme, watchMacTitlebarMetrics, windowChromeHandlers } from "./lib/window-chrome";
 
 type Theme = ThemeMode;
 
@@ -316,6 +316,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    void syncWindowTheme(theme);
     const el = document.documentElement;
     if (theme === "system") { el.removeAttribute("data-theme"); localStorage.removeItem(THEME_KEY); }
     else { el.setAttribute("data-theme", theme); localStorage.setItem(THEME_KEY, theme); }

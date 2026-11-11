@@ -57,8 +57,6 @@ mod runtime_stop;
 mod sidecar;
 mod startup;
 mod supervisor;
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-mod traffic_lights;
 mod tray;
 mod tray_availability;
 mod updater;
@@ -403,22 +401,19 @@ pub fn run() {
                         }
                     });
             // The integrated title bar: macOS keeps its traffic lights but draws them over the
-            // webview, so the dashboard's sidebar top strip reserves the space they land in
-            // (`app-titlebar.css` keeps it aligned with this position) and the strips move or
-            // zoom the window through `plugin:window` commands granted by
-            // `capabilities/dashboard-titlebar.json`. Windows and Linux keep the native title
-            // bar — the shell ships no min/max/close widgets of its own — while the sidebar-top
-            // layout applies unchanged. The vertical inset depends on the macOS release, whose
-            // button metrics changed in 26 (`traffic_lights.rs`).
+            // webview. Their placement is owned by the AppKit observer in
+            // `app/Sources/NativeTray/WindowControls.swift` (installed by `window::configure`;
+            // `traffic_light_position` stays unset so Wry cannot overwrite it), and the
+            // dashboard's sidebar top strip reserves the matching inset in
+            // `gui/src/components/app-titlebar.css`. The strips move or zoom the window through
+            // `plugin:window` commands granted by `capabilities/dashboard-titlebar.json`. Windows
+            // and Linux keep the native title bar — the shell ships no min/max/close widgets of
+            // its own — while the sidebar-top layout applies unchanged.
             #[cfg(target_os = "macos")]
             let builder = builder
                 .title_bar_style(tauri::TitleBarStyle::Overlay)
                 .hidden_title(true)
-                .min_inner_size(360.0, 320.0)
-                .traffic_light_position(tauri::Position::Logical(tauri::LogicalPosition::new(
-                    traffic_lights::X,
-                    traffic_lights::y_for(traffic_lights::macos_major()),
-                )));
+                .min_inner_size(360.0, 320.0);
             let window = builder.build()?;
             window::configure(&window);
             if startup::LaunchOrigin::detect() == startup::LaunchOrigin::User {
