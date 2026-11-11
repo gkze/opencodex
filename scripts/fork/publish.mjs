@@ -2,6 +2,7 @@ import { pruneNightlyReleases, recordNightlyPublication } from './retention.mjs'
 import { assetTargets, assetContract } from './asset-contract.mjs';
 import { verifyAssets } from './verify-assets.mjs';
 import { assertForkRemote } from "./remote.mjs";
+import { runIsolated } from './run.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -45,11 +46,11 @@ if (existing.status === 0) {
   assert.equal(JSON.parse(existing.stdout), integrity, 'Existing package bytes differ');
 } else {
   assert.equal(JSON.parse(existing.stdout).error?.code, 'E404', 'Cannot inspect package');
-  execFileSync('npm', ['publish', file, '--registry', registry, '--tag', 'candidate', '--access', 'public', '--ignore-scripts'], { stdio: 'inherit' });
+  runIsolated('npm', ['publish', file, '--registry', registry, '--tag', 'candidate', '--access', 'public', '--ignore-scripts']);
 }
 // Publication is recoverable: immutable package first, then guarded promotion,
 // then release visibility, and finally the consumer dist-tag.
-execFileSync('node', ['scripts/fork/nightly.mjs', 'promote'], { stdio: 'inherit' });
+runIsolated('node', ['scripts/fork/nightly.mjs', 'promote']);
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim();
 const remoteTag = git('ls-remote', 'origin', `refs/tags/${manifest.tag}`).split('\t')[0];
 if (remoteTag) assert.equal(remoteTag, manifest.source, 'Release tag points at other source');
@@ -65,10 +66,10 @@ const held = stack ? stack.results.filter(result => result.hold).map(result => r
 const dropped = stack ? (stack.dropped ?? []).map(entry => entry.id) : [];
 const heldNote = (held.length ? ` Held at its previous accepted revision: ${held.join(', ')}.` : '')
   + (dropped.length ? ` Left out of this build: ${dropped.join(', ')}.` : '');
-if (release.status !== 0) execFileSync('gh', ['release', 'create', manifest.tag, '--repo', 'gkze/opencodex', '--verify-tag', '--draft', '--prerelease', '--title', `OpenCodex ${manifest.version}`, '--notes', `CLI package, five standalone builds, and desktop bundles. Source: ${manifest.source}. Manual installation only; upstream self-update is disabled. macOS is ad-hoc signed without notarization; Windows is unsigned. These are personal builds, not official signed releases.${heldNote}`], { stdio: 'inherit' });
+if (release.status !== 0) runIsolated('gh', ['release', 'create', manifest.tag, '--repo', 'gkze/opencodex', '--verify-tag', '--draft', '--prerelease', '--title', `OpenCodex ${manifest.version}`, '--notes', `CLI package, five standalone builds, and desktop bundles. Source: ${manifest.source}. Manual installation only; upstream self-update is disabled. macOS is ad-hoc signed without notarization; Windows is unsigned. These are personal builds, not official signed releases.${heldNote}`]);
 const alreadyVisible = release.status === 0 && !JSON.parse(release.stdout).isDraft;
 if (!alreadyVisible) {
-  execFileSync('gh', ['release', 'upload', manifest.tag, ...releaseNames.map(name => path.join(directory, name)), '--clobber', '--repo', 'gkze/opencodex'], { stdio: 'inherit' });
+  runIsolated('gh', ['release', 'upload', manifest.tag, ...releaseNames.map(name => path.join(directory, name)), '--clobber', '--repo', 'gkze/opencodex']);
 }
 // Verify every asset's server-computed digest before making a draft visible or
 // moving the consumer tag. A retry of a visible release never replaces its bytes.
@@ -83,10 +84,10 @@ for (const name of releaseNames) {
   const expected = `sha256-${createHash('sha256').update(readFileSync(path.join(directory, name))).digest('hex')}`;
   assert.equal(asset.digest?.replace('sha256:', 'sha256-'), expected, `Published asset digest differs: ${name}`);
 }
-if (!alreadyVisible) execFileSync('gh', ['release', 'edit', manifest.tag, '--draft=false', '--prerelease', '--repo', 'gkze/opencodex'], { stdio: 'inherit' });
+if (!alreadyVisible) runIsolated('gh', ['release', 'edit', manifest.tag, '--draft=false', '--prerelease', '--repo', 'gkze/opencodex']);
 const visible = JSON.parse(execFileSync('gh', ['release', 'view', manifest.tag, '--repo', 'gkze/opencodex', '--json', 'isDraft'], { encoding: 'utf8' }));
 assert.equal(visible.isDraft, false);
-execFileSync('npm', ['dist-tag', 'add', target, 'nightly', '--registry', registry], { stdio: 'inherit' });
+runIsolated('npm', ['dist-tag', 'add', target, 'nightly', '--registry', registry]);
 assert.equal(execFileSync('npm', ['view', `${pkg.name}@nightly`, 'version', '--registry', registry], { encoding: 'utf8' }).trim(), manifest.version);
 // Cleanup is last: a failed build or publication must never consume rollback releases.
 recordNightlyPublication(identity.databaseId, manifest.tag);
