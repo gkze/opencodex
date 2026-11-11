@@ -213,6 +213,8 @@ jobs:
           path: ${{ runner.temp }}/verified-stack
       - uses: ./.github/actions/setup-project-bun
       - run: bun install --cwd scripts/fork/orchestrator --frozen-lockfile --ignore-scripts
+      # publish.mjs keeps its children off this step's descriptors; prove that before relying on it.
+      - run: node --test scripts/fork/run.test.js
       - name: Verify publication artifact budget
         env:
           GH_TOKEN: ${{ github.token }}
