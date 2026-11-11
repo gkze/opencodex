@@ -730,9 +730,10 @@
       "path": "providers/dsh-account.md",
       "tier": 4,
       "title": "DeepSeek Harness Account Provider",
-      "scope": "Explicit read-only DSH credential import, verified account identity, disabled refresh, pinned inference and probe destinations, and authoritative-empty quota.",
+      "scope": "Explicit read-only DSH credential import with PKCE browser sign-in fallback, verified account identity, disabled refresh, pinned inference and probe destinations, and authoritative-empty quota.",
       "documents": [
         "src/oauth/dsh.ts",
+        "src/oauth/dsh-browser.ts",
         "src/adapters/dsh-account.ts",
         "src/providers/dsh-account-destination.ts",
         "src/providers/quota/dsh-account.ts"
