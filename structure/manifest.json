@@ -1484,6 +1484,15 @@
         "package.json",
         "scripts/git-install-prepare.ts"
       ]
+    },
+    {
+      "path": "clients/fx.md",
+      "tier": 5,
+      "title": "fx Client Integration",
+      "scope": "fx private-profile custom connection ownership, loopback-only authentication and settings-size limits.",
+      "documents": [
+        "src/clients/"
+      ]
     }
   ],
   "contracts": {
