@@ -172,6 +172,7 @@ Background service, docs, release, and design discipline.
 | [`ops/cross-platform-ci.md`](ops/cross-platform-ci.md) | Test lanes, platform coverage, aggregate gating, and release CI proof. |
 | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) | Test-runner home, case-scoped lifecycle teardown, and Bun test lock generation ownership. |
 | [`ops/source-archives.md`](ops/source-archives.md) | Compatibility manifest hashing for source archives. |
+| [`ops/git-installs.md`](ops/git-installs.md) | Trusted Git installation lifecycle and source archive prerequisite. |
 
 ## Which doc describes which source
 
@@ -210,9 +211,11 @@ A source area can be described by more than one doc, because these docs are orga
 | `gui/src/components/ModelPriceDialog.tsx` | [`pricing.md`](pricing.md) |
 | `gui/src/hooks/useProviderAccountPools.ts` | [`account-auto-pause.md`](account-auto-pause.md) |
 | `native/ocx-child/` | [`remote-link.md`](remote-link.md) |
+| `package.json` | [`ops/git-installs.md`](ops/git-installs.md) |
 | `scripts/` | [`overview.md`](overview.md)<br>[`clients/client-support-matrix.md`](clients/client-support-matrix.md)<br>[`ops/docs-and-release.md`](ops/docs-and-release.md) |
 | `scripts/generate-compatibility-version.ts` | [`ops/source-archives.md`](ops/source-archives.md) |
 | `scripts/generate-ocx-skill-surface.ts` | [`cli-management.md`](cli-management.md) |
+| `scripts/git-install-prepare.ts` | [`ops/git-installs.md`](ops/git-installs.md) |
 | `scripts/test-run-lock-gate.ts` | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) |
 | `scripts/test-run-lock.ts` | [`ops/test-sandbox-cleanup.md`](ops/test-sandbox-cleanup.md) |
 | `services/telemetry-collector/` | [`telemetry.md`](telemetry.md) |
