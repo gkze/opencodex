@@ -94,6 +94,7 @@ const SEMANTICS_KEY: Record<FileIntegrationClientId, TKey> = {
   "workbuddy": "integrations.semantics.workbuddy",
   "workbuddy-ai": "integrations.semantics.workbuddyAi",
   t3code: "integrations.semantics.t3code",
+  fx: "integrations.semantics.fx",
 };
 
 const TAB_LABEL_KEY: Record<FileIntegrationClientId, TKey> = {
@@ -121,6 +122,7 @@ const TAB_LABEL_KEY: Record<FileIntegrationClientId, TKey> = {
   "workbuddy": "integrations.tab.workbuddy",
   "workbuddy-ai": "integrations.tab.workbuddyAi",
   t3code: "integrations.tab.t3code",
+  fx: "integrations.tab.fx",
 };
 
 type FileIntegrationPageProps = {

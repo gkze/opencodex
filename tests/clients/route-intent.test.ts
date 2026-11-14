@@ -38,7 +38,7 @@ describe("Home route intent contract", () => {
   test("digest canonically covers policies and sources, ignores labels and account ordering", () => {
     const doc = projectHomeRouteIntent(config, "test");
     // Independently computed using Python hashlib/json over the documented wire order.
-    expect(routeIntentDigest(doc)).toBe("afcea5dd5c7c45071fe8c1620c98985cd460475ebc986e8cefe3df9a4f2d2dd7");
+    expect(routeIntentDigest(doc)).toBe("ee1ec589fdd623d27396b7590eda69ea54ff09e4bb0952cb394f38cbcfb9faa7");
     doc.clients.aside = { enabled: true, modelNames: "alias", accounts: ["user-b", "user-a"] };
     const reordered = { ...doc, home: { name: "renamed", version: "new" }, clients: Object.fromEntries(Object.entries(doc.clients).reverse()) };
     reordered.clients.aside = { accounts: ["user-a", "user-b"], modelNames: "alias", enabled: true };
