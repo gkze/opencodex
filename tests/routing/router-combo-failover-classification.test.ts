@@ -18,7 +18,7 @@ import {
 } from "../../src/combos/failover";
 import { consumeComboFailure } from "../../src/server/responses/core-combo-failure";
 import { normalizeUpstreamErrorText } from "../../src/server/responses/core-errors";
-import { adapterFailureFromMessage, inferHttpStatusFromAdapterMessage } from "../../src/lib/errors";
+import { adapterFailureFromMessage, classifyError, inferHttpStatusFromAdapterMessage } from "../../src/lib/errors";
 import type { OcxConfig } from "../../src/types";
 
 /**
@@ -444,6 +444,14 @@ describe("combo failure cooldown scope", () => {
     expect(comboFailureCooldownScope(401, "invalid api key")).toBe("provider");
     expect(comboFailureCooldownScope(402, "payment required")).toBe("provider");
     expect(comboFailureCooldownScope(403, "forbidden")).toBe("provider");
+    // Fireworks reports a suspended account / spending-limit hold as 412 with a null error
+    // code; its suspension wording on that status is the provider-wide evidence.
+    expect(comboFailureCooldownScope(
+      412,
+      "Account town is suspended, possibly due to reaching the monthly spending limit or failure to pay past invoices.",
+    )).toBe("provider");
+    // A bare precondition failure is not account state and cools only the target.
+    expect(comboFailureCooldownScope(412, "precondition failed")).toBe("target");
     for (const code of [
       "invalid_api_key",
       "insufficient_quota",
@@ -637,6 +645,29 @@ describe("combo failure hop/stop verdicts", () => {
   test("402 and 425 hop instead of ending the chain", () => {
     expect(comboFailureDecision(402, "payment required")).toBe("hop");
     expect(comboFailureDecision(425, "too early")).toBe("hop");
+  });
+
+  test("a suspended-account 412 hops instead of ending the chain", () => {
+    // Real Fireworks body (2026-09-24): account suspension reported as 412 with a null
+    // provider code. The classifier must read the billing prose and the decision must treat
+    // the refusal as provider state, the way a 402 is treated.
+    const body = "Provider error 412: Account town is suspended, possibly due to reaching the monthly spending limit or failure to pay past invoices. Please go to https://fireworks.ai/account/billing for more information.";
+    expect(classifyError(412, "upstream_error", body).code).toBe("insufficient_quota");
+    expect(comboFailureDecision(412, body)).toBe("hop");
+    expect(comboFailureDecision(412, body, { code: null })).toBe("hop");
+    // A 412 without the provider's suspension wording is an ordinary precondition failure and
+    // keeps the generic terminal verdict.
+    expect(classifyError(412, "upstream_error", "precondition failed").code).not.toBe("insufficient_quota");
+    expect(comboFailureDecision(412, "precondition failed")).toBe("stop");
+  });
+
+  test.each([400, 422])("HTTP %s body echoing suspension wording is not account state", status => {
+    // A validation error can quote the prompt back (#7625); suspension wording is evidence only
+    // on the status the provider actually uses for it.
+    const echoed = "Invalid parameter: value quotes 'Account town is suspended'";
+    expect(classifyError(status, "upstream_error", echoed).code).not.toBe("insufficient_quota");
+    expect(comboFailureCooldownScope(status, echoed)).toBe("target");
+    expect(comboFailureDecision(status, echoed)).toBe("stop");
   });
 
   test("a per-request free-tier cap still hops", () => {
