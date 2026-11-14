@@ -1,6 +1,6 @@
 ---
 title: "Integraciones"
-description: "Conectar opencodex a OpenCode, Pi, Gentle Shell, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Qoder, Cline CLI, Kilo, Command Code, Factory Droid y T3 Code desde el panel — un interruptor por cliente, con una copia de seguridad tomada antes de cada escritura."
+description: "Conectar opencodex a OpenCode, Pi, Gentle Shell, OMP, Hermes, OpenClaw, Kimi Code, gjc, DeepSeek Harness, MiniMax Code, ZCode, Prime Agent, Aside, Raycast, omo, Qoder, Cline CLI, Kilo, Command Code, Factory Droid, T3 Code y fx desde el panel — un interruptor por cliente, con una copia de seguridad tomada antes de cada escritura."
 ---
 
 La página **Conectar** escribe el bloque de proveedor de opencodex en el archivo de configuración del cliente y permite retirarlo. Cada cliente de la tabla tiene su propio interruptor:
@@ -31,6 +31,7 @@ La página **Conectar** escribe el bloque de proveedor de opencodex en el archiv
 | Command Code | `~/.commandcode/providers.json` (en Windows con el home predeterminado: use `HOME ?? USERPROFILE` solo si no está en blanco y es una ruta absoluta de Windows; de lo contrario, `homedir()`; un home proporcionado por separado se respeta; añada `.commandcode\providers.json`) | JSON | el siguiente lanzamiento de Command Code | ninguno: bucle de retorno sin clave (`apiKey: false`); la aplicación de escritorio necesita su propio inicio de sesión y opencodex nunca escribe `auth.json` |
 | Factory Droid | `~/.factory/settings.json` ( `%USERPROFILE%\.factory\settings.json` en Windows) | JSON | inmediatamente a través de la observación de archivos | ninguno: bucle local sin clave |
 | T3 Code | `$T3CODE_HOME/userdata/settings.json` (por defecto `~/.t3/userdata/settings.json`) | JSON | inmediatamente — T3 Code observa el archivo | marcador loopback no secreto |
+| fx | `~/.fx/settings.json` | JSON | tras reiniciar fx | ninguno: solo loopback |
 
 Desde la CLI, `ocx integration client enable|disable --client <id>` cambia solo esta máquina, igual que el interruptor del panel. En un Home de Remote Link que usa la intención de ruta, el cambio se registra como decisión propia del Home, de modo que `ocx sync` la conserva y los Children enlazados mantienen sus valores predeterminados. Para cambiar lo que heredan los Children, usa `ocx route to <client> on|off`. En un Child de Remote Link, un interruptor simple se rechaza e imprime el comando del Home para ese dispositivo; usa allí `ocx route to <client> off --local` para excluir ese Child. Consulta [Remote Link](/es/guides/remote-link/#route-clients-per-device).
 
@@ -737,3 +738,44 @@ Droid también lee el legado `config.json` y el local `settings.local.json`. Res
 **Command Code Desktop necesita su propio inicio de sesión.** Comprueba `~/.commandcode/auth.json` o `COMMAND_CODE_API_KEY` antes de mostrar un espacio de trabajo; sin ellos se queda en login. Inicia sesión allí o con `cmd login` una vez. OpenCodex nunca escribe `auth.json`: contiene credenciales reales de Command Code y otros proveedores. Activar, aplicar, reemplazar, refrescar catálogo o desactivar solo administra `providers.json` y deja ese almacén idéntico byte a byte, sin escribir el placeholder en él.
 
 T3 Code recibe IDs `provider/model` exactos y la escala declarada de esfuerzo, para elegirla y crear subagentes. Si la vista previa no tiene catálogo cargado, **Cargar catálogo y reintentar** lo lee por la carga ordinaria de la lista, no por una vista previa que lo recopile, y vuelve a pedir el plan. Aside aplica el mismo flujo a un perfil cada vez; un plan no cubre varios archivos independientes. Un conflicto abre **Conectar → Aside → Elegir perfil**; **Sincronizar todos los perfiles** es otra acción masiva sin un plan combinado.
+
+## fx
+
+Esta integración apunta a las conexiones de modelo personalizadas de fx, que fx define solo en el
+**nivel superior** de `~/.fx/settings.json`. Un `.fx.json` de espacio de trabajo se limita a los campos
+del proyecto y no puede definir ni seleccionar una conexión, así que es ahí donde OpenCodex escribe
+`providers.opencodex`; el tema, los espacios de trabajo, las reglas de permisos y las demás conexiones
+del usuario no se tocan.
+
+```bash
+ocx integration client enable --client fx
+ocx integration client list --json
+ocx integration client restore --op <operation-id>
+```
+
+La conexión generada usa `openai-chat-completions` con `base_url` apuntando a la raíz `/v1` del
+proxy —fx añade `/chat/completions` por sí mismo— y `auth: { "type": "none" }`. El
+`model_metadata` de fx es también su lista de modelos: `fx models` muestra exactamente los modelos
+enrutados que escribió OpenCodex, con la ventana de contexto cuando el catálogo la conoce y entrada de
+imagen solo donde el modelo la declara.
+
+**fx lee este archivo al iniciarse, así que reinicia fx después de aplicar o sincronizar.** Activar la
+integración no cambia el proveedor seleccionado: ejecuta `fx provider opencodex` para pasar a
+OpenCodex y `fx status --json` para confirmarlo. Tus demás conexiones y sus modelos guardados siguen
+como estaban.
+
+Si el perfil ya contiene una entrada `providers.opencodex` —escrita a mano o dejada por una
+configuración anterior— no hay registro de propiedad con el que compararla, así que el interruptor
+informa un conflicto y se niega a aplicar. **Reemplazar** en la fila, o `ocx integration client enable --client fx --overwrite-conflict`,
+reescribe solo esa entrada con la conexión generada y deja intacto el resto del perfil (tema, otras
+conexiones, reglas de permisos), después de tomar la instantánea que restaura Deshacer.
+
+fx limita un archivo de configuración a 64 KiB e informa de la configuración no válida al iniciarse,
+así que una selección muy grande de modelos enrutados puede agotar el espacio que comparte el resto
+de tu perfil. Desactiva los proveedores que no uses o reduce la selección de modelos si fx informa
+que el archivo no es válido.
+
+fx no envía ninguna cabecera de autenticación personalizada, y `/v1/chat/completions` rechaza una
+credencial bearer y exige la cabecera dedicada `x-opencodex-api-key`, así que esta integración es
+deliberadamente solo loopback. Un enlace que no sea loopback se rechaza en lugar de escribir una
+conexión que no puede autenticarse.

@@ -160,6 +160,7 @@ export const INTEGRATION_TAB_HASHES = [
   "integrations/workbuddy",
   "integrations/workbuddy-ai",
   "integrations/t3code",
+  "integrations/fx",
 ] as const;
 
 /**
