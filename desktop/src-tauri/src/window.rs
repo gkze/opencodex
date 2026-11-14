@@ -20,6 +20,7 @@ pub fn webview_user_agent() -> String {
 /// a close hides and the runtime keeps serving; without one there is nowhere to hide, so D6 makes
 /// the close a quit — and it takes the same graceful drain the tray's Quit does.
 pub fn configure(window: &WebviewWindow) {
+    layout_window_controls(window);
     let window_for_close = window.clone();
     window.on_window_event(move |event| {
         if let WindowEvent::CloseRequested { api, .. } = event {
@@ -28,6 +29,26 @@ pub fn configure(window: &WebviewWindow) {
         }
     });
 }
+
+// Install one window-owned AppKit layout observer. Do not also set Tauri's
+// traffic_light_position: Wry would rewrite these frames from drawRect.
+#[cfg(target_os = "macos")]
+fn layout_window_controls(window: &WebviewWindow) {
+    let native_window = window.clone();
+    let _ = window.run_on_main_thread(move || {
+        extern "C" {
+            fn ocx_layout_window_controls(pointer: *mut std::ffi::c_void);
+        }
+        if let Ok(pointer) = native_window.ns_window() {
+            unsafe {
+                ocx_layout_window_controls(pointer);
+            }
+        }
+    });
+}
+
+#[cfg(not(target_os = "macos"))]
+fn layout_window_controls(_window: &WebviewWindow) {}
 
 /// Where this window may navigate.
 ///
@@ -407,7 +428,8 @@ mod tests {
             serde_json::json!([
                 "core:window:allow-start-dragging",
                 "core:window:allow-toggle-maximize",
-                "core:window:allow-scale-factor"
+                "core:window:allow-scale-factor",
+                "core:window:allow-set-theme"
             ])
         );
 
