@@ -60,6 +60,8 @@ FROM ${BUN_IMAGE} AS build
 WORKDIR /home/bun/app
 
 COPY --chown=bun:bun package.json bun.lock tsconfig.json ./
+# `bun install` runs the root `prepare` hook, which only builds for Git dependency installs.
+COPY --chown=bun:bun scripts/git-install-prepare.ts ./scripts/git-install-prepare.ts
 RUN bun install --frozen-lockfile
 
 COPY --chown=bun:bun gui/package.json gui/bun.lock ./gui/
