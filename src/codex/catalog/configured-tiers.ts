@@ -4,7 +4,7 @@ import { decodeRoutedModelId } from "../../providers/slug-codec";
 import { fastPolicyForModel } from "../../providers/service-tier";
 import type { ResolvedFastPolicy } from "../../providers/fastwire";
 import { catalogModelSlug, type CatalogModel, type RawEntry } from "./parsing";
-import { preserveOperatorUltraFastTiers } from "./operator-tiers";
+import { preserveOperatorUltraFastTiers, publishUltraFastTier } from "./operator-tiers";
 
 const MANAGED_ULTRAFAST = "opencodex_managed_ultrafast";
 
@@ -48,14 +48,12 @@ export function applyConfiguredUltraFast(
   preserveOperatorUltraFastTiers(entry, wasManaged || configured ? undefined : previous, retainOperatorTier);
   delete entry[MANAGED_ULTRAFAST];
   if (!configured) return;
-  entry.service_tiers = [...(Array.isArray(entry.service_tiers) ? entry.service_tiers : []), {
+  // A derived Ultra Fast row from the capability axis may already exist; publish exactly one.
+  publishUltraFastTier(entry, {
     id: "ultrafast",
     name: "Ultra Fast",
     description: "Higher speed and usage; provider access required",
-  }];
-  entry.additional_speed_tiers = [
-    ...(Array.isArray(entry.additional_speed_tiers) ? entry.additional_speed_tiers : []), "ultrafast",
-  ];
+  });
   // Advertising a selectable capability does not opt the user into its increased usage.
   entry[MANAGED_ULTRAFAST] = entry.slug;
 }
