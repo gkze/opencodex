@@ -1,3 +1,5 @@
+> **Личный форк:** ночные выпуски и инструкции по установке описаны в [FORK.md](../FORK.md). Ниже приведена документация исходного проекта.
+
 <p align="center">
   <img src="../assets/banner.png" alt="opencodex — один локальный шлюз для Codex, Claude Code, Claude Desktop, Grok Build и других инструментов" width="100%">
 </p>

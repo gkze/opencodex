@@ -1,5 +1,6 @@
 import { guardedRun, guardedSpawn, guardedSpawnSync } from "./mutation-guard.mjs";
 import { probeSpawn, probeSpawnSync } from "./mutation-guard.mjs";
+import { isForkVersion, forkUpdateMessage } from "./fork-policy.mjs";
 import { createSupervisionLatch, inspectDesktopSupervision } from "../service/desktop-supervision.mjs";
 import { manualUpdateFailureGuidance } from "./update-failure-guidance.mjs";
 import { STOP_HISTORY_INCOMPLETE_EXIT_CODE } from "./stop-contract.mjs";
@@ -340,6 +341,7 @@ export function latestVersion(
   probeSpawn: typeof probeSpawnSync = probeSpawnSync,
   probeEnv?: NodeJS.ProcessEnv,
 ): string | null {
+  if (isForkVersion(currentVersion())) return null;
   const resolvedOwner = installer === "pnpm" ? selectedPnpmOwner(owner, probeSpawn, probeEnv) : undefined;
   if (installer === "pnpm" && !resolvedOwner) return null;
   const manager = registrySpawnTarget(installer, ["view", `${PKG}@${tag}`, "version"], resolvedOwner, probeEnv);
@@ -494,6 +496,7 @@ export async function runUpdate(child?: Extract<OrchestratedChildArgs, { ok: tru
 
 async function runUpdateWithSession(child: Extract<OrchestratedChildArgs, { ok: true }> | undefined,
   session: ReturnType<typeof createOrchestratedChildSession> | undefined): Promise<void> {
+  if (isForkVersion(currentVersion())) { console.log(forkUpdateMessage); return; }
   const ownership = detectInstallOwnership();
   const installer = ownership.installer;
   if (child && installer !== "bun") { process.exitCode = 1; return; }

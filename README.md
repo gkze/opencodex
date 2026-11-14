@@ -1,3 +1,5 @@
+> **Personal fork:** nightly releases and installation instructions are documented in [FORK.md](FORK.md). The upstream project documentation follows below.
+
 <p align="center">
   <img src="assets/banner.png" alt="opencodex — one local gateway for Codex, Claude Code, Claude Desktop, Grok Build and more" width="100%">
 </p>
