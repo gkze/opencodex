@@ -61,3 +61,15 @@ test("a one-line list gains and loses elements in place instead of expanding", (
   // A reorder cannot be expressed as in-place edits, so the list is rewritten.
   expect(JSON.parse(renderMetadata(text, {explicitShards: ["c.json", "a.json"], x: 1})).explicitShards).toEqual(["c.json", "a.json"])
 })
+
+test("independent additions to a list of names merge as a set instead of conflicting", () => {
+  // 2026-11-12 to 14: upstream added a test-layout shard while git-install-preparation added its own.
+  const base = {explicitShards: ["a.json", "b.json"]}
+  const upstream = {explicitShards: ["a.json", "b.json", "upstream.json"]}
+  const patch = {explicitShards: ["a.json", "b.json", "patch.json"]}
+  expect(merge(base, upstream, patch)).toEqual({explicitShards: ["a.json", "b.json", "upstream.json", "patch.json"]})
+  expect(merge(base, upstream, {explicitShards: ["b.json", "patch.json"]})).toEqual({explicitShards: ["b.json", "upstream.json", "patch.json"]})
+  expect(merge(base, {explicitShards: ["a.json", "b.json", "same.json"]}, {explicitShards: ["a.json", "b.json", "same.json"]})).toEqual({explicitShards: ["a.json", "b.json", "same.json"]})
+  // A scalar changed to two different values is still a real conflict.
+  expect(() => merge({v: 1}, {v: 2}, {v: 3})).toThrow("Conflicting metadata: root.v")
+})

@@ -17,6 +17,15 @@ export const merge = (base: unknown, current: unknown, patch: unknown, path = "r
     const keyed = (x: unknown) => Object.fromEntries((x as Array<{path: string}>).map(v => [v.path, v]))
     return Object.values(merge(keyed(base), keyed(current), keyed(patch), path) as Record<string, unknown>)
   }
+  // A list of plain values here (`explicitShards`, a manifest entry's `documents`) is a set: upstream
+  // adding one shard while a patch adds another is two independent changes, not a conflict, as the
+  // 2026-11-12 to 14 refreshes treated it. Keep upstream's order, drop what the patch removed, and
+  // append what it added.
+  const scalars = (x: unknown): x is unknown[] => Array.isArray(x) && x.every(v => v === null || typeof v !== "object")
+  if (scalars(base) && scalars(current) && scalars(patch)) {
+    const removed = base.filter(v => !patch.includes(v)), added = patch.filter(v => !base.includes(v) && !current.includes(v))
+    return [...current.filter(v => !removed.includes(v)), ...added]
+  }
   throw new Error(`Conflicting metadata: ${path}`)
 }
 
