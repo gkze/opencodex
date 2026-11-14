@@ -104,7 +104,7 @@ test("replay leaves diff3 hunks and names the conflicted paths whatever the loca
       yield* git(cwd, "checkout", "-q", "--detach", parent)
       write(head); yield* git(cwd, "commit", "-qam", "upstream")
       const applied = yield* replay(cwd, source, trusted)
-      expect(applied).toEqual({ok: false, reason: "Conflicts: doc.md", conflicts: ["doc.md"]})
+      expect(applied).toEqual({ok: false, reason: "Conflicts: doc.md", conflicts: ["doc.md"], repairable: true})
       expect(conflictHunks(readFileSync(join(cwd, "doc.md"), "utf8")).hunks.map(h => [h.ours, h.base, h.theirs])).toEqual([[head, base, theirs]])
     }))
   } finally {
@@ -113,4 +113,28 @@ test("replay leaves diff3 hunks and names the conflicted paths whatever the loca
     }
     rmSync(cwd, {recursive: true, force: true})
   }
+})
+
+test("a metadata conflict is a replay result the patch can be held for, not an error that ends the refresh", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "ocx-replay-metadata-"))
+  const trusted = resolve(import.meta.dir, "../../..")
+  const manifest = (version: number) => JSON.stringify({version: 2, sizeBudgetLines: version, docs: []}, null, 2) + "\n"
+  try {
+    await Effect.runPromise(Effect.gen(function*() {
+      yield* git(cwd, "init", "-q")
+      yield* git(cwd, "config", "user.name", "Fixture")
+      yield* git(cwd, "config", "user.email", "test@example.com")
+      mkdirSync(join(cwd, "structure"))
+      writeFileSync(join(cwd, "structure/manifest.json"), manifest(600))
+      yield* git(cwd, "add", "."); yield* git(cwd, "commit", "-qm", "base")
+      const parent = yield* git(cwd, "rev-parse", "HEAD")
+      writeFileSync(join(cwd, "structure/manifest.json"), manifest(700)); yield* git(cwd, "commit", "-qam", "patch")
+      const source = yield* git(cwd, "rev-parse", "HEAD")
+      yield* git(cwd, "checkout", "-q", "--detach", parent)
+      writeFileSync(join(cwd, "structure/manifest.json"), manifest(800)); yield* git(cwd, "commit", "-qam", "upstream")
+      const applied = yield* Effect.result(replay(cwd, source, trusted))
+      expect(applied._tag).toBe("Success")
+      if (applied._tag === "Success") expect(applied.success).toEqual({ok: false, reason: "Metadata conflicts: structure/manifest.json (Conflicting metadata: root.sizeBudgetLines)", conflicts: [], repairable: false})
+    }))
+  } finally { rmSync(cwd, {recursive: true, force: true}) }
 })

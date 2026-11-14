@@ -11,21 +11,28 @@ export const replay = (cwd: string, source: string, trustedRoot: string) => Effe
   // two versions and has to guess which differences are the patch's; it is also set here so the
   // runner's default and a maintainer's local configuration produce the same hunks.
   const attempt = yield* git(cwd, "-c", "merge.conflictStyle=diff3", "cherry-pick", "--no-commit", source).pipe(Effect.result)
-  // Generated metadata is reconciled from its authority even if Git's text merge succeeds.
+  // Generated metadata is reconciled from its authority even if Git's text merge succeeds. A real
+  // conflict (one key changed to two different values) is this patch's failure to replay, reported
+  // like any other so the patch can be held or dropped. Thrown, it ended the whole refresh instead.
+  const metadataConflicts: string[] = []
   for (const path of metadata) {
     if (!(yield* git(cwd, "diff", "--name-only", parent, source, "--", path))) continue
     const values = yield* Effect.forEach([parent, before, source], ref => git(cwd, "show", `${ref}:${path}`))
-    const value = yield* Effect.try({ try: () => merge(...values.map(v => JSON.parse(v)) as [unknown, unknown, unknown]), catch: String })
-    yield* Effect.promise(() => Bun.write(join(cwd, path), renderMetadata(values[1], value)))
+    const value = yield* Effect.try({ try: () => merge(...values.map(v => JSON.parse(v)) as [unknown, unknown, unknown]), catch: String }).pipe(Effect.result)
+    if (value._tag === "Failure") { metadataConflicts.push(`${path} (${value.failure.replace(/^Error: /, "")})`); continue }
+    yield* Effect.promise(() => Bun.write(join(cwd, path), renderMetadata(values[1], value.success)))
     yield* git(cwd, "add", path)
   }
+  // Return before anything parses the unreconciled file. Text-hunk tools cannot settle a semantic
+  // JSON conflict, so it is not offered to the repair agent either.
+  if (metadataConflicts.length) return { ok: false as const, reason: `Metadata conflicts: ${metadataConflicts.join(", ")}`, conflicts: [], repairable: false }
   // Use the captured control revision's generator, never agent-proposed executable code.
   yield* command(["bun", join(trustedRoot, "scripts/fork/orchestrator/render-index.ts"), cwd], trustedRoot)
   yield* git(cwd, "add", "structure/INDEX.md")
   yield* reconcileReadme(cwd, parent, before, source)
   const conflicts = yield* git(cwd, "diff", "--name-only", "--diff-filter=U")
-  if (conflicts) return { ok: false as const, reason: `Conflicts: ${conflicts.split("\n").join(", ")}`, conflicts: conflicts.split("\n") }
-  if (attempt._tag === "Failure" && !(yield* git(cwd, "diff", "--cached", "--name-only"))) return { ok: false as const, reason: "Replay failed without staged changes", conflicts: [] }
+  if (conflicts) return { ok: false as const, reason: `Conflicts: ${conflicts.split("\n").join(", ")}`, conflicts: conflicts.split("\n"), repairable: true }
+  if (attempt._tag === "Failure" && !(yield* git(cwd, "diff", "--cached", "--name-only"))) return { ok: false as const, reason: "Replay failed without staged changes", conflicts: [], repairable: true }
   return { ok: true as const, reason: "" }
 })
 
