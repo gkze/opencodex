@@ -25,6 +25,7 @@
  */
 import { createHash } from "node:crypto";
 import { hostname } from "node:os";
+import { fastModeFeatureFlag } from "../types/fast-mode";
 import type { OcxConfig } from "../types";
 
 export const HOME_CODEX_SETTINGS_VERSION = 1;
@@ -69,7 +70,9 @@ export function projectHomeCodexSettings(config: OcxConfig, version: string): Ho
     version: HOME_CODEX_SETTINGS_VERSION,
     home: { name: safeLabel(hostname(), NAME_MAX) ?? "Home", version },
     settings: {
-      fastMode: typeof config.fastMode === "boolean" ? config.fastMode : null,
+      // This document carries the boolean Codex feature, not the proxy-owned tier demand, so it
+      // folds the demand exactly as the local injection plan does.
+      fastMode: fastModeFeatureFlag(config.fastMode) ?? null,
       multiAgentMode: mode && (MULTI_AGENT_MODES as readonly string[]).includes(mode) ? mode : null,
       webSearchSidecarEnabled: config.webSearchSidecar?.enabled !== false,
       subagentDefaults: sync
