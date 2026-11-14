@@ -52,6 +52,7 @@ const prepare = Effect.gen(function*() {
   const writable = readable.filter(path => !isForkControl(path))
   const instructions = yield* Effect.promise(() => Bun.file(join(trusted, "scripts/fork/orchestrator/engineering-discipline.md")).text())
   const first = yield* replay(cwd, task.patch.source, trusted)
+  if (!first.ok && !first.repairable) return yield* Effect.fail(`Patch ${task.patch.id} does not replay: ${first.reason}`)
   let applied: {ok: boolean, reason: string} = first
   let conflicted: readonly string[] = first.ok ? [] : first.conflicts
   let adapted = false
@@ -63,6 +64,7 @@ const prepare = Effect.gen(function*() {
       yield* command(["git", "clean", "-fd"], cwd)
       const again = yield* replay(cwd, task.patch.source, trusted)
       if (again.ok) { applied = again; break }
+      if (!again.repairable) return yield* Effect.fail(`Patch ${task.patch.id} does not replay: ${again.reason}`)
       // The fresh replay only restates the conflicts. What the last attempt got wrong is the part
       // the next one can learn from, so it is carried forward instead of overwritten.
       failure = `${again.reason}\nThe previous repair attempt did not succeed: ${failure}`
