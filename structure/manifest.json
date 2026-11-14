@@ -1513,6 +1513,16 @@
       "documents": [
         "scripts/generate-compatibility-version.ts"
       ]
+    },
+    {
+      "path": "ops/git-installs.md",
+      "tier": 6,
+      "title": "Git Installation Preparation",
+      "scope": "Trusted Git installation lifecycle and source archive prerequisite.",
+      "documents": [
+        "package.json",
+        "scripts/git-install-prepare.ts"
+      ]
     }
   ],
   "contracts": {
