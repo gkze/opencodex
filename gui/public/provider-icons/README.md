@@ -419,3 +419,14 @@ committing it.
   plate carrying a white "T3" glyph. **Not masked:** two neutral inks on an opaque plate, the
   plated case `qoder.svg` and `omo.svg` already record, so masking would fill the tile and
   discard the glyph. As an image it reads on both surfaces.
+
+## Export-client mark: fx (2026-09-30)
+
+- `fx.svg` — fetched 2026-09-30 from `https://fx.sh/icon.svg`, fx's own square app
+  icon, committed unmodified (1427 bytes). fx is `vercel-labs/fx`, and the site's
+  brand page (`https://fx.sh/llms.txt`, "Project and policies") publishes this icon
+  and the wordmark as the project's own assets. Painted as an image and never
+  masked: the artwork is an app icon — a `fill="black"` rounded plate carrying a
+  `fill="white"` glyph — so masking would discard the plate and leave the glyph
+  repainted in the theme's text color, and the two inks are exactly what keeps it
+  legible on both surfaces.
