@@ -11,6 +11,7 @@ import type { ServiceOwnershipResolution } from "../service/state";
 import { inspectDesktopSupervision, type SupervisionEvidence } from "../service/desktop-supervision.mjs";
 import { diagnoseService } from "../service/diagnostics";
 import { detectInstallOwnership, defaultUpdateTag, latestVersion } from "./index";
+import { isForkVersion, forkReleaseUrl } from "./fork-policy.mjs";
 import { parseOrchestratedUpdateArgs, type OrchestratedUpdateArgs } from "./orchestrated-arguments.mjs";
 import { buildOrchestratedPlan, type PlanInputs } from "./orchestrated-plan";
 import { inspectLiveOrchestratedIdentity } from "./orchestrated-live-identity";
@@ -126,6 +127,13 @@ export async function observeOrchestratedPlan(request: Request, deps: Orchestrat
   try { identity = await deps.identity(); } catch { unavailable = true; }
   try { const owner = deps.ownership(identity); runtimeOwner = owner.runtimeOwner; permits = owner.permits; } catch { runtimeOwner = "unknown"; }
   const installer = install.installer === "standalone" ? (install.desktopPath || runtimeOwner === "desktop-app" ? "desktop-app" : "unknown") : install.installer;
+  // A fork build updates only from the fork release channel: never resolve, plan or apply an
+  // upstream registry target, whatever the installer or runtime owner would otherwise allow.
+  if (isForkVersion(currentVersion)) {
+    const plan = buildOrchestratedPlan({ currentVersion, targetVersion: null, installer, runtimeOwner, cliRoot: install.cliRoot,
+      identity, ownershipPermits: permits, updateInFlight });
+    return { ...plan, canApply: false, reason: "fork-build" as const, releaseNotesUrl: forkReleaseUrl };
+  }
   try {
     const selector = request.version ?? request.tag ?? defaultUpdateTag(currentVersion);
     const resolved = deps.target(selector, installer);
