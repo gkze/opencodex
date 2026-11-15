@@ -46,6 +46,7 @@ opencodex es una única pasarela local para tus herramientas de programación co
 | Factory Droid | — | JSON | Sí | Chat Completions | test-covered ([prueba](https://github.com/lidge-jun/opencodex/blob/dev/tests/clients/droid-client.test.ts)) | — | Solo escucha local. [guía](/es/guides/factory-droid/) |
 | Gentle Shell | — | JSON | Sí | Chat Completions | test-covered ([prueba](https://github.com/lidge-jun/opencodex/blob/dev/tests/clients/gentle-shell-client.test.ts)) | — | Solo escucha local. |
 | T3 Code | — | JSON | Sí | Anthropic Messages | test-covered ([prueba](https://github.com/lidge-jun/opencodex/blob/dev/tests/clients/t3code-client.test.ts)) | — | Solo escucha local. Antes de aplicar los cambios, se ejecuta una comprobación específica del cliente que puede rechazarlos. |
+| fx | — | JSON | Sí | Chat Completions (revisado) | test-covered ([prueba](https://github.com/lidge-jun/opencodex/blob/dev/tests/clients/fx-client.test.ts)) | — | Solo escucha local. El cliente elige el endpoint a partir de este ajuste (revisado según el comportamiento documentado del cliente). |
 
 ## Endpoints de entrada
 
