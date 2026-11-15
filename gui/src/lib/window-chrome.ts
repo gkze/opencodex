@@ -10,6 +10,7 @@
  * global is absent and every call is a no-op.
  */
 import type { MouseEvent as ReactMouseEvent } from "react";
+import type { ThemeMode } from "../components/theme-switch";
 
 declare global {
   interface Window {
@@ -75,18 +76,15 @@ export function watchMacTitlebarMetrics(app: HTMLElement): () => void {
     const scale = Number.isFinite(dpr) && dpr > 0 ? windowScale / dpr : 1;
     const ratio = Math.max(1, scale);
     app.classList.toggle("app--reduced-zoom", ratio > 1);
-    app.style.setProperty("--titlebar-h", `${Math.ceil(40 * ratio)}px`);
-    if (scale >= 1) {
-      app.style.setProperty("--tl-inset", `${Math.ceil(80 * ratio)}px`);
-      app.style.setProperty("--chrome-clear", `${Math.ceil(124 * ratio)}px`);
-      return;
-    }
-    // Zoomed in: the lights (fixed in window points) now cover fewer CSS pixels, while the
-    // toggle and its padding (28 + 16) grow with the page. Shrinking only the lights' share
-    // keeps a 44px menu on screen in a 360pt window at 300%. The row keeps its 40px floor.
-    const inset = Math.ceil(80 * scale);
+    const row = Math.ceil(40 * ratio);
+    // Match AppKit: the red control is equally inset from the top and left.
+    // Two 23pt center gaps, a 7pt radius and 10pt air precede the toggle.
+    const center = Math.round((row - 1) / 2 / scale * windowScale) / windowScale * scale;
+    const inset = center + 63 * scale;
+    app.style.setProperty("--titlebar-center-offset", `${center - (row - 1) / 2}px`);
+    app.style.setProperty("--titlebar-h", `${row}px`);
     app.style.setProperty("--tl-inset", `${inset}px`);
-    app.style.setProperty("--chrome-clear", `${inset + 44}px`);
+    app.style.setProperty("--chrome-clear", `${inset + 44 * ratio}px`);
   };
   const readScale = () => {
     if (!core?.invoke) return;
@@ -115,4 +113,15 @@ export function watchMacTitlebarMetrics(app: HTMLElement): () => void {
     window.removeEventListener("resize", onResize);
     window.removeEventListener("focus", readScale);
   };
+}
+
+/** Keep AppKit/window chrome in the same appearance as the dashboard. */
+export async function syncWindowTheme(theme: ThemeMode): Promise<void> {
+  try {
+    await window.__TAURI__?.core?.invoke?.("plugin:window|set_theme", {
+      value: theme === "system" ? null : theme,
+    });
+  } catch {
+    // Older desktop shells may not grant this command; browser theming still works.
+  }
 }
