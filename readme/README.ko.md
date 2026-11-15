@@ -1,3 +1,5 @@
+> **개인 포크:** 야간 릴리스 및 설치 지침은 [FORK.md](../FORK.md)에 있습니다. 아래는 원본 프로젝트의 문서입니다.
+
 <p align="center">
   <img src="../assets/banner.png" alt="opencodex — Codex, Claude Code, Claude Desktop, Grok Build 등을 위한 하나의 로컬 게이트웨이" width="100%">
 </p>
