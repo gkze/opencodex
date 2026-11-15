@@ -388,6 +388,22 @@ export function resolveBunTestArgs(
 // Paths relative to tests/. An entry moves with its file (scripts/test-layout/move.ts rewrites
 // it); the lane label, the ignore glob, and the timeout table all key on the basename.
 export const SERIAL_FULL_SUITE_FILES = [
+  // Workaround, not isolation: these files' real CLI children (`claude desktop apply`, `ocx route
+  // to`, `ocx sync`) take the client lifecycle lock in the effective OS user's runtime root, which
+  // src/client/lifecycle-lock.ts deliberately derives from neither HOME, OPENCODEX_HOME nor any env
+  // switch, so the fixture env cannot redirect it and an in-process spy cannot reach a child. The
+  // lock fails fast (busy_timeout 0), so two of them sharing a parallel batch fail with
+  // client_lifecycle_busy whenever their children overlap (the 2026-11-15 nightlies, once batch
+  // boundaries put route-to-home-decisions and route-to-home-sync-review together). A fresh serial
+  // lane keeps them off each other and off parallel-lane files; a real ocx/Claude Desktop of the same
+  // user can still contend. Remove these entries once the CLI accepts a lock namespace a test child
+  // can be pointed at.
+  "claude-integration/claude-desktop-remote-hub.test.ts",
+  "routing/route-to-child-defaults.test.ts",
+  "routing/route-to-home-decisions.test.ts",
+  "routing/route-to-home-live-flags.test.ts",
+  "routing/route-to-home-native-truth.test.ts",
+  "routing/route-to-home-sync-review.test.ts",
   "codex-integration/codex-shim.test.ts",
   "providers/cursor/cursor-native-exec-shell.test.ts",
   "codex-integration/issue-452-empty-503.test.ts",
