@@ -126,6 +126,24 @@ npm install -g --allow-scripts=bun @bitkyc08/opencodex@preview
 ocx update --tag preview
 ```
 
+## Install this fork from Git
+
+This fork supports Bun Git installs without publishing a release. With Bun and
+Git installed, replace `<commit>` with the full commit SHA you intend to run:
+
+```bash
+bun add --global --trust 'git+https://github.com/gkze/opencodex.git#<commit>'
+```
+
+When the package is installed as a Git dependency, its `prepare` hook builds the
+dashboard and generates package metadata; in a source checkout the hook does nothing.
+`--trust` explicitly permits this dependency's build scripts; use only source you trust.
+The proxy runs TypeScript directly through Bun. Build failures fail installation.
+Stop an existing service before replacing its package, then restart and check
+`ocx ready --json`. To avoid stale same-version installs, remove the old global
+package with `bun remove --global @bitkyc08/opencodex` before adding the Git source.
+Use the pinned Git command for fork updates; `ocx update` follows upstream releases.
+
 ## Run from source
 
 To hack on opencodex itself:

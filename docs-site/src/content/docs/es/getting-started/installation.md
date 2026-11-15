@@ -94,6 +94,25 @@ ocx update --tag preview
 
 <a id="run-from-source"></a>
 
+## Instalar este fork desde Git
+
+Este fork admite instalaciones de Bun desde Git sin publicar una versión. Con Bun y Git instalados,
+sustituye `<commit>` por el SHA completo del commit que quieras ejecutar:
+
+```bash
+bun add --global --trust 'git+https://github.com/gkze/opencodex.git#<commit>'
+```
+
+Cuando el paquete se instala como dependencia de Git, su hook `prepare` compila el panel y genera
+los metadatos del paquete; en una copia del código fuente el hook no hace nada. `--trust` permite
+explícitamente los scripts de compilación de esta dependencia; úsalo solo con código en el que
+confíes. El proxy ejecuta TypeScript directamente con Bun. Un fallo de compilación hace fallar la
+instalación. Detén un servicio existente antes de sustituir su paquete y después reinícialo y
+comprueba `ocx ready --json`. Para evitar instalaciones obsoletas de la misma versión, elimina el
+paquete global anterior con `bun remove --global @bitkyc08/opencodex` antes de añadir la fuente de
+Git. Usa el comando de Git fijado para actualizar el fork; `ocx update` sigue las versiones de
+upstream.
+
 ## Correr desde la fuente
 
 Para hackear el propio opencodex:
