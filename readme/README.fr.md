@@ -1,3 +1,5 @@
+> **Fork personnel :** les versions nocturnes et les instructions d’installation sont documentées dans [FORK.md](../FORK.md). La documentation du projet amont suit ci-dessous.
+
 <p align="center">
   <img src="../assets/banner.png" alt="opencodex — une passerelle locale pour Codex, Claude Code, Claude Desktop, Grok Build et plus" width="100%">
 </p>
