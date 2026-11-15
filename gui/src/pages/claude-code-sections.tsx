@@ -12,7 +12,7 @@ import {
 } from "./claude-code-sidecar";
 import { AutoConnectSetting, SettingToggle } from "./claude-code-settings";
 import type { ClaudeCodeState, MapRow } from "./claude-code-types";
-import { newClientId } from "./claude-code-types";
+import { fastModeChoice, fastModeFromChoice, newClientId } from "./claude-code-types";
 import type { TFn, TKey } from "../i18n/shared";
 
 /**
@@ -100,13 +100,14 @@ export function ClaudeCodeSettingsCard({
         </div>
         <div className="setting-controls">
           <Select
-            value={state.fastMode === null ? "auto" : state.fastMode ? "on" : "off"}
+            value={fastModeChoice(state.fastMode)}
             options={[
               { value: "auto", label: t("claude.fastAuto") },
               { value: "on", label: t("claude.fastOn") },
+              { value: "ultrafast", label: t("claude.fastUltra") },
               { value: "off", label: t("claude.fastOff") },
             ]}
-            onChange={v => onStateChange({ ...state, fastMode: v === "auto" ? null : v === "on" })}
+            onChange={v => onStateChange({ ...state, fastMode: fastModeFromChoice(v) })}
             label={t("claude.fastMode")}
             style={{ minWidth: 140 }}
             align="right"

@@ -96,6 +96,8 @@ const ZH_TW_KEEP_ENGLISH: ReadonlySet<string> = new Set([
   "claude.fastMode",
   "claude.fastOff",
   "claude.fastOn",
+  // Codex's own tier name, kept in English beside the ON/OFF states above.
+  "claude.fastUltra",
   // Dash / logs short labels, units, and surface badges
   "dash.col.baseUrl",
   "dash.mem.arrayBuffers",
