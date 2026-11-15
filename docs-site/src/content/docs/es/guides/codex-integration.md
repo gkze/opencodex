@@ -60,7 +60,7 @@ Los diagnósticos opcionales `OCX_LIVE_FRAME_LOG` escriben solo la marca de tiem
 
 ### Modo rápido
 
-El `fast_mode` inyectado sigue el ajuste de tres estados `fastMode`: `true` escribe `fast_mode = true`, `false` escribe `fast_mode = false`, y unset deja un `fast_mode` existente intacto sin agregar una tabla `[features]`.
+El `fast_mode` inyectado sigue el ajuste de tres estados `fastMode`: `true` escribe `fast_mode = true`, `false` escribe `fast_mode = false`, y unset deja un `fast_mode` existente intacto sin agregar una tabla `[features]`. `"ultrafast"` también escribe `fast_mode = true`, porque esa clave es el indicador del carril Fast del cliente y no un selector de nivel: qué nivel envía OpenCodex se decide en el proxy, y el propio nivel solo aparece en el selector donde la fila lo declara.
 
 El modo rápido está separado del transporte de voz. La descripción de la velocidad de nivel de servicio de un modelo compatible no garantiza un micrófono más bajo, WebRTC o latencia de voz de extremo a extremo hasta OpenCodex.
 

@@ -34,10 +34,20 @@ import { providerDestinationResolvedError } from "../../lib/destination-policy";
 import { redactSecretString, redactUserPath } from "../../lib/redact";
 import upstreamModelsSnapshot from "../data/upstream-models.json";
 
+/**
+ * Copy for the canonical Ultra Fast tier row.
+ *
+ * Upstream's own spelling of this description is "The fastest available responses for
+ * latency-sensitive work." (live `/models` roster, client 0.162.0, 2026-10-13), so a routed row
+ * that declares the tier describes it the same way rather than inventing marketing copy.
+ */
+const ULTRA_FAST_TIER_DESCRIPTION = "The fastest available responses for latency-sensitive work.";
+
 
 import { generatedModelMetadata, readCatalog, readCodexCatalogPath } from "./parsing";
 import type { CatalogModel, RawEntry } from "./parsing";
 import { UPSTREAM_NATIVE_ENTRIES } from "./metadata";
+import { publishUltraFastTier } from "./operator-tiers";
 import { nativeOpenAiCapabilitySourceSlug, SELF_DESCRIBED_NATIVE_OPENAI_MODELS, NATIVE_RESERVE_MODEL } from "./native-models";
 import { isReserveCatalogProjection } from "./reserve";
 import { loadBundledCodexCatalog } from "./bundled";
@@ -209,6 +219,16 @@ export function applyCatalogModelMetadata(entry: RawEntry, model?: CatalogModel)
     }] : [])];
     entry.additional_speed_tiers = eligibleRoutedFlex ? ["fast", "flex"] : ["fast"];
   }
+  if (model.supportsUltraFast === true) {
+    // Ultra Fast rides beside the Fast row rather than replacing it, and its declaration is the
+    // provider/model evidence `supportsUltraFast` carries — this never invents a tier for a pair
+    // that declared nothing. Fast and Flex rows written above are kept as they are.
+    publishUltraFastTier(entry, {
+      id: "ultrafast",
+      name: "Ultra Fast",
+      description: ULTRA_FAST_TIER_DESCRIPTION,
+    });
+  }
   stampCapabilityProvenance(entry, model);
 }
 
@@ -259,6 +279,11 @@ function stampCapabilityProvenance(entry: RawEntry, model: CatalogModel): void {
     ...(Array.isArray(model.capabilities) && model.capabilities.length > 0
       ? { capabilities: [...model.capabilities] }
       : {}),
+    // Evidence for the Ultra Fast row emitted above. The catalog merge reads this to tell a tier
+    // THIS build derived from a provider/model declaration apart from one an operator wrote by
+    // hand, which the separate `ultraFastTier` opt-in governs. Without it, a row that merely
+    // inherited tier metadata from a native template would look like evidence.
+    ...(model.supportsUltraFast === true ? { ultra_fast: true } : {}),
   };
 }
 
