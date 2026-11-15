@@ -698,12 +698,20 @@ describe("FastWire config and registry validation", () => {
     })).toBeNull();
   });
 
-  test("registry FastWire declarations are cursor's variant wire and Anthropic's speed wire", () => {
+  test("registry FastWire declarations are cursor's variant wire, Anthropic's speed wire, and OpenAI's Ultra Fast spelling", () => {
     // Cursor's Fast is a model VARIANT and Anthropic's is a top-level `speed` field, so
-    // neither can inherit the OpenAI adapter default. Every other provider still gets its
-    // wire from defaultFastWireForAdapter.
+    // neither can inherit the OpenAI adapter default. The openai entry declares the default
+    // service-tier wire explicitly for one reason: to add the `ultrafast` spelling its backend
+    // accepts, which a per-model capability map cannot carry on its own. Every other provider
+    // still gets its wire from defaultFastWireForAdapter.
     const declared = PROVIDER_REGISTRY.filter(entry => entry.fastWire !== undefined);
-    expect(declared.map(entry => entry.id).sort()).toEqual(["anthropic", "anthropic-apikey", "anthropic2", "cursor"]);
+    expect(declared.map(entry => entry.id).sort())
+      .toEqual(["anthropic", "anthropic-apikey", "anthropic2", "cursor", "openai"]);
+    expect(declared.find(entry => entry.id === "openai")?.fastWire).toEqual({
+      kind: "service-tier",
+      canonicalToWire: { priority: "priority", ultrafast: "ultrafast" },
+      foreignCallerTiers: "verbatim",
+    });
     expect(declared.find(entry => entry.id === "cursor")?.fastWire).toEqual({
       kind: "cursor-variant",
       canonicalToWire: { priority: "fast" },

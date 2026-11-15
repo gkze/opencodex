@@ -166,6 +166,7 @@ export default defineConfig({
               items: [
                 { label: "Overview", translations: { es: "Descripción general", fr: "Vue d’ensemble", ko: "개요", "zh-CN": "概览", "zh-TW": "概覽", ru: "Обзор", ja: "概要", tr: "Genel Bakış" }, slug: "reference/configuration" },
                 { label: "Providers", translations: { es: "Proveedores", fr: "Fournisseurs", ko: "프로바이더", "zh-CN": "提供商", "zh-TW": "供應商", ru: "Провайдеры", ja: "プロバイダー", tr: "Sağlayıcılar" }, slug: "reference/configuration/providers" },
+                { label: "Ultra Fast", translations: { es: "Ultra Fast", fr: "Ultra Fast", ko: "Ultra Fast", "zh-CN": "Ultra Fast", "zh-TW": "Ultra Fast", ru: "Ultra Fast", ja: "Ultra Fast", tr: "Ultra Fast" }, slug: "reference/configuration/ultra-fast" },
                 { label: "Account Auto-pause", translations: { es: "Pausa automática de cuentas" }, slug: "reference/configuration/account-auto-pause" },
                 { label: "OS Keychain", translations: { es: "Llavero del sistema" }, slug: "reference/configuration/keychain" },
                 { label: "Catalog", translations: { es: "Catálogo", fr: "Catalogue", ko: "카탈로그", "zh-CN": "目录", "zh-TW": "目錄", ru: "Каталог", ja: "カタログ", tr: "Katalog" }, slug: "reference/configuration/catalog" },
