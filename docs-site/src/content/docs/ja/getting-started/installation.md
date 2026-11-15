@@ -67,6 +67,24 @@ npm install -g --allow-scripts=bun @bitkyc08/opencodex@preview
 ocx update --tag preview
 ```
 
+## このフォークを Git からインストール
+
+このフォークは、リリースを公開せずに Bun の Git インストールに対応しています。Bun と Git を
+インストールしたうえで、`<commit>` を実行したいコミットの完全な SHA に置き換えてください。
+
+```bash
+bun add --global --trust 'git+https://github.com/gkze/opencodex.git#<commit>'
+```
+
+パッケージが Git 依存関係としてインストールされると、その `prepare` フックがダッシュボードを
+ビルドし、パッケージメタデータを生成します。ソースチェックアウトではフックは何もしません。
+`--trust` はこの依存関係のビルドスクリプトを明示的に許可するため、信頼できるソースにのみ使用して
+ください。プロキシは Bun で TypeScript を直接実行します。ビルドに失敗するとインストールも失敗
+します。既存のサービスは、パッケージを置き換える前に停止し、その後再起動して `ocx ready --json`
+を確認してください。同じバージョンの古いインストールが残らないよう、Git ソースを追加する前に
+`bun remove --global @bitkyc08/opencodex` で古いグローバルパッケージを削除してください。フォーク
+の更新には固定した Git コマンドを使います。`ocx update` はアップストリームのリリースに従います。
+
 ## ソースから実行
 
 opencodex 自体を直接修正しながら作業するには:
