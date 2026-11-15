@@ -1504,6 +1504,15 @@
         "src/server/background-lifecycle.ts",
         "services/telemetry-collector/"
       ]
+    },
+    {
+      "path": "ops/source-archives.md",
+      "tier": 6,
+      "title": "Source Archive Identity",
+      "scope": "Compatibility manifest hashing for source archives.",
+      "documents": [
+        "scripts/generate-compatibility-version.ts"
+      ]
     }
   ],
   "contracts": {
