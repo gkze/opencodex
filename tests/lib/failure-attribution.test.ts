@@ -176,6 +176,13 @@ describe("request failure attribution", () => {
     expect(deriveRequestFailureCause({ status: 402 })).toBe("quota-exhausted");
   });
 
+  test("a 412 is a rejected request, because a status alone cannot prove a suspension", () => {
+    // Attribution reads closed facts only, never upstream text, so it cannot tell a provider's
+    // account suspension (also a 412) from an ordinary precondition failure. Combo failover
+    // reads the wording; this table must not promote every 412 to account state.
+    expect(deriveRequestFailureCause({ status: 412 })).toBe("payload-rejected");
+  });
+
   test("a local refusal is attributed to this proxy rather than to upstream", () => {
     expect(deriveRequestFailureCause({ status: 502, locallyAnswered: true })).toBe("local-refusal");
   });
