@@ -201,7 +201,8 @@ describe("provider and model aliases", () => {
     // 1. Ownership collision: 'other' explicitly claimed 'agy', so Google row suppresses 'agy'
     // and falls back to the canonical slug 'google-antigravity/gemini-3.8-flash'.
     expect(googleEntry.display_name).toBe("google-antigravity/gemini-3.8-flash");
-    expect(otherEntry.display_name).toBe("other/model-x");
+    // 'other' owns the claimed alias, so its row advertises exactly the selector step 3 routes.
+    expect(otherEntry.display_name).toBe("agy/model-x");
 
     // 2. Routing fidelity: Every advertised Google namespace routes back to google-antigravity!
     expect(routeModel(c, googleEntry.display_name)).toMatchObject({
@@ -435,5 +436,37 @@ describe("provider and model aliases", () => {
     expect(xaiModel).toBeDefined();
     expect("providerAlias" in xaiModel).toBe(false);
     expect(Object.prototype.hasOwnProperty.call(xaiModel, "providerAlias")).toBe(false);
+  });
+  test("an aliased provider prefixes every picker row, not only the models carrying a model alias", async () => {
+    const c = {
+      port: 10100,
+      defaultProvider: "vercel-ai-gateway",
+      providers: {
+        "vercel-ai-gateway": {
+          adapter: "openai-chat",
+          baseUrl: "https://ai-gateway.vercel.sh/v1",
+          authMode: "key",
+          apiKey: "test-key",
+          liveModels: false,
+          alias: "vaigw",
+          models: ["openai/gpt-5.5", "anthropic/claude-opus-5"],
+          modelAliases: { "anthropic/claude-opus-5": "claude-opus-5" },
+        },
+      },
+    } as unknown as OcxConfig;
+
+    const entries = buildCatalogEntries(null, [], await gatherRoutedModels(c));
+
+    // The aliased row and the unaliased row of one provider agree on the prefix; slugs stay canonical.
+    expect(entries.find(e => e.slug === "vercel-ai-gateway/anthropic-claude-opus-5")?.display_name)
+      .toBe("vaigw/claude-opus-5");
+    expect(entries.find(e => e.slug === "vercel-ai-gateway/openai-gpt-5.5")?.display_name)
+      .toBe("vaigw/openai-gpt-5.5");
+
+    // The label is a working selector, not decoration.
+    expect(routeModel(c, "vaigw/openai-gpt-5.5")).toMatchObject({
+      providerName: "vercel-ai-gateway",
+      modelId: "openai/gpt-5.5",
+    });
   });
 });
