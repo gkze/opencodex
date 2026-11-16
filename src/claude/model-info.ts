@@ -15,6 +15,7 @@
  *  - created_at is a fixed constant; max_input_tokens is authoritative-or-null;
  *    max_tokens is always null (no authoritative output limit exists proxy-side).
  */
+import type { FastModeDemand } from "../types/fast-mode";
 import { orderForModelPicker, catalogModelEfforts, nativeEffortClamp, nativeOpenAiContextWindow, nativeOpenAiMaxInputTokens, type CatalogModel, type NativeContextLimitsInput } from "../codex/catalog";
 import { claudeCodeAlias, claudeCodeNativeAlias } from "./alias";
 import { cursorFastIdFor } from "../adapters/cursor/catalog";
@@ -155,7 +156,12 @@ export function buildAnthropicModelInfos(
   idStyle: AnthropicIdStyle = "desktop3p",
   aliasForRoute: (provider: string, modelId: string) => string | undefined = desktop3pAlias,
   nativeContextCap?: NativeContextLimitsInput,
-  fastMode?: boolean,
+  /**
+   * Fast-lane demand. Only `true` means canonical Fast here: an `"ultrafast"` demand is a different
+   * tier, and the Fast identity rewrite below must not claim this route got a lane the demand did
+   * not name.
+   */
+  fastMode?: FastModeDemand,
   // Presence is the feature gate: the caller passes undefined when `fastRows` is off, so a
   // default install publishes nothing. The predicate answers ELIGIBILITY, not enablement.
   fastRows?: (model: CatalogModel | { provider: string; id: string }) => boolean,
