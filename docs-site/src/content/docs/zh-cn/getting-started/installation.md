@@ -65,6 +65,22 @@ npm install -g --allow-scripts=bun @bitkyc08/opencodex@preview
 ocx update --tag preview
 ```
 
+## 从 Git 安装此分支
+
+此分支支持在不发布版本的情况下通过 Bun 进行 Git 安装。安装 Bun 和 Git 后，将 `<commit>`
+替换为你打算运行的提交的完整 SHA：
+
+```bash
+bun add --global --trust 'git+https://github.com/gkze/opencodex.git#<commit>'
+```
+
+当该包作为 Git 依赖安装时，其 `prepare` 钩子会构建仪表盘并生成包元数据；在源码检出目录中，
+该钩子不执行任何操作。`--trust` 会显式允许此依赖的构建脚本；请仅用于你信任的源码。代理通过
+Bun 直接运行 TypeScript。构建失败会导致安装失败。替换现有服务的包之前请先停止该服务，然后重新
+启动并检查 `ocx ready --json`。为避免同版本的旧安装残留，请在添加 Git 源之前使用
+`bun remove --global @bitkyc08/opencodex` 移除旧的全局包。更新此分支时请使用固定提交的 Git
+命令；`ocx update` 跟随上游发布版本。
+
 ## 从源码运行
 
 若要对 opencodex 本身进行开发:
